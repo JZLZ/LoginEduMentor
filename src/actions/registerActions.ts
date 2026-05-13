@@ -3,6 +3,7 @@
 import { parse, InferInput } from "valibot";
 import { RegisterState } from "../types";
 import { registerSchema } from "../lib/schemas/registerSchema";
+import { cookies } from "next/headers";
 
 type RegisterInput = InferInput<typeof registerSchema>;
 
@@ -14,20 +15,25 @@ export async function RegisterUser(
     name: FormData.get("name"),
     surname: FormData.get("surname"),
     email: FormData.get("email"),
-    password: FormData.get("password"),
-    confirmPassword: FormData.get("confirmPassword"),
-    termsAccepted: FormData.get("termsAccepted") !== null,
+    generatePassword: FormData.get("generatePassword") === "on",
+    password: FormData.get("password")?.toString() || "",
   } as Partial<RegisterInput>;
 
   try {
     const validData = parse(registerSchema, rawData);
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
 
     const response = await fetch(
       process.env.NEXT_PUBLIC_API_URL + "/user/register",
       {
         method: "POST",
         body: JSON.stringify(validData),
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
         cache: "no-store",
       },
     );
@@ -55,15 +61,19 @@ export async function RegisterUser(
     return {
       success: true,
       message: apiData.message,
+      tempPassword: apiData.data?.tempPassword || null,
       inputs: {},
     };
-    //eslint-disable-next-line
-  } catch (err: any) {
-    console.error("ERRO CAPTURADO NO SERVER ACTION:", err);
+  } catch (err: unknown) {
+    let errorMessage = "Erro de validação";
+    
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    }
 
     return {
       success: false,
-      message: err.message,
+      message: errorMessage,
       inputs: rawData,
     };
   }

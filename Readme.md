@@ -32,3 +32,7 @@ yarn start
 ```bash
 yarn lint
 ```
+
+8. Para acessar o sistema, use as credenciais de admin:
+    * E-mail: admin@admin.com
+    * Senha: Admin@123

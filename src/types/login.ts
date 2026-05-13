@@ -1,6 +1,6 @@
 export interface LoginPops {
   isLogin: boolean;
-  setIsLogin: (state: boolean) => void;
+  setIsLogin?: (state: boolean) => void;
 }
 
 export type LoginState = {
@@ -13,6 +13,7 @@ export interface UserPayload {
   sub: string;
   email: string;
   name: string;
+  role: string;
   iat: number;
   exp: number;
 }

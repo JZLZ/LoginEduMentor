@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  ChangeEvent,
-  FormEvent,
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ChangeEvent, useActionState, useEffect, useRef, useState } from "react";
 import { RegisterUser } from "../actions/registerActions";
 import { RegisterState } from "../types";
-import { flatten, safeParse, InferInput } from "valibot";
+import { InferInput } from "valibot";
 import { registerSchema } from "../lib/schemas/registerSchema";
 
 export type RegisterInput = InferInput<typeof registerSchema>;
@@ -21,59 +14,32 @@ const initialState: RegisterState<Partial<RegisterInput>> = {
   inputs: {},
 };
 
-export function useRegisterForm(setIsLogin?: (value: boolean) => void) {
-  const [state, formAction, isPending] = useActionState(
-    RegisterUser,
-    initialState,
-  );
-
+export function useRegisterForm() {
+  const [state, formAction, isPending] = useActionState(RegisterUser, initialState);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   const prevSuccess = useRef(state.success);
-
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showPin, setShowPin] = useState(false);
-
-  const [formValues, setFormValues] = useState<Partial<RegisterInput>>({});
-
-  const [clientErrors, setClientErrors] = useState<
-    Partial<Record<keyof RegisterInput, string[]>>
-  >({});
-
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
-    {},
-  );
+  
+  const [formValues, setFormValues] = useState<Partial<RegisterInput>>({ generatePassword: true });
+  const [clientErrors, setClientErrors] = useState<Partial<Record<keyof RegisterInput, string[]>>>({});
 
   useEffect(() => {
     if (state.success && !prevSuccess.current) {
-      const startSequenceTimer = setTimeout(() => {
+      // O setTimeout resolve o aviso "Calling setState synchronously within an effect"
+      const timer = setTimeout(() => {
         setShowSuccessModal(true);
-        setFormValues({});
-        setTouchedFields({});
+        setFormValues({ generatePassword: true });
         setClientErrors({});
       }, 0);
-
-      const redirectTimer = setTimeout(() => {
-        setShowSuccessModal(false);
-        if (setIsLogin) {
-          setIsLogin(true);
-        }
-      }, 4000);
-
-      return () => {
-        clearTimeout(startSequenceTimer);
-        clearTimeout(redirectTimer);
-      };
+      
+      prevSuccess.current = true;
+      return () => clearTimeout(timer);
     }
-
+    
     prevSuccess.current = state.success;
-  }, [state.success, setIsLogin]);
+  }, [state.success]);
 
-  const handleCloseModal = () => {
-    setShowSuccessModal(false);
-    if (setIsLogin) setIsLogin(true);
-  };
+  const handleCloseModal = () => setShowSuccessModal(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name as keyof RegisterInput;
@@ -81,8 +47,6 @@ export function useRegisterForm(setIsLogin?: (value: boolean) => void) {
     const valorReal = type === "checkbox" ? checked : value;
 
     setFormValues((prev) => ({ ...prev, [name]: valorReal }));
-    setTouchedFields((prev) => ({ ...prev, [name]: true }));
-
     if (clientErrors[name]) {
       setClientErrors((prev) => {
         const novo = { ...prev };
@@ -92,32 +56,9 @@ export function useRegisterForm(setIsLogin?: (value: boolean) => void) {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    const formData = new FormData(e.currentTarget);
-
-    const dataToValidate = {
-      name: formData.get("name")?.toString() || "",
-      surname: formData.get("surname")?.toString() || "",
-      email: formData.get("email")?.toString() || "",
-      password: formData.get("password")?.toString() || "",
-      confirmPassword: formData.get("confirmPassword")?.toString() || "",
-      termsAccepted: formData.get("termsAccepted") !== null,
-    };
-
-    const resultado = safeParse(registerSchema, dataToValidate);
-
-    if (!resultado.success) {
-      e.preventDefault();
-      const issues = flatten(resultado.issues).nested;
-      setClientErrors(issues as Partial<Record<keyof RegisterInput, string[]>>);
-    }
-  };
-
   const getValue = (field: keyof RegisterInput): string => {
     const val = formValues[field] ?? state.inputs?.[field];
-    return val !== null && val !== undefined && typeof val !== "boolean"
-      ? String(val)
-      : "";
+    return val !== null && val !== undefined && typeof val !== "boolean" ? String(val) : "";
   };
 
   const getChecked = (field: keyof RegisterInput): boolean => {
@@ -126,31 +67,23 @@ export function useRegisterForm(setIsLogin?: (value: boolean) => void) {
   };
 
   const getError = (field: keyof RegisterInput) => {
-    const isDirty = touchedFields[field as string];
     if (clientErrors[field]) return clientErrors[field]![0];
-    if (!isDirty && state.errors?.[field]) return state.errors[field]![0];
+    if (state.errors?.[field]) return state.errors[field]![0];
     return undefined;
   };
 
   const togglePassword = () => setShowPassword((p) => !p);
-  const toggleConfirmPassword = () => setShowConfirmPassword((p) => !p);
-  const togglePin = () => setShowPin((p) => !p);
 
   return {
     state,
     formAction,
     isPending,
     handleChange,
-    handleSubmit,
     getValue,
     getChecked,
     getError,
     showPassword,
     togglePassword,
-    showConfirmPassword,
-    toggleConfirmPassword,
-    showPin,
-    togglePin,
     showSuccessModal,
     handleCloseModal,
   };

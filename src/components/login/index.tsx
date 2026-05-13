@@ -15,7 +15,7 @@ const EyeIcon = ({ visible }: { visible: boolean }) => {
   );
 };
 
-export default function Login({ isLogin, setIsLogin }: LoginPops) {
+export default function Login({ isLogin }: LoginPops) {
   const {
     formAction,
     isPending,
@@ -26,9 +26,7 @@ export default function Login({ isLogin, setIsLogin }: LoginPops) {
     handleChange,
   } = useLoginForm();
 
-  if (!isLogin) {
-    return null;
-  }
+  if (!isLogin) return null;
 
   return (
     <form action={formAction} className="w-full">
@@ -46,7 +44,7 @@ export default function Login({ isLogin, setIsLogin }: LoginPops) {
           autoComplete="email"
           required
           className="mt-2 p-3 outline-2 outline-secondary-400 bg-secondary-100 rounded-xl text-black focus:none"
-          placeholder="responsavel@gmail.com"
+          placeholder="admin@admin.com"
           value={formValues.email || ""}
           onChange={handleChange}
         />
@@ -83,21 +81,11 @@ export default function Login({ isLogin, setIsLogin }: LoginPops) {
       </div>
 
       <div className="flex items-center justify-center text-sm mb-4">
-        <input
-          id="remember"
-          type="checkbox"
-          className="peer hidden" 
-        />
+        <input id="remember" type="checkbox" className="peer hidden" />
         <div
           className="w-5 h-5 border border-[#1f6fe3] rounded-full flex items-center justify-center cursor-pointer peer-checked:bg-[url('/assets/check-box.png')] peer-checked:bg-cover peer-checked:bg-center transition-all"
-          onClick={() => {
-            const checkbox = document.getElementById("remember");
-            if (checkbox) {
-              checkbox.click(); 
-            }
-          }}
-        >
-        </div>
+          onClick={() => document.getElementById("remember")?.click()}
+        ></div>
         <label
           htmlFor="remember"
           className="text-[14px] text-secondary-700 font-bold ml-2 cursor-pointer"
@@ -115,7 +103,7 @@ export default function Login({ isLogin, setIsLogin }: LoginPops) {
               : "bg-secondary-400 hover:bg-[#1f6fe3] cursor-pointer"
           }`}
         >
-          {isPending ? "Entrar" : "Entrar"}
+          {isPending ? "Entrando..." : "Entrar"}
         </button>
       </div>
 
@@ -124,18 +112,6 @@ export default function Login({ isLogin, setIsLogin }: LoginPops) {
           {state.error}
         </div>
       )}
-
-      <div className="mt-3 text-center text-sm">
-        <p className="text-secondary-700 text-[16px]">
-          Não possui uma conta?
-          <span
-            onClick={() => setIsLogin(false)}
-            className="text-secondary-700 hover:underline font-bold cursor-pointer ml-1"
-          >
-            Criar conta
-          </span>
-        </p>
-      </div>
     </form>
   );
 }
