@@ -18,6 +18,15 @@ export async function RegisterUser(
     generatePassword: FormData.get("generatePassword") === "on",
     password: FormData.get("password")?.toString() || "",
   } as Partial<RegisterInput>;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!apiUrl) {
+    return {
+      success: false,
+      message: "A API não está configurada.",
+      inputs: rawData,
+    };
+  }
 
   try {
     const validData = parse(registerSchema, rawData);
@@ -26,7 +35,7 @@ export async function RegisterUser(
     const token = cookieStore.get("auth_token")?.value;
 
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + "/user/register",
+      `${apiUrl}/user/register`,
       {
         method: "POST",
         body: JSON.stringify(validData),
