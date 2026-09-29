@@ -28,7 +28,7 @@ export default async function proxy(request: NextRequest) {
     }
 
     if (isPublicRoute && isValid) {
-      return NextResponse.redirect(new URL("/profile", request.url));
+      return NextResponse.redirect(new URL("/home", request.url));
     }
   }
 
@@ -36,10 +36,11 @@ export default async function proxy(request: NextRequest) {
 }
 
 async function validateToken(token: string): Promise<boolean> {
-  if (!token) return false;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!token || !apiUrl) return false;
 
   try {
-    const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/auth", {
+    const response = await fetch(`${apiUrl}/auth`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

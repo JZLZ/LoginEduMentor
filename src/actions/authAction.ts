@@ -16,10 +16,15 @@ export async function loginAction(
 ): Promise<LoginState> {
   const email = formData.get("email");
   const password = formData.get("password");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!apiUrl) {
+    return { success: false, error: "A API não está configurada." };
+  }
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+      `${apiUrl}/auth/login`,
       {
         method: "POST",
         body: JSON.stringify({ email, password }),
