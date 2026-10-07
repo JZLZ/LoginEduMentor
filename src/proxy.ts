@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/login", "/"];
+const publicRoutes = ["/login", "/cadastro", "/"];
 
 export default async function proxy(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
