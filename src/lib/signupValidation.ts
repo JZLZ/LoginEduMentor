@@ -14,6 +14,19 @@ export type SignupFormValues = {
 
 export type SignupErrors = Partial<Record<keyof SignupFormValues, string>>;
 
+export type SignupEducation =
+  | "ENSINO_FUNDAMENTAL"
+  | "ENSINO_MEDIO"
+  | "ENSINO_SUPERIOR"
+  | "POS_GRADUACAO";
+
+const signupEducationValues: SignupEducation[] = [
+  "ENSINO_FUNDAMENTAL",
+  "ENSINO_MEDIO",
+  "ENSINO_SUPERIOR",
+  "POS_GRADUACAO",
+];
+
 export const initialSignupValues: SignupFormValues = {
   fullName: "",
   birthDate: "",
@@ -90,30 +103,64 @@ export function calculateAge(value: string): number | null {
   return age;
 }
 
+export function birthDateToIso(value: string) {
+  const [day, month, year] = value.split("/");
+  return `${year}-${month}-${day}`;
+}
+
 function isValidFullName(value: string) {
-  const name = value.trim();
+  const name = value.trim().replace(/\s+/g, " ");
   return (
-    name.length >= 5 &&
+    name.length >= 3 &&
     name.length <= 100 &&
-    /^[\p{L}]+(?:[ '-][\p{L}]+)+(?:[ '-][\p{L}]+)*$/u.test(name)
+    /^\p{L}+(?: \p{L}+)+$/u.test(name)
   );
 }
 
 function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value.trim());
+  const email = value.trim();
+  return (
+    email.length <= 254 && /^[^\s@]+@[^\s@]+\.com(?:\.br)?$/i.test(email)
+  );
 }
 
 function isValidPhone(value: string) {
   return /^[1-9]{2}9\d{8}$/.test(onlyNumbers(value));
 }
 
-function isValidPassword(value: string) {
+function hasIdentityPart(password: string, fullName: string, email: string) {
+  const normalizedPassword = password.toLocaleLowerCase("pt-BR");
+  const nameParts = fullName
+    .toLocaleLowerCase("pt-BR")
+    .split(/\s+/)
+    .filter((part) => part.length >= 3);
+  const normalizedEmail = email.trim().toLocaleLowerCase("pt-BR");
+  const emailLocalPart = normalizedEmail.split("@")[0] ?? "";
+
+  return (
+    nameParts.some((part) => normalizedPassword.includes(part)) ||
+    Boolean(normalizedEmail && normalizedPassword.includes(normalizedEmail)) ||
+    Boolean(emailLocalPart && normalizedPassword.includes(emailLocalPart))
+  );
+}
+
+function hasSequentialNumbers(value: string) {
+  return /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+    value,
+  );
+}
+
+function isValidPassword(value: string, fullName: string, email: string) {
   return (
     value.length >= 8 &&
+    value.length <= 20 &&
     /[a-z]/.test(value) &&
     /[A-Z]/.test(value) &&
     /\d/.test(value) &&
-    /[^A-Za-z0-9]/.test(value)
+    /[!@#$%&*]/.test(value) &&
+    /^\S+$/.test(value) &&
+    !hasIdentityPart(value, fullName, email) &&
+    !hasSequentialNumbers(value)
   );
 }
 
@@ -179,9 +226,11 @@ export function validateSignup(values: SignupFormValues): SignupErrors {
 
   if (!values.password) {
     errors.password = "Senha é obrigatória.";
-  } else if (!isValidPassword(values.password)) {
+  } else if (
+    !isValidPassword(values.password, values.fullName, values.email)
+  ) {
     errors.password =
-      "Use 8 ou mais caracteres, com maiúscula, minúscula, número e símbolo.";
+      "Use de 8 a 20 caracteres, com maiúscula, minúscula, número e !@#$%&*, sem dados pessoais ou sequências numéricas.";
   }
 
   if (!values.confirmPassword) {
@@ -192,6 +241,10 @@ export function validateSignup(values: SignupFormValues): SignupErrors {
 
   if (!values.education) {
     errors.education = "Escolaridade é obrigatória.";
+  } else if (
+    !signupEducationValues.includes(values.education as SignupEducation)
+  ) {
+    errors.education = "Informe uma escolaridade válida.";
   }
 
   if (age !== null && age < 18) {

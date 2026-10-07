@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { FiInfo } from "react-icons/fi";
 
+import { signupAction, type SignupPayload } from "@/src/actions/signupAction";
 import {
+  birthDateToIso,
   calculateAge,
   formatBirthDate,
   formatCpf,
   formatPhone,
   initialSignupValues,
-  SignupErrors,
-  SignupFormValues,
+  onlyNumbers,
+  type SignupEducation,
+  type SignupErrors,
+  type SignupFormValues,
   validateSignup,
 } from "@/src/lib/signupValidation";
 
@@ -22,6 +27,34 @@ const inputClassName =
 
 function getInputClassName(error?: string) {
   return `${inputClassName} ${error ? "border-red-600 focus:border-red-600 focus:ring-red-600/15" : ""}`;
+}
+
+const backendFieldNames: Record<string, keyof SignupFormValues> = {
+  nomeCompleto: "fullName",
+  dataNascimento: "birthDate",
+  escolaridade: "education",
+  email: "email",
+  emailRecuperacao: "recoveryEmail",
+  celular: "phone",
+  senha: "password",
+  confirmarSenha: "confirmPassword",
+  "responsavelLegal.nomeCompleto": "guardianName",
+  "responsavelLegal.cpf": "guardianCpf",
+};
+
+function mapBackendErrors(errors?: Record<string, string[]>) {
+  if (!errors) return {};
+
+  return Object.entries(errors).reduce<SignupErrors>(
+    (mappedErrors, [field, messages]) => {
+      const formField = backendFieldNames[field];
+      const message = messages[0];
+
+      if (formField && message) mappedErrors[formField] = message;
+      return mappedErrors;
+    },
+    {},
+  );
 }
 
 function BrandMark() {
@@ -108,6 +141,7 @@ function Field({
 }
 
 export default function Signup() {
+  const router = useRouter();
   const [formValues, setFormValues] = useState<SignupFormValues>(
     initialSignupValues,
   );
@@ -115,6 +149,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const age = useMemo(
     () => calculateAge(formValues.birthDate ?? ""),
@@ -161,7 +196,7 @@ export default function Signup() {
       setFieldValue(field, formatter(event.target.value));
     };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const validationErrors = validateSignup({
@@ -184,9 +219,57 @@ export default function Signup() {
       return;
     }
 
-    setFormMessage(
-      "Dados validados. A criação da conta aguarda integração com a API.",
-    );
+    const payload: SignupPayload = {
+      nomeCompleto: formValues.fullName.trim().replace(/\s+/g, " "),
+      dataNascimento: birthDateToIso(formValues.birthDate),
+      escolaridade: formValues.education as SignupEducation,
+      email: formValues.email.trim().toLowerCase(),
+      emailRecuperacao: formValues.recoveryEmail.trim().toLowerCase(),
+      celular: formValues.phone,
+      senha: formValues.password,
+      confirmarSenha: formValues.confirmPassword,
+      ...(needsGuardian
+        ? {
+            responsavelLegal: {
+              nomeCompleto: formValues.guardianName.trim(),
+              cpf: onlyNumbers(formValues.guardianCpf),
+            },
+          }
+        : {}),
+    };
+
+    setIsSubmitting(true);
+    setFormMessage(null);
+
+    try {
+      const result = await signupAction(payload);
+
+      if (result.success) {
+        router.push("/login?cadastro=sucesso");
+        return;
+      }
+
+      const backendErrors = mapBackendErrors(result.errors);
+      setErrors(backendErrors);
+      setFormMessage(result.message);
+
+      const firstBackendField = Object.keys(backendErrors)[0] as
+        | keyof SignupFormValues
+        | undefined;
+
+      if (firstBackendField) {
+        requestAnimationFrame(() => {
+          document
+            .querySelector<HTMLElement>(`[name="${firstBackendField}"]`)
+            ?.focus();
+        });
+      }
+    } catch {
+      setErrors({});
+      setFormMessage("Falha na conexão com o servidor.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -264,6 +347,7 @@ export default function Signup() {
                 onChange={updateTextField("fullName")}
                 aria-describedby={errors.fullName ? "fullName-error" : undefined}
                 aria-invalid={Boolean(errors.fullName)}
+                maxLength={100}
                 required
               />
             </Field>
@@ -335,6 +419,7 @@ export default function Signup() {
                 onChange={updateTextField("email")}
                 aria-describedby={errors.email ? "email-error" : undefined}
                 aria-invalid={Boolean(errors.email)}
+                maxLength={254}
                 required
               />
             </Field>
@@ -361,6 +446,7 @@ export default function Signup() {
                     : "recoveryEmail-helper"
                 }
                 aria-invalid={Boolean(errors.recoveryEmail)}
+                maxLength={254}
                 required
               />
             </Field>
@@ -385,6 +471,7 @@ export default function Signup() {
                     aria-describedby={errors.password ? "password-error" : undefined}
                     aria-invalid={Boolean(errors.password)}
                     minLength={8}
+                    maxLength={20}
                     required
                   />
                   <button
@@ -420,6 +507,7 @@ export default function Signup() {
                     }
                     aria-invalid={Boolean(errors.confirmPassword)}
                     minLength={8}
+                    maxLength={20}
                     required
                   />
                   <button
@@ -461,10 +549,10 @@ export default function Signup() {
                 <option value="" disabled>
                   Selecione sua escolaridade
                 </option>
-                <option value="ensino-fundamental">Ensino Fundamental</option>
-                <option value="ensino-medio">Ensino Médio</option>
-                <option value="ensino-superior">Ensino Superior</option>
-                <option value="pos-graduacao">Pós-graduação</option>
+                <option value="ENSINO_FUNDAMENTAL">Ensino Fundamental</option>
+                <option value="ENSINO_MEDIO">Ensino Médio</option>
+                <option value="ENSINO_SUPERIOR">Ensino Superior</option>
+                <option value="POS_GRADUACAO">Pós-graduação</option>
               </select>
             </Field>
 
@@ -501,6 +589,7 @@ export default function Signup() {
                       errors.guardianName ? "guardianName-error" : undefined
                     }
                     aria-invalid={Boolean(errors.guardianName)}
+                    maxLength={100}
                     required
                   />
                 </Field>
@@ -574,13 +663,9 @@ export default function Signup() {
 
             {formMessage && (
               <p
-                className={`rounded-xl border px-4 py-3 text-sm font-bold ${
-                  Object.keys(errors).length
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-[#4F3CF0]/20 bg-[#E9E6FF] text-[#4F3CF0]"
-                }`}
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
                 data-cy="signup-form-message"
-                role={Object.keys(errors).length ? "alert" : "status"}
+                role="alert"
               >
                 {formMessage}
               </p>
@@ -588,10 +673,12 @@ export default function Signup() {
 
             <button
               type="submit"
-              className="mx-auto mt-2 flex h-12 w-full max-w-[400px] items-center justify-center rounded-full bg-[#4F3CF0] px-8 text-base font-bold text-white transition hover:bg-[#3F2DD5] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#4F3CF0] active:scale-[0.99]"
+              className="mx-auto mt-2 flex h-12 w-full max-w-[400px] items-center justify-center rounded-full bg-[#4F3CF0] px-8 text-base font-bold text-white transition hover:bg-[#3F2DD5] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#4F3CF0] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
               data-cy="signup-submit"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
             >
-              Criar conta
+              {isSubmitting ? "Criando conta..." : "Criar conta"}
             </button>
           </form>
         </div>

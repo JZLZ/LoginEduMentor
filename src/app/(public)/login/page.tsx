@@ -1,7 +1,12 @@
-"use client";
 import Login from "@/src/components/login";
 
-export default function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ cadastro?: string }>;
+}) {
+  const { cadastro } = await searchParams;
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-secondary-700">
       <div className="flex flex-1 flex-col items-center justify-center mt-5">
@@ -14,6 +19,15 @@ export default function Page() {
         </div>
 
         <div className="w-140 h-fit bg-[#FAFEFC] rounded-xl p-8 shadow-2xl border-4 border-[#759FFE] mb-22 z-10">
+          {cadastro === "sucesso" && (
+            <p
+              className="mb-5 rounded-lg bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-800"
+              data-cy="signup-success-message"
+              role="status"
+            >
+              Conta criada com sucesso. Faça login para continuar.
+            </p>
+          )}
           <Login isLogin={true} />
         </div>
       </div>
