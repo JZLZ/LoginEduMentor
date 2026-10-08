@@ -169,11 +169,15 @@ form { display: flex; flex-direction: column; gap: 16px; }
   outline: 0;
 }
 .input-shell input::placeholder { color: var(--muted); }
+.input-shell input[type="date"]:required:invalid::-webkit-datetime-edit { color: transparent; }
+.date-placeholder { position: absolute; left: 16px; color: var(--muted); font-size: 14px; line-height: 20px; pointer-events: none; }
+.input-shell:has(input[type="date"]:focus) .date-placeholder { display: none; }
 .input-shell input:focus { border: 2px solid var(--indigo); padding: 11px 15px; box-shadow: 0 0 0 3px var(--lavender); }
 .input-action { position: absolute; right: 14px; color: var(--indigo); font-size: 13px; font-weight: 700; background: transparent; border: 0; }
 .input-shell:has(.input-action) input { padding-right: 80px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .field-help { margin-top: -12px; color: var(--muted); font-size: 13px; line-height: 18px; }
+.field-error { color: #b42318; font-size: 13px; line-height: 18px; }
 
 .primary-button, .secondary-button {
   min-height: 48px;

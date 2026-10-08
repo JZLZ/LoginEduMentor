@@ -1,4 +1,5 @@
-import { FormEvent, ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 
 type Screen =
   | "login"
@@ -45,7 +46,7 @@ function Field({
   children,
   className = "",
 }: {
-  label: string;
+  label?: string;
   type?: string;
   placeholder?: string;
   children?: ReactNode;
@@ -53,9 +54,9 @@ function Field({
 }) {
   return (
     <label className={`field ${className}`}>
-      <span>{label}</span>
+      {label && <span>{label}</span>}
       <span className="input-shell">
-        <input type={type} placeholder={placeholder ?? label} required />
+        <input type={type} placeholder={placeholder ?? label} aria-label={label ?? placeholder} required />
         {children}
       </span>
     </label>
@@ -111,7 +112,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
   const [accepted, setAccepted] = useState(true);
   const [accounts, setAccounts] = useState(false);
 
-  function submit(event: FormEvent) {
+  function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (accepted) setAccounts(true);
   }
@@ -120,10 +121,10 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     <AuthLayout>
       <div className="auth-form login-form">
         <AuthTabs active="login" go={go} />
-        <header className="form-heading"><h2>Que bom te ver de novo!</h2><p>Entre para continuar sua trilha até o ENEM.</p></header>
+        <header className="form-heading"><h2>Que bom te ver por aqui!</h2><p>Entre para iniciar sua trilha.</p></header>
         <form onSubmit={submit}>
-          <Field label="E-mail" type="email" placeholder="nome@email.com" />
-          <Field label="Senha" type={showPassword ? "text" : "password"} placeholder="••••••••">
+          <Field type="email" placeholder="nome@email.com" />
+          <Field type={showPassword ? "text" : "password"} placeholder="senha">
             <button className="input-action" type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Ocultar" : "Mostrar"}</button>
           </Field>
           <button className="text-button forgot" type="button" onClick={() => go("recovery")}>Esqueceu sua senha?</button>
@@ -147,23 +148,23 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     <AuthLayout>
       <div className="auth-form signup-form">
         <AuthTabs active="signup" go={go} />
-        <header className="form-heading"><h2>Bora criar sua conta?</h2><p>Leva menos de 2 minutos.</p></header>
+        <header className="form-heading"><h2>Bora criar sua conta?</h2><p>Leva menos de 1 minutos.</p></header>
         <form onSubmit={(event) => { event.preventDefault(); go("course"); }}>
-          <Field label="Nome completo" placeholder="Júlia Andrade" />
+          <Field placeholder="Nome completo" />
           <div className="field-row">
-            <label className="field"><span>Data de nascimento</span><span className="input-shell"><input type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></span></label>
-            <Field label="Celular" type="tel" placeholder="(11) 90000-0000" />
+            <label className="field"><span></span><span className="input-shell"><input lang="pt-BR" type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />{!birthDate && <span className="date-placeholder" aria-hidden="true">Data de nascimento</span>}</span></label>
+            <Field type="tel" placeholder="Celular" />
           </div>
-          <Field label="E-mail" type="email" placeholder="julia@email.com" />
-          <Field label="E-mail de recuperação" type="email" placeholder="nome@email.com" />
+          <Field type="email" placeholder="E-mail" />
+          <Field type="email" placeholder="E-mail de recuperação" />
           <small className="field-help">É para ele que enviamos o link de nova senha.</small>
-          <div className="field-row"><Field label="Senha" type="password" placeholder="••••••••" /><Field label="Confirmar senha" type="password" placeholder="••••••••" /></div>
+          <div className="field-row"><Field type="password" placeholder="Senha" /><Field type="password" placeholder="Confirmar senha" /></div>
           {minor && (
             <fieldset className="guardian-card">
-              <legend>Se você tiver menos de 18 anos</legend>
+              <legend>Vimos que você tem menos de 18 anos</legend>
               <p>Precisamos dos dados do seu responsável legal.</p>
-              <Field label="Nome do responsável legal" placeholder="Nome completo" />
-              <Field label="CPF do responsável" placeholder="000.000.000-00" />
+              <Field placeholder="Nome completo" />
+              <Field placeholder="CPF do responsável" />
             </fieldset>
           )}
           <button className="primary-button" type="submit">Criar conta</button>

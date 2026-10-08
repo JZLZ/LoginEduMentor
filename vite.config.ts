@@ -86,11 +86,11 @@ function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
     return html.replace(`<!-- ${slotName} -->`, content)
   }
 
-  const title = config.title ?? "Figma Make App"
-  const description = config.description ?? ''
-  const favicon = config.icons?.icon ?? ''
+  const title = config.title ?? "EduMentor AI"
+  const description = config.description ?? 'Acompanhe sua evolução e conquiste seus objetivos com a EduMentor AI, a plataforma de aprendizado personalizada que se adapta ao seu ritmo e estilo de estudo.'
+  const favicon = config.icons?.icon ?? '/img/favicon.png'
   const socialImage = config.openGraph?.image ?? ''
-  const language = sanitizeHtmlValue(config.language) || 'en'
+  const language = sanitizeHtmlValue(config.language) || 'pt-br'
   const googleAnalyticsId = sanitizeHtmlValue(config.analytics?.googleAnalyticsId)
   const headStart = config.customScripts?.headStart ?? ''
   const headEnd = config.customScripts?.headEnd ?? ''
