@@ -1,4 +1,9 @@
-import { nunito, dynapuff } from "@/src/lib/fonts";
+import {
+  bricolageGrotesque,
+  dynapuff,
+  nunito,
+  nunitoSans,
+} from "@/src/lib/fonts";
 import { AuthProvider } from "../context/AuthContext";
 import { UserPayload } from "../types";
 import { cookies } from "next/headers";
@@ -30,7 +35,10 @@ export default async function RootLayout({
 }) {
   const user = await getUserFromCookie();
   return (
-    <html lang="pt-BR" className={`${nunito.variable} ${dynapuff.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${nunito.variable} ${dynapuff.variable} ${bricolageGrotesque.variable} ${nunitoSans.variable}`}
+    >
       <body className="bg-secondary-700 min-h-screen">
         <AuthProvider initialUser={user}>
           {children}
