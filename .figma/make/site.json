@@ -1,0 +1,10 @@
+{
+  "description": "This platform offers personalized educational support for students preparing for the ENEM exam, featuring 24/7 tutoring and resources to enhance learning.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
