@@ -24,27 +24,54 @@ export async function loginAction(
 
   try {
     const response = await fetch(
-      `${apiUrl}/auth/login`,
+      `${apiUrl.replace(/\/$/, "")}/auth/login`,
       {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: String(email ?? "").trim().toLowerCase(),
+          senha: String(password ?? ""),
+        }),
         headers: { "Content-Type": "application/json" },
+        cache: "no-store",
       },
     );
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      const errorData = data as ApiErrorResponse;
+      const errorMessage = Array.isArray(data?.message)
+        ? data.message[0]
+        : (data as ApiErrorResponse | null)?.message || "E-mail ou senha incorretos.";
       return {
         success: false,
-        error: errorData.message,
+        error: errorMessage,
       };
     }
 
-    const successData = data as ApiSuccessResponse;
-    const token = successData.data.token;
+    const headerAuth =
+      response.headers.get("authorization") ||
+      response.headers.get("Authorization");
+    const token =
+      (data as ApiSuccessResponse | null)?.data?.token ||
+      (headerAuth ? headerAuth.replace(/^Bearer\s+/i, "") : null);
+
+    if (!token) {
+      return {
+        success: false,
+        error: "Token de autenticação não retornado pelo servidor.",
+      };
+    }
+
     const userDecoded = jwtDecode<UserPayload>(token);
+
+    if (!userDecoded.email && email) {
+      userDecoded.email = String(email);
+    }
+    if (!userDecoded.name) {
+      userDecoded.name = userDecoded.email
+        ? userDecoded.email.split("@")[0]
+        : "Estudante";
+    }
 
     (await cookies()).set("auth_token", token, {
       httpOnly: true,
@@ -55,7 +82,7 @@ export async function loginAction(
 
     return { success: true, user: userDecoded };
   } catch (err) {
-    console.error(err);
+    console.error("Erro no loginAction:", err);
     return { success: false, error: "Falha na conexão com o servidor." };
   }
 }

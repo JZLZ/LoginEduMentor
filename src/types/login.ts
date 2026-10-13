@@ -11,9 +11,11 @@ export type LoginState = {
 
 export interface UserPayload {
   sub: string;
-  email: string;
-  name: string;
-  role: string;
+  email?: string;
+  name?: string;
+  role?: string;
+  uid?: string;
+  typ?: string;
   iat: number;
   exp: number;
 }
