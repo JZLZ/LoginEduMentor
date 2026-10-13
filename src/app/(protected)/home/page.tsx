@@ -3,6 +3,7 @@
 import { useAuth } from '@/src/context/AuthContext';
 import LogoutButton from '@/src/components/ui/LogoutButton';
 import Register from '@/src/components/register';
+import { StudentTermsCard } from '@/src/components/student/StudentTermsCard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -34,18 +35,22 @@ export default function DashboardPage() {
           <LogoutButton customClass="w-full justify-center" />
         </div>
 
-        {/* Lado Direito - Ferramentas de Admin (Apenas para o sysadmin) */}
-        {isSysAdmin && (
-          <div className="flex-1 bg-gray-50 p-6 rounded-xl border border-gray-200">
-            <h2 className="text-xl font-bold text-secondary-700 border-b border-gray-200 pb-2 mb-4">
-              Ferramentas do Sistema
-            </h2>
-            <p className="text-sm text-gray-600">
-              Utilize o formulário abaixo para registrar novos usuários na plataforma.
-            </p>
-            <Register />
-          </div>
-        )}
+        {/* Lado Direito - Ferramentas de Admin ou Ações do Aluno */}
+        <div className="flex-1">
+          {isSysAdmin ? (
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <h2 className="text-xl font-bold text-secondary-700 border-b border-gray-200 pb-2 mb-4">
+                Ferramentas do Sistema
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Utilize o formulário abaixo para registrar novos usuários na plataforma.
+              </p>
+              <Register />
+            </div>
+          ) : (
+            <StudentTermsCard />
+          )}
+        </div>
 
       </div>
     </main>
