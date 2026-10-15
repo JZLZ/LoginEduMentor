@@ -96,6 +96,7 @@ describe("Signup", () => {
         celular: "(11) 91234-5678",
         senha: "Forte@9xQ",
         confirmarSenha: "Forte@9xQ",
+        termosAceitos: true,
       });
     });
     expect(pushMock).toHaveBeenCalledWith("/login?cadastro=sucesso");
@@ -137,5 +138,65 @@ describe("Signup", () => {
     const errorMessage = await screen.findByText("E-mail já cadastrado.");
     expect(errorMessage).toHaveAttribute("role", "alert");
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("abre o modal de termos com conteúdo padrão para maior de idade e permite aceitar", async () => {
+    const user = userEvent.setup();
+    render(<Signup />);
+
+    const termsLink = screen.getByText("Termos de Uso e Política de Privacidade");
+    await user.click(termsLink);
+
+    expect(
+      screen.getByText("Termos de Uso e Política de Privacidade — EduMentor AI"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Ao prosseguir com o cadastro, você concorda com as condições/i),
+    ).toBeVisible();
+
+    const acceptButton = screen.getByRole("button", { name: "Entendi e Aceito" });
+    await user.click(acceptButton);
+
+    expect(
+      screen.queryByText("Termos de Uso e Política de Privacidade — EduMentor AI"),
+    ).not.toBeInTheDocument();
+
+    const termsCheckbox = screen.getByLabelText(/Li e aceito os/i);
+    expect(termsCheckbox).toBeChecked();
+  });
+
+  it("abre o modal com regras tutelares e LGPD Art. 14 para aluno menor de idade", async () => {
+    const user = userEvent.setup();
+    render(<Signup />);
+
+    const birthDateInput = screen.getByLabelText("Data de nascimento");
+    await user.type(birthDateInput, "15/03/2020");
+
+    expect(
+      screen.getByText(/com a anuência do meu responsável legal\./i),
+    ).toBeVisible();
+
+    const termsLink = screen.getByText("Termos de Uso e Política de Privacidade");
+    await user.click(termsLink);
+
+    expect(
+      screen.getByText(
+        "Termo com Validação Legal e Tutelar (Menores de Idade)",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Aviso aos Pais e Responsáveis Legais (Artigo 14 da LGPD)",
+      ),
+    ).toBeVisible();
+
+    const closeButton = screen.getByRole("button", { name: "Fechar" });
+    await user.click(closeButton);
+
+    expect(
+      screen.queryByText(
+        "Termo com Validação Legal e Tutelar (Menores de Idade)",
+      ),
+    ).not.toBeInTheDocument();
   });
 });

@@ -13,6 +13,7 @@ export type SignupPayload = {
   celular: string;
   senha: string;
   confirmarSenha: string;
+  termosAceitos: boolean;
   responsavelLegal?: {
     nomeCompleto: string;
     cpf: string;

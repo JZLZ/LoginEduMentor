@@ -6,6 +6,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { FiInfo } from "react-icons/fi";
 
 import { signupAction, type SignupPayload } from "@/src/actions/signupAction";
+import { TermsModal } from "@/src/components/ui/TermsModal";
 import {
   birthDateToIso,
   calculateAge,
@@ -40,6 +41,7 @@ const backendFieldNames: Record<string, keyof SignupFormValues> = {
   confirmarSenha: "confirmPassword",
   "responsavelLegal.nomeCompleto": "guardianName",
   "responsavelLegal.cpf": "guardianCpf",
+  termosAceitos: "acceptedTerms",
 };
 
 function mapBackendErrors(errors?: Record<string, string[]>) {
@@ -150,6 +152,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   const age = useMemo(
     () => calculateAge(formValues.birthDate ?? ""),
@@ -228,6 +231,7 @@ export default function Signup() {
       celular: formValues.phone,
       senha: formValues.password,
       confirmarSenha: formValues.confirmPassword,
+      termosAceitos: Boolean(formValues.acceptedTerms),
       ...(needsGuardian
         ? {
             responsavelLegal: {
@@ -643,10 +647,29 @@ export default function Signup() {
                   className="text-sm leading-5 text-[#17152E]"
                 >
                   Li e aceito os{" "}
-                  <span className="font-bold text-[#4F3CF0] underline underline-offset-2">
-                    Termos de Uso
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsTermsModalOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsTermsModalOpen(true);
+                      }
+                    }}
+                    className="font-bold text-[#4F3CF0] underline underline-offset-2 hover:text-[#3F2DD5] transition cursor-pointer"
+                    data-cy="signup-terms-link"
+                  >
+                    Termos de Uso e Política de Privacidade
                   </span>
-                  .
+                  {needsGuardian
+                    ? " com a anuência do meu responsável legal."
+                    : "."}
                 </label>
               </div>
               {errors.acceptedTerms && (
@@ -683,6 +706,13 @@ export default function Signup() {
           </form>
         </div>
       </section>
+
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        isMinor={needsGuardian}
+        onAccept={() => setFieldValue("acceptedTerms", true)}
+      />
     </main>
   );
 }
