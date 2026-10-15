@@ -1,5 +1,9 @@
 import { useState } from "react";
 import type { ReactNode, SubmitEvent } from "react";
+import logoMark from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Group.png";
+import logoWord from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector.png";
+import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-1.png";
+import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png";
 
 type Screen =
   | "login"
@@ -13,20 +17,15 @@ type Screen =
   | "goal"
   | "done";
 
-function Logo({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
-  return (
-    <div className={`logo ${light ? "logo-light" : ""} ${compact ? "logo-compact" : ""}`}>
-      <span className="logo-mark" aria-hidden="true"><i /><b>✦</b></span>
-      <strong>EduMentor</strong>
-      <em>AI</em>
-    </div>
-  );
-}
-
 function BrandPanel() {
   return (
     <aside className="brand-panel">
-      <Logo light />
+      <div className="brand-logo" role="img" aria-label="EduMentor AI">
+        <img className="brand-logo-mark" src={logoMark} alt="" />
+        <img className="brand-logo-word" src={logoWord} alt="" />
+        <img className="brand-logo-badge" src={logoBadge} alt="" />
+        <img className="brand-logo-ai" src={logoAi} alt="" />
+      </div>
       <div className="brand-copy">
         <h1>Sua trilha até o ENEM, com uma tutora 24h.</h1>
         <p>Trilhas personalizadas, simulados com questões reais e a Mentorina para tirar dúvidas a qualquer hora.</p>
@@ -60,6 +59,110 @@ function Field({
         {children}
       </span>
     </label>
+  );
+}
+
+function formatCpf(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3}\.\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3}\.\d{3}\.\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits ? `(${digits}` : "";
+
+  const areaCode = digits.slice(0, 2);
+  const subscriber = digits.slice(2);
+  return `(${areaCode}) ${subscriber.slice(0, 5)}${subscriber.length > 5 ? `-${subscriber.slice(5)}` : ""}`;
+}
+
+function PhoneField() {
+  const [phone, setPhone] = useState("");
+
+  return (
+    <label className="field">
+      <span className="input-shell">
+        <input
+          type="tel"
+          inputMode="numeric"
+          placeholder="(00) 00000-0000"
+          aria-label="Celular"
+          pattern="\(\d{2}\) \d{5}-\d{4}"
+          maxLength={15}
+          required
+          value={phone}
+          onChange={(event) => setPhone(formatPhone(event.currentTarget.value))}
+        />
+      </span>
+    </label>
+  );
+}
+
+function isValidCpf(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+
+  const calculateDigit = (length: number) => {
+    const sum = [...digits.slice(0, length)].reduce(
+      (total, digit, index) => total + Number(digit) * (length + 1 - index),
+      0,
+    );
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+
+  return (
+    calculateDigit(9) === Number(digits[9]) &&
+    calculateDigit(10) === Number(digits[10])
+  );
+}
+
+function CpfField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="field">
+      <span className="input-shell">
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="CPF do responsável"
+          aria-label="CPF do responsável"
+          pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+          maxLength={14}
+          required
+          value={value}
+          onChange={(event) => {
+            const formattedValue = formatCpf(event.currentTarget.value);
+            onChange(formattedValue);
+            event.currentTarget.setCustomValidity(
+              formattedValue.length === 14 && !isValidCpf(formattedValue)
+                ? "Informe um CPF válido."
+                : "",
+            );
+          }}
+        />
+      </span>
+    </label>
+  );
+}
+
+function PasswordVisibilityButton({ visible, toggle }: { visible: boolean; toggle: () => void }) {
+  return (
+    <button
+      className="input-action"
+      type="button"
+      onClick={toggle}
+      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+      aria-pressed={visible}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="2.5" />
+        {visible && <path d="m4 4 16 16" />}
+      </svg>
+    </button>
   );
 }
 
@@ -109,8 +212,9 @@ function AccountModal({ close, continueFlow }: { close: () => void; continueFlow
 
 function Login({ go }: { go: (screen: Screen) => void }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [accepted, setAccepted] = useState(true);
+  const [accepted, setAccepted] = useState(false);
   const [accounts, setAccounts] = useState(false);
+  const [formAttempted, setFormAttempted] = useState(false);
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,13 +226,17 @@ function Login({ go }: { go: (screen: Screen) => void }) {
       <div className="auth-form login-form">
         <AuthTabs active="login" go={go} />
         <header className="form-heading"><h2>Que bom te ver por aqui!</h2><p>Entre para iniciar sua trilha.</p></header>
-        <form onSubmit={submit}>
+        <form
+          className={formAttempted ? "required-check" : ""}
+          onInvalidCapture={() => setFormAttempted(true)}
+          onSubmit={submit}
+        >
           <Field type="email" placeholder="nome@email.com" />
           <Field type={showPassword ? "text" : "password"} placeholder="senha">
-            <button className="input-action" type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Ocultar" : "Mostrar"}</button>
+            <PasswordVisibilityButton visible={showPassword} toggle={() => setShowPassword(!showPassword)} />
           </Field>
           <button className="text-button forgot" type="button" onClick={() => go("recovery")}>Esqueceu sua senha?</button>
-          <label className="check-row"><input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} /><span>Li e concordo com os <u>Termos de uso</u></span></label>
+          <label className="check-row"><input type="checkbox" required checked={accepted} onChange={(e) => setAccepted(e.target.checked)} /><span>Li e concordo com os <u>Termos de uso</u></span></label>
           <button className="primary-button" type="submit" disabled={!accepted}>Entrar</button>
         </form>
         <p className="auth-switch">Não possui uma conta? <button type="button" onClick={() => go("signup")}>Criar conta</button></p>
@@ -139,9 +247,63 @@ function Login({ go }: { go: (screen: Screen) => void }) {
   );
 }
 
+function formatBirthDate(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1/$2")
+    .replace(/^(\d{2}\/\d{2})(\d)/, "$1/$2");
+}
+
+function getBirthDateError(value: string) {
+  if (!value) return "";
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    return "Use o formato dd/mm/aaaa.";
+  }
+  if (!parseBirthDate(value)) {
+    return "Informe uma data válida, que não seja futura.";
+  }
+  return "";
+}
+
+function parseBirthDate(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!match) return null;
+
+  const [, day, month, year] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (
+    date.getFullYear() !== Number(year) ||
+    date.getMonth() !== Number(month) - 1 ||
+    date.getDate() !== Number(day) ||
+    date > today
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function getAge(birthDate: string) {
+  const date = parseBirthDate(birthDate);
+  if (!date) return null;
+
+  const today = new Date();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > date.getMonth() ||
+    (today.getMonth() === date.getMonth() && today.getDate() >= date.getDate());
+
+  return today.getFullYear() - date.getFullYear() - (hasHadBirthdayThisYear ? 0 : 1);
+}
+
 function Signup({ go }: { go: (screen: Screen) => void }) {
   const [birthDate, setBirthDate] = useState("");
-  const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / 31557600000) : null;
+  const [guardianCpf, setGuardianCpf] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [formAttempted, setFormAttempted] = useState(false);
+  const age = getAge(birthDate);
   const minor = age !== null && age < 18;
 
   return (
@@ -149,22 +311,74 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       <div className="auth-form signup-form">
         <AuthTabs active="signup" go={go} />
         <header className="form-heading"><h2>Bora criar sua conta?</h2><p>Leva menos de 1 minutos.</p></header>
-        <form onSubmit={(event) => { event.preventDefault(); go("course"); }}>
+        <form
+          className={formAttempted ? "required-check" : ""}
+          onInvalidCapture={() => setFormAttempted(true)}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (age === null) return;
+            if (minor && !isValidCpf(guardianCpf)) return;
+            go("course");
+          }}
+        >
           <Field placeholder="Nome completo" />
           <div className="field-row">
-            <label className="field"><span></span><span className="input-shell"><input lang="pt-BR" type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />{!birthDate && <span className="date-placeholder" aria-hidden="true">Data de nascimento</span>}</span></label>
-            <Field type="tel" placeholder="Celular" />
+            <label className="field">
+              <span className="input-shell">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="bday"
+                  placeholder="Data de nascimento"
+                  aria-label="Data de nascimento"
+                  pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                  maxLength={10}
+                  required
+                  value={birthDate}
+                  onChange={(event) => {
+                    const value = formatBirthDate(event.currentTarget.value);
+                    setBirthDate(value);
+                    event.currentTarget.setCustomValidity(getBirthDateError(value));
+                  }}
+                  onBlur={(event) => {
+                    event.currentTarget.setCustomValidity(getBirthDateError(birthDate));
+                  }}
+                />
+              </span>
+            </label>
+            <PhoneField />
           </div>
+          <label className="field">
+            <span className="input-shell">
+              <select aria-label="Escolaridade" required defaultValue="">
+                <option value="" disabled>Escolaridade</option>
+                <option value="fundamental-incompleto">Ensino fundamental incompleto</option>
+                <option value="fundamental-completo">Ensino fundamental completo</option>
+                <option value="medio-incompleto">Ensino médio incompleto</option>
+                <option value="medio-completo">Ensino médio completo</option>
+                <option value="superior-incompleto">Ensino superior incompleto</option>
+                <option value="superior-completo">Ensino superior completo</option>
+                <option value="pos-graduacao">Pós-graduação</option>
+              </select>
+            </span>
+          </label>
           <Field type="email" placeholder="E-mail" />
           <Field type="email" placeholder="E-mail de recuperação" />
           <small className="field-help">É para ele que enviamos o link de nova senha.</small>
-          <div className="field-row"><Field type="password" placeholder="Senha" /><Field type="password" placeholder="Confirmar senha" /></div>
+          <div className="field-row">
+            <Field type={showPassword ? "text" : "password"} placeholder="Senha">
+              <PasswordVisibilityButton visible={showPassword} toggle={() => setShowPassword(!showPassword)} />
+            </Field>
+            <Field type={showPassword ? "text" : "password"} placeholder="Confirmar senha">
+              <PasswordVisibilityButton visible={showPassword} toggle={() => setShowPassword(!showPassword)} />
+            </Field>
+          </div>
           {minor && (
             <fieldset className="guardian-card">
               <legend>Vimos que você tem menos de 18 anos</legend>
               <p>Precisamos dos dados do seu responsável legal.</p>
-              <Field placeholder="Nome completo" />
-              <Field placeholder="CPF do responsável" />
+              <Field placeholder="Nome completo do responsável" />
+              <CpfField value={guardianCpf} onChange={setGuardianCpf} />
             </fieldset>
           )}
           <button className="primary-button" type="submit">Criar conta</button>
@@ -179,6 +393,7 @@ function PasswordScreen({ reset, go }: { reset?: boolean; go: (screen: Screen) =
   const [show, setShow] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [formAttempted, setFormAttempted] = useState(false);
   const validLength = password.length >= 8;
   const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password);
   const same = password.length > 0 && password === confirmation;
@@ -192,15 +407,23 @@ function PasswordScreen({ reset, go }: { reset?: boolean; go: (screen: Screen) =
           <p>{reset ? "Escolha uma senha que você não use em outros sites." : "Digite seu e-mail de recuperação. Vamos enviar um link para você criar uma nova senha. Ele vale por 1 hora."}</p>
         </header>
         {!reset ? (
-          <form onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
+          <form
+            className={formAttempted ? "required-check" : ""}
+            onInvalidCapture={() => setFormAttempted(true)}
+            onSubmit={(e) => { e.preventDefault(); setSent(true); }}
+          >
             <Field label="E-mail de recuperação" type="email" placeholder="nome@email.com" />
             <button className="primary-button" type="submit">Enviar link</button>
             {sent && <div className="success-state"><strong>✓ Link enviado!</strong><span>Confira sua caixa de entrada e o spam.</span><button type="button" onClick={() => go("reset")}>Abrir link recebido</button></div>}
           </form>
         ) : (
-          <form onSubmit={(e) => { e.preventDefault(); if (validLength && validMix && same) go("login"); }}>
-            <label className="field"><span>Nova senha</span><span className="input-shell"><input type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required /><button className="input-action" type="button" onClick={() => setShow(!show)}>{show ? "Ocultar" : "Mostrar"}</button></span></label>
-            <label className="field"><span>Confirmar nova senha</span><span className="input-shell"><input type={show ? "text" : "password"} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} required /></span></label>
+          <form
+            className={formAttempted ? "required-check" : ""}
+            onInvalidCapture={() => setFormAttempted(true)}
+            onSubmit={(e) => { e.preventDefault(); if (validLength && validMix && same) go("login"); }}
+          >
+            <label className="field"><span>Nova senha</span><span className="input-shell"><input type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required /><PasswordVisibilityButton visible={show} toggle={() => setShow(!show)} /></span></label>
+            <label className="field"><span>Confirmar nova senha</span><span className="input-shell"><input type={show ? "text" : "password"} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} required /><PasswordVisibilityButton visible={show} toggle={() => setShow(!show)} /></span></label>
             <ul className="password-rules"><li className={validLength ? "valid" : ""}>Pelo menos 8 caracteres</li><li className={validMix ? "valid" : ""}>Letras e números</li><li className={same ? "valid" : ""}>As duas senhas são iguais</li></ul>
             <button className="primary-button" type="submit" disabled={!validLength || !validMix || !same}>Redefinir senha</button>
           </form>
@@ -218,7 +441,12 @@ function Stepper({ step, back }: { step: number; back: () => void }) {
   const labels = ["Curso-alvo", "Como começar", "Meta semanal"];
   return (
     <header className="onboarding-header">
-      <Logo compact />
+      <div className="brand-logo" role="img" aria-label="EduMentor AI">
+        <img className="brand-logo-mark" src={logoMark} alt="" />
+        <img className="brand-logo-word" src={logoWord} alt="" />
+        <img className="brand-logo-badge" src={logoBadge} alt="" />
+        <img className="brand-logo-ai" src={logoAi} alt="" />
+      </div>
       <div className="stepper">
         {labels.map((label, index) => <div className={index + 1 <= step ? "complete" : ""} key={label}><i>{index + 1 < step ? "✓" : index + 1}</i><span>{label}</span>{index < 2 && <b />}</div>)}
       </div>
