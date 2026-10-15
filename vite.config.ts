@@ -88,7 +88,7 @@ function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
 
   const title = config.title ?? "EduMentor AI"
   const description = config.description ?? 'Acompanhe sua evolução e conquiste seus objetivos com a EduMentor AI, a plataforma de aprendizado personalizada que se adapta ao seu ritmo e estilo de estudo.'
-  const favicon = config.icons?.icon ?? '/img/favicon.png'
+  const favicon = config.icons?.icon ?? '/assets/img/favicon.png'
   const socialImage = config.openGraph?.image ?? ''
   const language = sanitizeHtmlValue(config.language) || 'pt-br'
   const googleAnalyticsId = sanitizeHtmlValue(config.analytics?.googleAnalyticsId)
