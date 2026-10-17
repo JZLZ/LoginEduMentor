@@ -4,7 +4,7 @@
     "index": false
   },
   "icons": {
-    "icon": "/assets/img/favicon.png"
+    "icon": "/src/assets/img/favicon.png"
   },
   "accessibility": {
     "addBypassLinks": false,
