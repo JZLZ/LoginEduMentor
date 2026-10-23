@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react"
-import Mascot, { MascotMinhoquinha } from "./Mascot"
 import logoMark from "../assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Group.png"
 
 interface LandingPageProps {
@@ -9,10 +8,6 @@ interface LandingPageProps {
 export default function LandingPage({ onNavigate }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState<number | null>(0) // First open by default as in Figma
-
-  // Interactive question option in Simulados card
-  const [selectedSimuladoOption, setSelectedSimuladoOption] =
-    useState<string>("B")
 
   // Interactive chat state for Mentorina section
   const [chatMessages, setChatMessages] = useState<Array<{
@@ -1767,9 +1762,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
 
             {/* Links Columns */}
-            <div className="md:col-span-6 grid grid-cols-4 gap-0">
+            <div className="md:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
               {/* Coluna Produto */}
-              <div className="col-3 flex flex-col gap-3">
+              <div className="sm:col-span-3 flex flex-col gap-3">
                 <span className="text-[#C6F432] font-bold text-[10px] uppercase tracking-wider mb-0.5">
                   PRODUTO
                 </span>
