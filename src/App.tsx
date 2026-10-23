@@ -652,8 +652,8 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       return
     }
 
-    if (password.length < 6 || password.length > 30) {
-      setErrorMessage("A senha deve ter entre 6 e 30 caracteres.")
+    if (password.length < 8 || password.length > 20) {
+      setErrorMessage("A senha deve ter entre 8 e 20 caracteres.")
       return
     }
 
@@ -846,8 +846,8 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
             className="field-help"
             style={{ marginTop: "-6px", marginBottom: "8px" }}
           >
-            Mínimo 6 caracteres, com letra maiúscula, minúscula, número e
-            símbolo (@#$%).
+            Mínimo 8 e no máximo 20 caracteres, com letra maiúscula, minúscula,
+            número e símbolo (@#$%).
           </small>
           <label className="field">
             <span>Escolaridade</span>
@@ -979,7 +979,7 @@ function PasswordScreen({
   const [confirmation, setConfirmation] = useState("")
   const [formAttempted, setFormAttempted] = useState(false)
 
-  const validLength = password.length >= 8
+  const validLength = password.length >= 8 && password.length <= 20
   const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
   const same = password.length > 0 && password === confirmation
 
@@ -1057,7 +1057,7 @@ function PasswordScreen({
             </Field>
             <ul className="password-rules">
               <li className={validLength ? "valid" : ""}>
-                Pelo menos 8 caracteres
+                Entre 8 e 20 caracteres
               </li>
               <li className={validMix ? "valid" : ""}>Letras e números</li>
               <li className={same ? "valid" : ""}>As duas senhas são iguais</li>
