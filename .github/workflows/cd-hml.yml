@@ -1,0 +1,115 @@
+
+name: Build and Deploy to homologation
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homologation-sherlock-frontend
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and Publish Frontend Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'dev'
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Checkout Approved Commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate Image Tag
+        run: |
+          if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "A full 40-character commit SHA is required."
+            exit 1
+          fi
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Publish Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: ghcr.io/qacoders-academy/sherlock-frontend:${{ github.event.workflow_run.head_sha }}
+
+  deploy-homelab:
+    name: Deploy Frontend to Homelab
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Connect to Tailnet
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        with:
+          host: ${{ secrets.HOMELAB_HOST }}
+          username: ${{ secrets.HOMELAB_USER }}
+          key: ${{ secrets.HOMELAB_SSH_KEY }}
+          envs: GHCR_USERNAME,GHCR_TOKEN,IMAGE_TAG
+          command_timeout: 25m
+          script: |
+            set -eu
+
+            if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "A full 40-character commit SHA is required."
+              exit 1
+            fi
+
+            flock -w 1800 /tmp/homelab-homologation-deploy.lock bash -s <<'DEPLOY_SCRIPT'
+            set -eu
+
+            cd "$HOME/sherlock"
+
+            export IMAGE_TAG
+
+            docker compose -f docker-compose.yml config --quiet
+
+            echo "$GHCR_TOKEN" | docker login ghcr.io \
+              -u "$GHCR_USERNAME" --password-stdin
+
+            trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+            docker compose -f docker-compose.yml pull frontend
+            docker compose -f docker-compose.yml up -d --no-deps frontend
+
+            echo "Frontend homologation deployment completed for $IMAGE_TAG."
+            DEPLOY_SCRIPT
