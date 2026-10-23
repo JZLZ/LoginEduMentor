@@ -1,0 +1,147 @@
+
+name: CD Production Frontend
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-sherlock-frontend
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    name: Build and Publish Production Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Checkout Production Commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate Image Tag
+        run: |
+          if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "A full 40-character commit SHA is required."
+            exit 1
+          fi
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Publish Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: ghcr.io/qacoders-academy/sherlock-frontend:${{ github.event.workflow_run.head_sha }}
+
+  deploy:
+    name: Deploy Frontend to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-and-publish
+
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+      ROLLBACK_TAG: rollback-${{ github.run_id }}
+
+    steps:
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          ROLLBACK_TAG: ${{ env.ROLLBACK_TAG }}
+          EC2_APP_DIR: ${{ secrets.EC2_FRONTEND_APP_DIR }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GHCR_USERNAME,GHCR_TOKEN,IMAGE_TAG,ROLLBACK_TAG,EC2_APP_DIR
+          command_timeout: 25m
+          script: |
+            set -eu
+
+            if [ -z "$EC2_APP_DIR" ] || [ ! -d "$EC2_APP_DIR" ]; then
+              echo "The production frontend directory is invalid."
+              exit 1
+            fi
+
+            if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "A full 40-character commit SHA is required."
+              exit 1
+            fi
+
+            flock -w 900 /tmp/production-frontend-deploy.lock bash -s <<'DEPLOY_SCRIPT'
+            set -eu
+
+            cd "$EC2_APP_DIR"
+
+            IMAGE_NAME="ghcr.io/qacoders-academy/sherlock-frontend"
+            export IMAGE_TAG
+
+            docker compose -f docker-compose.yml config --quiet
+
+            CURRENT_CONTAINER=$(docker compose -f docker-compose.yml ps -q frontend || true)
+            OLD_IMAGE_ID=""
+
+            if [ -n "$CURRENT_CONTAINER" ]; then
+              OLD_IMAGE_ID=$(docker inspect --format '{{.Image}}' "$CURRENT_CONTAINER")
+            fi
+
+            echo "$GHCR_TOKEN" | docker login ghcr.io \
+              -u "$GHCR_USERNAME" --password-stdin
+
+            trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+            if docker compose -f docker-compose.yml pull frontend &&
+               docker compose -f docker-compose.yml up -d --no-deps --wait --wait-timeout 120 frontend; then
+              echo "Production frontend deployment completed for $IMAGE_TAG."
+              exit 0
+            fi
+
+            echo "Production frontend deployment failed."
+
+            if [ -n "$OLD_IMAGE_ID" ]; then
+              if docker image tag "$OLD_IMAGE_ID" "$IMAGE_NAME:$ROLLBACK_TAG"; then
+                export IMAGE_TAG="$ROLLBACK_TAG"
+
+                if docker compose -f docker-compose.yml up -d --no-deps --wait --wait-timeout 120 frontend; then
+                  echo "Previous frontend image restored using $ROLLBACK_TAG."
+                else
+                  echo "Rollback failed. Manual intervention is required."
+                fi
+              else
+                echo "Could not preserve the previous frontend image."
+              fi
+            else
+              echo "No previous frontend container was found. Automatic rollback is unavailable."
+            fi
+
+            exit 1
+            DEPLOY_SCRIPT
