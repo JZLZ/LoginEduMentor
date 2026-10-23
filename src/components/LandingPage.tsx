@@ -1765,37 +1765,37 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <div className="md:col-span-6 grid grid-cols-4 gap-0">
               {/* Coluna Produto */}
               <div className="col-3 flex flex-col gap-3">
-                <span className="text-[#C6F432] font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                <span className="text-[#C6F432] font-bold text-[12px] uppercase tracking-wider mb-0.5">
                   PRODUTO
                 </span>
                 <a
                   href="#como-funciona"
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs"
+                  className="hover:text-white transition-colors text-[12px]"
                 >
                   Como funciona
                 </a>
                 <a
                   href="#recursos"
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs"
+                  className="hover:text-white transition-colors text-[12px]"
                 >
                   Recursos
                 </a>
                 <a
                   href="#mentorina"
                   onClick={scrollToMentorina}
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs cursor-pointer"
+                  className="hover:text-white transition-colors text-[12px] cursor-pointer"
                 >
                   Mentorina
                 </a>
                 <a
                   href="#recursos"
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs"
+                  className="hover:text-white transition-colors text-[12px]"
                 >
                   Simulados
                 </a>
                 <a
                   href="#recursos"
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs"
+                  className="hover:text-white transition-colors text-[12px]"
                 >
                   Redação
                 </a>
@@ -1803,19 +1803,19 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
               {/* Coluna Ajuda */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[#C6F432] font-bold text-[10px] uppercase tracking-wider mb-0.5">
+                <span className="text-[#C6F432] font-bold text-[12px] uppercase tracking-wider mb-0.5">
                   AJUDA
                 </span>
                 <a
                   href="#duvidas"
-                  className="hover:text-white transition-colors text-[11px] sm:text-xs"
+                  className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
                 >
                   Dúvidas
                 </a>
                 <button
                   type="button"
                   onClick={() => alert("Suporte: contato@edumentor.ai")}
-                  className="text-left hover:text-white transition-colors text-[11px] sm:text-xs cursor-pointer"
+                  className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
                 >
                   Fale com o suporte
                 </button>
@@ -1824,7 +1824,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   onClick={() =>
                     alert("Termos de uso da plataforma EduMentor AI.")
                   }
-                  className="text-left hover:text-white transition-colors text-[11px] sm:text-xs cursor-pointer"
+                  className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
                 >
                   Termos de uso
                 </button>
@@ -1833,7 +1833,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                   onClick={() =>
                     alert("Política de privacidade e proteção de dados LGPD.")
                   }
-                  className="text-left hover:text-white transition-colors text-[11px] sm:text-xs cursor-pointer"
+                  className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
                 >
                   Privacidade
                 </button>
