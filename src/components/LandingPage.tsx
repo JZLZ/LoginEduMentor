@@ -144,7 +144,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           1. HEADER / NAVIGATION (menu) - calibrado (+5%)
           ========================================================================= */}
       <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md bg-[#17152E]/90 border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-16 h-[62px] flex items-center justify-between gap-5">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto px-5 md:px-10 lg:px-16 2xl:px-20 h-[62px] flex items-center justify-between gap-5">
           {/* =================================================================
               LOGO DA MARCA (Header) - Composto por: Ícone, Nome e Badge
               ================================================================= */}
@@ -173,51 +173,53 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
           </a>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-[#D9D6EE] font-bold text-xs sm:text-sm">
-            <a
-              href="#como-funciona"
-              className="hover:text-white transition-colors py-1"
-            >
-              Como funciona
-            </a>
-            <a
-              href="#recursos"
-              className="hover:text-white transition-colors py-1"
-            >
-              Recursos
-            </a>
-            <a
-              href="#mentorina"
-              onClick={scrollToMentorina}
-              className="hover:text-white transition-colors py-1 cursor-pointer"
-            >
-              Mentorina
-            </a>
-            <a
-              href="#duvidas"
-              className="hover:text-white transition-colors py-1"
-            >
-              Dúvidas
-            </a>
-          </nav>
+          {/* Desktop Nav Links & Action Buttons */}
+          <div className="flex items-center ml-auto gap-[34px]">
+            <nav className="hidden lg:flex items-center gap-[34px] text-[#D9D6EE] font-bold text-[15px]">
+              <a
+                href="#como-funciona"
+                className="hover:text-white transition-colors py-1"
+              >
+                Como funciona
+              </a>
+              <a
+                href="#recursos"
+                className="hover:text-white transition-colors py-1"
+              >
+                Recursos
+              </a>
+              <a
+                href="#mentorina"
+                onClick={scrollToMentorina}
+                className="hover:text-white transition-colors py-1 cursor-pointer"
+              >
+                Mentorina
+              </a>
+              <a
+                href="#duvidas"
+                className="hover:text-white transition-colors py-1"
+              >
+                Dúvidas
+              </a>
+            </nav>
 
-          {/* Action Buttons */}
-          <div className="hidden sm:flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => onNavigate("login")}
-              className="px-4.5 py-2 text-white font-bold text-xs rounded-full border border-white/30 hover:border-white hover:bg-white/10 transition-all cursor-pointer"
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate("signup")}
-              className="px-4.5 py-2 bg-[#C6F432] hover:bg-[#b5e028] text-[#17152E] font-bold text-xs rounded-full shadow-[0_3px_10px_rgba(198,244,50,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              Criar minha conta
-            </button>
+            {/* Action Buttons */}
+            <div className="hidden sm:flex items-center gap-[34px]">
+              <button
+                type="button"
+                onClick={() => onNavigate("login")}
+                className="px-4.5 py-2 text-white font-bold text-xs rounded-full border border-white/30 hover:border-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate("signup")}
+                className="px-4.5 py-2 bg-[#C6F432] hover:bg-[#b5e028] text-[#17152E] font-bold text-xs rounded-full shadow-[0_3px_10px_rgba(198,244,50,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                Criar minha conta
+              </button>
+            </div>
           </div>
 
           {/* Mobile hamburger button */}
@@ -651,13 +653,31 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
 
                     {/* Mentorina Floating Action Button */}
-                    <div className="absolute left-[234px] top-[568px] w-[56px] h-[56px] bg-[#4F3CF0] rounded-full shadow-[0px_4px_10px_rgba(23,20,46,0.18),0px_16px_40px_-8px_rgba(79,61,240,0.3)] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform z-10">
-                      <div className="w-4 h-4 flex items-center justify-center mb-0.5">
-                        <span className="w-2 h-2 rounded-full bg-[#C6F432]" />
-                      </div>
-                      <span className="font-sans font-bold text-[10px] text-white tracking-[0.06em] leading-none">
-                        IA
-                      </span>
+                    <div className="absolute left-[202px] top-[552px] cursor-pointer hover:scale-105 transition-transform z-10">
+                      <svg width="108" height="100" viewBox="0 0 108 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#filter0_dd_2206_149)">
+                          <rect x="32" y="16" width="56" height="56" rx="28" fill="#4F3CF0" />
+                          <path d="M60 28.667C60.6667 32.3337 61.9167 33.5837 65.5834 34.2503C61.9167 34.917 60.6667 36.167 60 39.8337C59.3334 36.167 58.0834 34.917 54.4167 34.2503C58.0834 33.5837 59.3334 32.3337 60 28.667Z" fill="white" />
+                          <path d="M54.85 57V49.95H56.17V57H54.85ZM57.6878 57L60.8678 49.95H61.9878L65.1678 57H63.8178L62.9678 55.02L63.5278 55.43H59.3078L59.8678 55.02L59.0278 57H57.6878ZM61.4078 51.36L60.0078 54.67L59.7478 54.36H63.0878L62.8378 54.67L61.4378 51.36H61.4078Z" fill="white" />
+                        </g>
+                        <defs>
+                          <filter id="filter0_dd_2206_149" x="0" y="0" width="120" height="120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+                            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                            <feMorphology radius="8" operator="erode" in="SourceAlpha" result="effect1_dropShadow_2206_149" />
+                            <feOffset dy="16" />
+                            <feGaussianBlur stdDeviation="20" />
+                            <feColorMatrix type="matrix" values="0 0 0 0 0.31 0 0 0 0 0.24 0 0 0 0 0.94 0 0 0 0.3 0" />
+                            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2206_149" />
+                            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                            <feOffset dy="4" />
+                            <feGaussianBlur stdDeviation="5" />
+                            <feColorMatrix type="matrix" values="0 0 0 0 0.09 0 0 0 0 0.08 0 0 0 0 0.18 0 0 0 0.18 0" />
+                            <feBlend mode="normal" in2="effect1_dropShadow_2206_149" result="effect2_dropShadow_2206_149" />
+                            <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_2206_149" result="shape" />
+                          </filter>
+                        </defs>
+                      </svg>
                     </div>
                   </div>
                 </div>
@@ -696,7 +716,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         id="problema"
         className="w-full pt-[50px] md:pt-[0px] pb-[50px] md:pb-[0px] bg-[#F7F6FC] flex justify-center items-center overflow-hidden"
       >
-        <div className="w-full max-w-[1440px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8 2xl:px-12">
           <svg
             width="1380"
             height="696"
@@ -796,7 +816,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         id="como-funciona"
         className="w-full pt-[50px] md:pt-[0px] pb-[50px] md:pb-[0px] bg-white relative overflow-hidden flex justify-center items-center"
       >
-        <div className="w-full max-w-[1440px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8 2xl:px-12">
           <svg
             width="1380"
             height="732"
@@ -872,7 +892,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         id="recursos"
         className="w-full pt-[50px] md:pt-[0px] pb-[50px] md:pb-[0px] bg-[#F7F6FC] flex justify-center items-center overflow-hidden"
       >
-        <div className="w-full max-w-[1440px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8 2xl:px-12">
           <svg
             width="1440"
             height="1391"
@@ -1042,7 +1062,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           ========================================================================= */}
       <section
         id="mentorina"
-        className="w-full py-12 sm:py-16 lg:py-[0px] px-6 sm:px-10 lg:px-[64px] bg-[#17152E] text-white relative overflow-hidden isolate flex flex-col justify-center items-center min-h-[660px]"
+        className="w-full py-12 sm:py-16 lg:py-[0px] px-6 sm:px-10 lg:px-[64px] 2xl:px-20 bg-[#17152E] text-white relative overflow-hidden isolate flex flex-col justify-center items-center min-h-[660px]"
       >
         {/* Glow Orb 1 - Top right */}
         <div
@@ -1056,7 +1076,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           aria-hidden="true"
         />
 
-        <div className="max-w-[1240px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16 relative z-10 w-full">
+        <div className="w-full max-w-[1240px] 2xl:max-w-[1440px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16 relative z-10">
           {/* Left Column */}
           <div className="w-full lg:w-[470px] xl:w-[490px] shrink-0 flex flex-col items-start gap-4 sm:gap-5 relative isolate">
 
@@ -1292,7 +1312,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         id="aparelhos"
         className="w-full pt-[50px] md:pt-[0px] pb-[50px] md:pb-[0px] bg-white flex justify-center items-center overflow-hidden"
       >
-        <div className="w-full max-w-[1440px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto flex justify-center items-center px-4 sm:px-6 lg:px-8 2xl:px-12">
           <svg
             width="1440"
             height="1000"
@@ -1437,9 +1457,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           ========================================================================= */}
       <section
         id="duvidas"
-        className="w-full py-14 sm:py-16 lg:py-[96px] px-6 sm:px-10 lg:px-[80px] bg-[#F7F6FC] relative overflow-hidden isolate min-h-[740px] flex flex-col items-center justify-center"
+        className="w-full py-14 sm:py-16 lg:py-[96px] px-6 sm:px-10 lg:px-[80px] 2xl:px-20 bg-[#F7F6FC] relative overflow-hidden isolate min-h-[740px] flex flex-col items-center justify-center"
       >
-        <div className="max-w-[1150px] mx-auto w-full flex flex-col items-start gap-6 lg:gap-9 relative z-10">
+        <div className="w-full max-w-[1150px] 2xl:max-w-[1350px] mx-auto flex flex-col items-start gap-6 lg:gap-9 relative z-10">
           {/* Minhoquinha v6 · interrogação (reduzida um pouco) */}
           <div className="hidden lg:block absolute right-4 xl:right-8 top-[-60px] w-[260px] h-[160px] z-20 pointer-events-none">
             <svg width="200" height="200" viewBox="0 0 200 230" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1631,9 +1651,9 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           ========================================================================= */}
       <section
         id="cta"
-        className="w-full min-h-screen py-12 sm:py-16 lg:py-20 bg-[#F7F6FC] px-4 sm:px-6 lg:px-8 flex items-center justify-center scroll-mt-12"
+        className="w-full min-h-screen py-12 sm:py-16 lg:py-20 bg-[#F7F6FC] px-4 sm:px-6 lg:px-8 2xl:px-12 flex items-center justify-center scroll-mt-12"
       >
-        <div className="w-full max-w-[960px] mx-auto flex items-center justify-center">
+        <div className="w-full max-w-[960px] 2xl:max-w-[1080px] mx-auto flex items-center justify-center">
           {/* bloco CTA: 960px x 525px, padding 64px 60px, gap 18px, bg #17152E, rounded-[32px] */}
           <div className="w-full bg-[#17152E] text-white rounded-[26px] sm:rounded-[32px] px-5 sm:px-10 lg:px-[60px] py-10 sm:py-12 lg:py-[64px] min-h-[450px] lg:min-h-[525px] text-center relative overflow-hidden isolate flex flex-col items-center justify-center gap-4 sm:gap-[18px] shadow-[0px_22px_55px_-8px_rgba(23,20,46,0.3)]">
             {/* Glow Orb 1 - Top left: width 360px, height 360px, blur 65px */}
@@ -1731,7 +1751,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
       {/* =========================================================================
           11. FOOTER (rodapé) - +10px no início
           ========================================================================= */}
-      <footer className="w-full bg-[#17152E] text-[#D9D6EE] pt-[51px] pb-[33px] px-5 md:px-10 lg:px-16 border-t border-white/10 relative overflow-hidden flex flex-col items-center">
+      <footer className="w-full bg-[#17152E] text-[#D9D6EE] pt-[51px] pb-[33px] px-5 md:px-10 lg:px-16 2xl:px-20 border-t border-white/10 relative overflow-hidden flex flex-col items-center">
         {/* Soft footer ambient glows */}
         <div
           className="absolute w-[290px] h-[290px] top-[30px] -left-[90px] bg-[rgba(79,60,240,0.1)] blur-[55px] rounded-full pointer-events-none"
@@ -1742,7 +1762,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           aria-hidden="true"
         />
 
-        <div className="w-full max-w-[1440px] mx-auto relative z-10">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-6">
             {/* ===============================================================
                 LOGO DA MARCA (Footer / Rodapé)
