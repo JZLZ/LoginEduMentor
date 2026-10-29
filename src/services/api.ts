@@ -154,12 +154,43 @@ export const authApi = {
     token: string
     user: UserTokenPayload | null
   }> => {
-    const res = await apiFetch<LoginResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-    })
+    // O backend espera { email, senha } e devolve o token no header
+    // Authorization (Bearer ...), não no corpo da resposta.
+    const url = `${API_BASE_URL}/auth/login`
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), senha: password.trim() }),
+      })
+    } catch {
+      throw new Error(
+        "Não foi possível conectar ao servidor backend. Verifique se o sherlock-backend está em execução.",
+      )
+    }
 
-    const token = res.data.token
+    const body = (await response.json().catch(() => null)) as
+      | { message?: string | string[]; data?: { status?: string } }
+      | null
+
+    if (!response.ok) {
+      const message = Array.isArray(body?.message)
+        ? body?.message.join(". ")
+        : body?.message || `Erro na requisição (${response.status})`
+      throw new Error(message)
+    }
+
+    const token =
+      response.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? null
+
+    if (!token) {
+      // Múltiplas contas: seleção de perfil necessária (sem token nesta etapa).
+      throw new Error(
+        "Esta conta exige seleção de perfil antes de continuar. Tente novamente pelo fluxo de seleção.",
+      )
+    }
+
     tokenStorage.set(token)
     const user = parseJwt(token)
 
@@ -214,4 +245,92 @@ export const authApi = {
    * Retorna a URL base configurada.
    */
   getBaseUrl: (): string => API_BASE_URL,
+}
+
+// ============================================================================
+// Onboarding — Tela 01 (Curso-alvo)
+// ============================================================================
+
+export interface CourseOption {
+  id: string
+  name: string
+  slug: string
+}
+
+interface CourseSearchResponse {
+  message: string
+  data: {
+    items: CourseOption[]
+    page: number
+    limit: number
+    total: number
+  }
+}
+
+interface WeightAreasResponse {
+  message: string
+  data: {
+    courseId: string
+    courseName: string
+    weightAreas: string[]
+  }
+}
+
+interface TargetCourseResponse {
+  message: string
+  data: {
+    targetCourseId: string | null
+    targetCourseName: string | null
+  }
+}
+
+/**
+ * Cliente de cursos (catálogo oficial) — busca e áreas de maior peso.
+ */
+export const coursesApi = {
+  /** Busca cursos pelo termo (o backend ignora acento e maiúsculas/minúsculas). */
+  search: async (term: string): Promise<CourseOption[]> => {
+    const query = term.trim()
+    const res = await apiFetch<CourseSearchResponse>(
+      `/courses?search=${encodeURIComponent(query)}&limit=10`,
+      { method: "GET" },
+    )
+    return res.data.items
+  },
+
+  /** Retorna as áreas de maior peso de um curso. */
+  getWeightAreas: async (courseId: string): Promise<string[]> => {
+    const res = await apiFetch<WeightAreasResponse>(
+      `/courses/${courseId}/weight-areas`,
+      { method: "GET" },
+    )
+    return res.data.weightAreas
+  },
+}
+
+/**
+ * Cliente de onboarding — persistência incremental do fluxo.
+ */
+export const onboardingApi = {
+  /** Retorna o estado atual do onboarding do usuário autenticado. */
+  getMe: async (): Promise<TargetCourseResponse["data"]> => {
+    const res = await apiFetch<TargetCourseResponse>("/onboarding/me", {
+      method: "GET",
+    })
+    return res.data
+  },
+
+  /** Registra o curso-alvo escolhido na Tela 01. */
+  setTargetCourse: async (
+    courseId: string,
+  ): Promise<TargetCourseResponse["data"]> => {
+    const res = await apiFetch<TargetCourseResponse>(
+      "/onboarding/target-course",
+      {
+        method: "PUT",
+        body: JSON.stringify({ courseId }),
+      },
+    )
+    return res.data
+  },
 }

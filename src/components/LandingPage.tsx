@@ -1197,10 +1197,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
             </div>
 
-            {/* Bottom Row: 3 Feature Cards (grupo: 1280px x 476px, gap 24px) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1280px] w-full">
-              {/* 1. Simulados com questões reais (411.33px x 476px, bg #FFFFFF, border #E2DFF1, radius 28px, padding 32px, gap 16px) */}
-              <div className="bg-white border border-[#E2DFF1] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between shadow-[0px_2px_8px_rgba(23,20,46,0.06)] min-h-[476px]">
+            {/* Bottom Row: 3 Feature Cards — grid 12 col (gap 16px) alinhado à linha superior:
+                os 2 cards da esquerda somam 8 col (largura do card roxo) e o 3º ocupa 4 col (alinha com o "39 dias") */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
+              {/* 1. Simulados com questões reais (col-span-4, bg #FFFFFF, border #E2DFF1, radius 28px, padding 32px, gap 16px) */}
+              <div className="lg:col-span-4 bg-white border border-[#E2DFF1] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between shadow-[0px_2px_8px_rgba(23,20,46,0.06)] min-h-[476px]">
                 {/* Header elements: Icon, Title, Description */}
                 <div className="flex flex-col items-start gap-3 w-full">
                   {/* Icon (48px x 48px, bg #E9E6FF, radius 14px, padding 12px) */}
@@ -1326,8 +1327,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 </div>
               </div>
 
-              {/* 2. Redação corrigida por IA (411.33px x 476px, bg #FFFFFF, border #E2DFF1, radius 28px, padding 32px, gap 16px) */}
-              <div className="bg-white border border-[#E2DFF1] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between shadow-[0px_2px_8px_rgba(23,20,46,0.06)] min-h-[476px]">
+              {/* 2. Redação corrigida por IA (col-span-4, bg #FFFFFF, border #E2DFF1, radius 28px, padding 32px, gap 16px) */}
+              <div className="lg:col-span-4 bg-white border border-[#E2DFF1] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between shadow-[0px_2px_8px_rgba(23,20,46,0.06)] min-h-[476px]">
                 {/* Header elements: Icon, Title, Description */}
                 <div className="flex flex-col items-start gap-3 w-full">
                   {/* Icon (48px x 48px, bg #E9E6FF, radius 14px, padding 12px) */}
@@ -1406,8 +1407,8 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 <div className="h-2" />
               </div>
 
-              {/* 3. Revisões no momento certo (409.33px x 476px, bg #E9E6FF, radius 28px, padding 32px, gap 16px) */}
-              <div className="bg-[#E9E6FF] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between min-h-[476px]">
+              {/* 3. Revisões no momento certo (col-span-4 → alinha com o card "39 dias" acima, bg #E9E6FF, radius 28px, padding 32px, gap 16px) */}
+              <div className="lg:col-span-4 bg-[#E9E6FF] rounded-[28px] p-6 sm:p-8 flex flex-col items-start gap-4 justify-between min-h-[476px]">
                 {/* Header elements: Icon, Title, Description */}
                 <div className="flex flex-col items-start gap-3 w-full">
                   {/* Icon (48px x 48px, bg #FFFFFF, radius 14px, padding 12px) */}
@@ -1953,7 +1954,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           ========================================================================= */}
       <section
         id="duvidas"
-        className="py-14 sm:py-16 lg:py-[96px] px-6 sm:px-10 lg:px-[80px] bg-[#F7F6FC] relative overflow-hidden isolate min-h-[740px] flex flex-col items-start justify-center"
+        className="py-14 sm:py-16 lg:py-[96px] px-6 sm:px-10 lg:px-[80px] bg-[#F7F6FC] relative overflow-hidden isolate flex flex-col items-start justify-start"
       >
         <div className="max-w-[1280px] mx-auto w-full flex flex-col items-start gap-6 lg:gap-9 relative z-10">
           {/* Minhoquinha v6 · interrogação (reduzida um pouco) */}
@@ -2110,7 +2111,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           ========================================================================= */}
       <section
         id="cta"
-        className="min-h-screen py-12 sm:py-16 lg:py-20 bg-[#F7F6FC] px-4 sm:px-6 lg:px-8 flex items-center justify-center scroll-mt-12"
+        className="py-12 sm:py-16 lg:py-20 bg-[#F7F6FC] px-4 sm:px-6 lg:px-8 flex items-center justify-center scroll-mt-12"
       >
         <div className="w-full max-w-[1056px] mx-auto flex items-center justify-center">
           {/* bloco CTA (ajustado +10%: 1056px x 584px, padding 72px 66px, gap 20px, bg #17152E, rounded-[36px]) */}
