@@ -1028,6 +1028,50 @@ form {
   margin: 0 auto;
 }
 
+.course-single {
+  width: min(696px, 100%);
+  margin: 0 auto;
+}
+
+.course-combobox {
+  position: relative;
+}
+
+.course-options {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(23, 21, 46, 0.14);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.course-option {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--ink, #17152e);
+  cursor: pointer;
+}
+
+.course-option.active {
+  background: var(--lavender);
+  color: var(--indigo);
+}
+
+.course-option.muted {
+  color: var(--muted);
+  cursor: default;
+}
+
 .weight-card {
   width: min(696px, 100%);
   margin: 0 auto;
