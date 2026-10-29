@@ -214,6 +214,29 @@ export const authApi = {
   },
 
   /**
+   * Cadastro completo (POST /api/auth/cadastro) — cria usuário + conta.
+   * É o fluxo oficial usado pela autenticação (coleção accounts), permitindo
+   * login logo após o cadastro.
+   */
+  cadastrar: async (payload: {
+    nomeCompleto: string
+    dataNascimento: string
+    escolaridade: string
+    celular: string
+    email: string
+    emailRecuperacao: string
+    senha: string
+    confirmarSenha: string
+    termosAceitos: boolean
+    responsavelLegal?: { nomeCompleto: string; cpf: string }
+  }): Promise<void> => {
+    await apiFetch<unknown>("/auth/cadastro", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  },
+
+  /**
    * Valida o token JWT atual na rota protegida (GET /api/auth).
    */
   verifyToken: async (): Promise<boolean> => {

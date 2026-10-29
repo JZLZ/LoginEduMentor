@@ -658,40 +658,90 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       return
     }
 
-    if (password.length < 6 || password.length > 30) {
-      setErrorMessage("A senha deve ter entre 6 e 30 caracteres.")
+    // Regras alinhadas ao backend (CadastroDto): 8–20 caracteres.
+    if (password.length < 8 || password.length > 20) {
+      setErrorMessage("A senha deve ter entre 8 e 20 caracteres.")
       return
     }
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).+$/
+    // Maiúscula, minúscula, número e especial (!@#$%&*), sem espaços.
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])\S+$/
     if (!passwordRegex.test(password)) {
       setErrorMessage(
-        "A senha precisa conter pelo menos: uma letra maiúscula, uma minúscula, um número e um caractere especial (@#$%).",
+        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
       )
+      return
+    }
+
+    // Sem números sequenciais (ex.: 123, 321) — regra do backend.
+    if (
+      /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+        password,
+      )
+    ) {
+      setErrorMessage("A senha não pode conter números sequenciais.")
+      return
+    }
+
+    // O e-mail de recuperação precisa existir e ser diferente do principal.
+    const recovery = recoveryEmail.trim().toLowerCase()
+    if (!recovery) {
+      setErrorMessage("Informe um e-mail de recuperação.")
+      return
+    }
+    if (recovery === email.trim().toLowerCase()) {
+      setErrorMessage(
+        "O e-mail de recuperação deve ser diferente do e-mail principal.",
+      )
+      return
+    }
+
+    if (!education) {
+      setErrorMessage("Selecione sua escolaridade.")
       return
     }
 
     setLoading(true)
     setErrorMessage(null)
 
-    const name = parts[0]
-    const surname = parts.slice(1).join(" ")
+    // Converte dd/mm/aaaa -> YYYY-MM-DD (ISO) exigido pelo backend.
+    const [dd, mm, yyyy] = birthDate.split("/")
+    const dataNascimento = `${yyyy}-${mm}-${dd}`
+
+    // Mapeia os valores do select para o enum Escolaridade do backend.
+    const escolaridadeMap: Record<string, string> = {
+      "fundamental-incompleto": "ENSINO_FUNDAMENTAL",
+      "fundamental-completo": "ENSINO_FUNDAMENTAL",
+      "medio-incompleto": "ENSINO_MEDIO",
+      "medio-completo": "ENSINO_MEDIO",
+      "superior-incompleto": "ENSINO_SUPERIOR",
+      "superior-completo": "ENSINO_SUPERIOR",
+      "pos-graduacao": "POS_GRADUACAO",
+    }
 
     try {
-      await authApi.register({
-        name,
-        surname,
-        email,
-        password,
+      await authApi.cadastrar({
+        nomeCompleto: fullName.trim().replace(/\s+/g, " "),
+        dataNascimento,
+        escolaridade: escolaridadeMap[education] ?? "ENSINO_MEDIO",
+        celular: phone,
+        email: email.trim().toLowerCase(),
+        emailRecuperacao: recovery,
+        senha: password,
+        confirmarSenha: confirmPassword,
+        termosAceitos: accepted,
+        ...(minor
+          ? {
+              responsavelLegal: {
+                nomeCompleto: guardianName.trim(),
+                cpf: guardianCpf.replace(/\D/g, ""),
+              },
+            }
+          : {}),
       })
 
-      // Realiza login automático com o novo usuário para obter o token JWT
-      try {
-        await authApi.login(email, password)
-      } catch {
-        // Se login falhar por algum motivo, prossegue normalmente
-      }
+      // Login automático: o cadastro criou a conta, então o login funciona.
+      await authApi.login(email, password)
 
       go("course")
     } catch (err: unknown) {
