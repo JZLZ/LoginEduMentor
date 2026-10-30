@@ -507,6 +507,31 @@ export const onboardingApi = {
     return res.data
   },
 
+  /**
+   * Conclui o onboarding (Tela final). Opcionalmente informa o id da sessão
+   * de nivelamento para o backend derivar e gravar o nível apurado.
+   */
+  complete: async (
+    assessmentSessionId?: string,
+  ): Promise<{
+    completed: boolean
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: {
+        completed: boolean
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+      }
+    }>("/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(
+        assessmentSessionId ? { assessmentSessionId } : {},
+      ),
+    })
+    return res.data
+  },
+
   /** Retorna o perfil de onboarding (para pré-seleção). */
   getMe: async (): Promise<{
     targetCourseId: string | null
@@ -515,6 +540,8 @@ export const onboardingApi = {
     subjects: string[]
     foreignLanguage: "ingles" | "espanhol" | null
     weeklyGoalDays: 3 | 5 | 7 | null
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+    completed: boolean
   }> => {
     const res = await apiFetch<{
       message: string
@@ -525,6 +552,8 @@ export const onboardingApi = {
         subjects: string[]
         foreignLanguage: "ingles" | "espanhol" | null
         weeklyGoalDays: 3 | 5 | 7 | null
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+        completed: boolean
       }
     }>("/onboarding/me", { method: "GET" })
     return res.data

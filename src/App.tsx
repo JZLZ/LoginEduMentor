@@ -2573,19 +2573,28 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
     }
   }, [])
 
-  // Persiste a meta semanal escolhida (dias por semana) no backend.
+  // Persiste a meta semanal e conclui o onboarding no backend. O nível é
+  // derivado no servidor a partir da sessão de nivelamento (quando houver).
   async function handleContinue() {
     if (saving) return
     setSaving(true)
     setErrorMessage(null)
     try {
       await onboardingApi.setWeeklyGoal(selected)
+      let assessmentSessionId: string | undefined
+      try {
+        assessmentSessionId =
+          localStorage.getItem("sherlock_assessment_session") ?? undefined
+      } catch {
+        assessmentSessionId = undefined
+      }
+      await onboardingApi.complete(assessmentSessionId)
       go("done")
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : "Erro ao registrar a meta semanal.",
+          : "Erro ao concluir o onboarding.",
       )
     } finally {
       setSaving(false)
@@ -2672,6 +2681,12 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           className="primary-button narrow"
           type="button"
           onClick={() => {
+            // Onboarding concluído: limpa a sessão de nivelamento residual.
+            try {
+              localStorage.removeItem("sherlock_assessment_session")
+            } catch {
+              // ignore
+            }
             authApi.logout()
 
             go("login")
