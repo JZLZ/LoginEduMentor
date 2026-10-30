@@ -460,4 +460,57 @@ export const onboardingApi = {
     })
     return res.data
   },
+
+  /** Registra as matérias (ordem = prioridade) e a língua (Tela 03c). */
+  setSubjects: async (payload: {
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol"
+  }): Promise<{
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { subjects: string[]; foreignLanguage: "ingles" | "espanhol" | null }
+    }>("/onboarding/subjects", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    })
+    return res.data
+  },
+
+  /** Registra apenas a língua estrangeira (Tela 03d). */
+  setForeignLanguage: async (
+    foreignLanguage: "ingles" | "espanhol",
+  ): Promise<{ foreignLanguage: "ingles" | "espanhol" | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { foreignLanguage: "ingles" | "espanhol" | null }
+    }>("/onboarding/foreign-language", {
+      method: "PUT",
+      body: JSON.stringify({ foreignLanguage }),
+    })
+    return res.data
+  },
+
+  /** Retorna o perfil de onboarding (para pré-seleção). */
+  getMe: async (): Promise<{
+    targetCourseId: string | null
+    targetCourseName: string | null
+    startMode: "nivelamento" | "materias" | null
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: {
+        targetCourseId: string | null
+        targetCourseName: string | null
+        startMode: "nivelamento" | "materias" | null
+        subjects: string[]
+        foreignLanguage: "ingles" | "espanhol" | null
+      }
+    }>("/onboarding/me", { method: "GET" })
+    return res.data
+  },
 }

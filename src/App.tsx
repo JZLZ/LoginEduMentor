@@ -28,7 +28,7 @@ import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import TermsModal from "./TermsModal"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "goal" | "done"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -1581,7 +1581,7 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
         } catch {
           // ignore
         }
-        go("subjects")
+        go("language")
         return
       }
       setIndex(res.index)
@@ -1666,10 +1666,10 @@ const SUBJECT_LIST = [
 ]
 
 function Subjects({ go }: { go: (screen: Screen) => void }) {
-  const [selected, setSelected] = useState([
-    "Matemática",
-    "Ciências da Natureza",
-  ])
+  const [selected, setSelected] = useState<string[]>([])
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function toggle(subject: string) {
     setSelected((items) =>
@@ -1679,12 +1679,40 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
     )
   }
 
+  // RN04: habilita só com >=1 matéria e 1 língua.
+  const canContinue = selected.length > 0 && language !== null
+
+  // RN05: registra as escolhas e segue para a próxima etapa (língua estrangeira).
+  async function handleContinue() {
+    if (!canContinue || !language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setSubjects({
+        subjects: selected,
+        foreignLanguage: language,
+      })
+      go("language")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar as matérias.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="center-heading">
         <h1>Quais matérias você quer focar?</h1>
-        <p>Selecione uma ou mais. A IA gera uma trilha para cada matéria.</p>
+        <p>Selecione uma ou mais matérias e a sua língua estrangeira.</p>
       </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <div className="subject-grid">
         {SUBJECT_LIST.map((subject, index) => {
           const isSelected = selected.includes(subject)
@@ -1703,6 +1731,29 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
           )
         })}
       </div>
+      <div className="language-choice">
+        <span className="language-choice-label">Língua estrangeira</span>
+        <div className="language-options">
+          {(
+            [
+              { id: "ingles", label: "Inglês" },
+              { id: "espanhol", label: "Espanhol" },
+            ] as const
+          ).map((opt) => (
+            <button
+              type="button"
+              className={language === opt.id ? "selected" : ""}
+              aria-pressed={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
+            >
+              <i>{language === opt.id ? "✓" : ""}</i>
+              <span>{opt.label}</span>
+              <small>5 questões na prova de Linguagens</small>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="info-strip">
         ⓘ Uma trilha por vez: termine uma para liberar a próxima. A ordem da
         seleção define a prioridade.
@@ -1710,10 +1761,99 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       <button
         className="primary-button narrow"
         type="button"
-        disabled={!selected.length}
-        onClick={() => go("goal")}
+        disabled={!canContinue || saving}
+        onClick={() => void handleContinue()}
       >
-        Continuar
+        {saving ? "Salvando..." : "Continuar"}
+      </button>
+    </OnboardingLayout>
+  )
+}
+
+function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Pré-seleciona a língua já escolhida (ex.: vinda da Tela 03c).
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.foreignLanguage) setLanguage(data.foreignLanguage)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // RN04: registra e segue para Gerando trilha (enquanto 05 não existe, vai para goal).
+  async function handleContinue() {
+    if (!language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setForeignLanguage(language)
+      go("goal")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a língua.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <OnboardingLayout step={2} back={() => go("subjects")}>
+      <div className="center-heading">
+        <h1>Qual língua estrangeira você vai fazer?</h1>
+        <p>
+          No ENEM você escolhe uma delas. A Mentorina coloca essa língua na sua
+          trilha de Linguagens.
+        </p>
+      </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
+      <div className="language-choice language-choice--wide">
+        <div className="language-options">
+          {(
+            [
+              { id: "ingles", label: "Inglês" },
+              { id: "espanhol", label: "Espanhol" },
+            ] as const
+          ).map((opt) => (
+            <button
+              type="button"
+              className={language === opt.id ? "selected" : ""}
+              aria-pressed={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
+            >
+              <i>{language === opt.id ? "✓" : ""}</i>
+              <span>{opt.label}</span>
+              <small>5 questões na prova de Linguagens</small>
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="language-hint">
+        Dá para trocar depois em Perfil › Língua estrangeira.
+      </p>
+      <button
+        className="primary-button narrow"
+        type="button"
+        disabled={!language || saving}
+        onClick={() => void handleContinue()}
+      >
+        {saving ? "Salvando..." : "Continuar"}
       </button>
     </OnboardingLayout>
   )
@@ -1841,6 +1981,8 @@ export default function App() {
       return <Quiz go={setScreen} />
     case "subjects":
       return <Subjects go={setScreen} />
+    case "language":
+      return <ForeignLanguage go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
     case "done":
