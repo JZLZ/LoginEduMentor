@@ -425,14 +425,6 @@ export const assessmentApi = {
  * Cliente de onboarding — persistência incremental do fluxo.
  */
 export const onboardingApi = {
-  /** Retorna o estado atual do onboarding do usuário autenticado. */
-  getMe: async (): Promise<TargetCourseResponse["data"]> => {
-    const res = await apiFetch<TargetCourseResponse>("/onboarding/me", {
-      method: "GET",
-    })
-    return res.data
-  },
-
   /** Registra o curso-alvo escolhido na Tela 01. */
   setTargetCourse: async (
     courseId: string,
