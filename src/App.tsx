@@ -6,19 +6,35 @@ import type {
   ReactNode,
 } from "react"
 // ============================================================================
+
 // PARTES DO LOGO (EduMentor AI) - Importação das camadas exportadas do Figma:
+
 // ============================================================================
+
 // 1. Ícone/Símbolo (Group): Balão roxo com escadaria branca e brilhos verdes
+
 import logoMark from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Group.png"
+
 // 2. Tipografia principal (Vector): Palavra "EduMentor"
+
 import logoWord from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector.png"
+
 // 3. Fundo do badge (Vector-1): Pílula verde-limão de destaque
+
 import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-1.png"
+
 // 4. Texto do badge (Vector-2): Sigla "AI" em preto dentro da pílula
+
 import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png"
-import { authApi, coursesApi, onboardingApi, tokenStorage } from "./services/api"
+import {
+  authApi,
+  coursesApi,
+  onboardingApi,
+  tokenStorage,
+} from "./services/api"
 import type { CourseOption } from "./services/api"
 import LandingPage from "./components/LandingPage"
+import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import TermsModal from "./TermsModal"
 
 type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "goal" | "done"
@@ -27,6 +43,7 @@ type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" |
  * Componente do Logo completo da marca EduMentor AI.
  * Utilizado nas telas de autenticação (Login/Cadastro) e no cabeçalho do Onboarding.
  */
+
 function BrandLogo() {
   return (
     <div className="brand-logo" role="img" aria-label="EduMentor AI">
@@ -41,6 +58,73 @@ function BrandLogo() {
 
       {/* PARTE 4: Texto "AI" em preto centralizado sobre o badge verde */}
       <img className="brand-logo-ai" src={logoAi} alt="" />
+    </div>
+  )
+}
+
+/**
+ * Logo da marca em SVG inline (fiel ao Figma), usado no cabeçalho do onboarding.
+ * Ícone roxo (balão + escadaria branca + brilho lima) + "EduMentor" + badge "AI".
+ */
+function BrandLogoMark() {
+  // SVG oficial do logo exportado do Figma (ícone + "EduMentor" + badge "AI").
+  return (
+    <div className="brand-logomark" role="img" aria-label="EduMentor AI">
+      <svg
+        className="brand-logomark-svg"
+        width="177"
+        height="30"
+        viewBox="0 0 177 30"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <g clipPath="url(#clip0_logo)">
+          <path
+            d="M8.5 2H21.5C25.1 2 28 4.9 28 8.5V18.5C28 22.1 25.1 25 21.5 25H12L6.5 29C5.75 29.55 4.75 29 4.75 28.1V24.85C3.15 23.75 2 21.25 2 18.5V8.5C2 4.9 4.9 2 8.5 2Z"
+            fill="#4F3CF0"
+          />
+          <path
+            d="M7.5 20H12V16H16.5V12H22.5"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            stroke="white"
+          />
+          <path
+            d="M23.5 4.5C23.8 6.15 24.35 6.7 26 7C24.35 7.3 23.8 7.85 23.5 9.5C23.2 7.85 22.65 7.3 21 7C22.65 6.7 23.2 6.15 23.5 4.5Z"
+            fill="#C6F432"
+          />
+          <path
+            d="M22.5 13.75C23.4665 13.75 24.25 12.9665 24.25 12C24.25 11.0335 23.4665 10.25 22.5 10.25C21.5335 10.25 20.75 11.0335 20.75 12C20.75 12.9665 21.5335 13.75 22.5 13.75Z"
+            fill="#C6F432"
+          />
+          <g clipPath="url(#clip1_logo)">
+            <path
+              d="M41.34 22V8.8H44.58V22H41.34ZM43.7 22V19.4H51.74V22H43.7ZM43.7 16.52V14.18H50.74V16.52H43.7ZM43.7 11.4V8.8H51.68V11.4H43.7ZM56.9256 22.28C56.059 22.28 55.2923 22.06 54.6256 21.62C53.9723 21.1667 53.459 20.5267 53.0856 19.7C52.7123 18.86 52.5256 17.86 52.5256 16.7C52.5256 15.6067 52.6856 14.6533 53.0056 13.84C53.3256 13.0133 53.799 12.3667 54.4256 11.9C55.0523 11.4333 55.8323 11.2 56.7656 11.2C57.4323 11.2 57.9923 11.32 58.4456 11.56C58.9123 11.8 59.299 12.1667 59.6056 12.66C59.9123 13.14 60.1523 13.7467 60.3256 14.48H60.8056C60.7123 14.04 60.6256 13.62 60.5456 13.22C60.4656 12.8067 60.399 12.42 60.3456 12.06C60.3056 11.7 60.2856 11.38 60.2856 11.1V7.64H63.5256V16.94V22H60.8856L60.8456 18.86H60.4256C60.279 19.66 60.0456 20.3133 59.7256 20.82C59.419 21.3267 59.0323 21.7 58.5656 21.94C58.099 22.1667 57.5523 22.28 56.9256 22.28ZM58.0856 19.68C58.4856 19.68 58.8256 19.5933 59.1056 19.42C59.3856 19.2467 59.6123 19.0267 59.7856 18.76C59.959 18.48 60.0856 18.18 60.1656 17.86C60.259 17.5267 60.3056 17.2133 60.3056 16.92V16.52C60.3056 16.2533 60.2656 15.9933 60.1856 15.74C60.119 15.4733 60.019 15.22 59.8856 14.98C59.7656 14.74 59.6123 14.5333 59.4256 14.36C59.2523 14.1733 59.039 14.0267 58.7856 13.92C58.5456 13.8133 58.2856 13.76 58.0056 13.76C57.5656 13.76 57.1923 13.8867 56.8856 14.14C56.579 14.38 56.339 14.72 56.1656 15.16C55.9923 15.6 55.9056 16.12 55.9056 16.72C55.9056 17.3067 55.9923 17.8267 56.1656 18.28C56.3523 18.72 56.6056 19.0667 56.9256 19.32C57.259 19.56 57.6456 19.68 58.0856 19.68ZM69.1367 22.28C67.8967 22.28 66.9634 21.86 66.3367 21.02C65.7101 20.18 65.3967 18.8933 65.3967 17.16V11.44H68.6367V16.76C68.6367 17.7467 68.7767 18.4733 69.0567 18.94C69.3501 19.4067 69.7834 19.64 70.3567 19.64C70.7167 19.64 71.0234 19.5533 71.2767 19.38C71.5434 19.1933 71.7634 18.94 71.9367 18.62C72.1234 18.3 72.2567 17.9267 72.3367 17.5C72.4301 17.06 72.4767 16.58 72.4767 16.06V11.44H75.6967V17.7V22H73.1167L73.0567 18.68H72.6967C72.4967 19.52 72.2501 20.2067 71.9567 20.74C71.6634 21.2733 71.2834 21.6667 70.8167 21.92C70.3634 22.16 69.8034 22.28 69.1367 22.28ZM77.8353 22V8.8H82.6553L86.0553 18.28H86.1353L89.4553 8.8H94.0553V22H90.9953L91.1753 12.08H90.9553L87.1953 22H84.5553L80.8753 12.08H80.6553L80.8353 22H77.8353ZM101.222 22.28C100.342 22.28 99.5549 22.16 98.8616 21.92C98.1682 21.68 97.5816 21.3333 97.1016 20.88C96.6216 20.4267 96.2549 19.8667 96.0016 19.2C95.7482 18.5333 95.6216 17.7733 95.6216 16.92C95.6216 16.0933 95.7416 15.3267 95.9816 14.62C96.2216 13.9133 96.5682 13.3 97.0216 12.78C97.4882 12.26 98.0549 11.86 98.7216 11.58C99.4016 11.3 100.168 11.16 101.022 11.16C101.862 11.16 102.602 11.3 103.242 11.58C103.895 11.86 104.428 12.2667 104.842 12.8C105.268 13.3333 105.575 13.98 105.762 14.74C105.962 15.5 106.028 16.3733 105.962 17.36L97.7416 17.42V15.72L104.062 15.66L102.982 16.46C103.075 15.8067 103.035 15.2733 102.862 14.86C102.702 14.4333 102.455 14.12 102.122 13.92C101.802 13.72 101.442 13.62 101.042 13.62C100.575 13.62 100.162 13.7467 99.8016 14C99.4549 14.2533 99.1816 14.62 98.9816 15.1C98.7949 15.58 98.7016 16.1667 98.7016 16.86C98.7016 17.9533 98.9349 18.7467 99.4016 19.24C99.8816 19.7333 100.488 19.98 101.222 19.98C101.568 19.98 101.862 19.9333 102.102 19.84C102.342 19.7333 102.535 19.6067 102.682 19.46C102.842 19.3 102.962 19.1267 103.042 18.94C103.122 18.74 103.188 18.5533 103.242 18.38L106.042 18.94C105.962 19.4333 105.802 19.8867 105.562 20.3C105.335 20.7 105.028 21.0533 104.642 21.36C104.255 21.6533 103.782 21.88 103.222 22.04C102.662 22.2 101.995 22.28 101.222 22.28ZM107.462 22V15.68V11.44H110.062L110.102 14.64H110.502C110.662 13.8667 110.895 13.22 111.202 12.7C111.522 12.18 111.928 11.7933 112.422 11.54C112.915 11.2867 113.502 11.16 114.182 11.16C115.408 11.16 116.342 11.5867 116.982 12.44C117.622 13.2933 117.942 14.66 117.942 16.54V22H114.702V16.9C114.702 15.8333 114.548 15.06 114.242 14.58C113.948 14.0867 113.502 13.84 112.902 13.84C112.395 13.84 111.982 13.9933 111.662 14.3C111.342 14.5933 111.102 15 110.942 15.52C110.782 16.04 110.702 16.6267 110.702 17.28V22H107.462ZM123.897 22.26C122.644 22.26 121.724 21.9333 121.137 21.28C120.564 20.6133 120.277 19.56 120.277 18.12V13.96H118.777L118.837 11.48H119.837C120.304 11.48 120.65 11.4067 120.877 11.26C121.104 11.1133 121.244 10.8533 121.297 10.48L121.557 9.1H123.357V11.44H125.917V14.06H123.357V17.96C123.357 18.4267 123.47 18.7667 123.697 18.98C123.924 19.1933 124.264 19.3 124.717 19.3C124.957 19.3 125.19 19.2733 125.417 19.22C125.644 19.1667 125.83 19.0933 125.977 19V21.96C125.55 22.0933 125.164 22.1733 124.817 22.2C124.47 22.24 124.164 22.26 123.897 22.26ZM132.245 22.28C131.165 22.28 130.218 22.0733 129.405 21.66C128.592 21.2467 127.952 20.6267 127.485 19.8C127.018 18.9733 126.785 17.94 126.785 16.7C126.785 15.46 127.018 14.4333 127.485 13.62C127.952 12.7933 128.592 12.18 129.405 11.78C130.232 11.3667 131.178 11.16 132.245 11.16C133.325 11.16 134.272 11.3667 135.085 11.78C135.912 12.1933 136.558 12.8133 137.025 13.64C137.492 14.4533 137.725 15.48 137.725 16.72C137.725 17.9867 137.485 19.0333 137.005 19.86C136.525 20.6867 135.865 21.3 135.025 21.7C134.198 22.0867 133.272 22.28 132.245 22.28ZM132.345 19.94C132.812 19.94 133.205 19.8333 133.525 19.62C133.845 19.3933 134.078 19.0533 134.225 18.6C134.385 18.1467 134.465 17.5867 134.465 16.92C134.465 16.2133 134.378 15.62 134.205 15.14C134.045 14.6467 133.792 14.2733 133.445 14.02C133.112 13.7533 132.685 13.62 132.165 13.62C131.698 13.62 131.305 13.7333 130.985 13.96C130.665 14.1733 130.425 14.5067 130.265 14.96C130.105 15.4133 130.025 15.98 130.025 16.66C130.025 17.7533 130.225 18.5733 130.625 19.12C131.025 19.6667 131.598 19.94 132.345 19.94ZM139.152 22V17.04V11.44H141.792L141.852 15.06H142.252C142.346 14.1267 142.519 13.38 142.772 12.82C143.026 12.2467 143.386 11.8333 143.852 11.58C144.332 11.3267 144.926 11.2 145.632 11.2C145.752 11.2 145.879 11.2067 146.012 11.22C146.159 11.2333 146.326 11.26 146.512 11.3L146.392 14.74C146.166 14.6333 145.926 14.56 145.672 14.52C145.419 14.48 145.199 14.46 145.012 14.46C144.506 14.46 144.066 14.5667 143.692 14.78C143.319 14.98 143.026 15.2867 142.812 15.7C142.599 16.1133 142.459 16.6333 142.392 17.26V22H139.152Z"
+              fill="#17152E"
+            />
+          </g>
+          <rect x="153" y="3" width="24" height="13" rx="6.5" fill="#C6F432" />
+          <path
+            d="M160.126 12L162.142 6.06H164.275L166.291 12H164.707L163.285 7.194H163.141L161.71 12H160.126ZM161.323 10.884V9.912H165.31V10.884H161.323ZM167.046 12V6.06H168.522V12H167.046Z"
+            fill="#17152E"
+          />
+        </g>
+        <defs>
+          <clipPath id="clip0_logo">
+            <rect width="177" height="30" fill="white" />
+          </clipPath>
+          <clipPath id="clip1_logo">
+            <rect
+              width="137"
+              height="24"
+              fill="white"
+              transform="translate(40 3)"
+            />
+          </clipPath>
+        </defs>
+      </svg>
     </div>
   )
 }
@@ -74,17 +158,25 @@ function BrandPanel() {
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
+
   className?: string
+
   children?: ReactNode
 }
 
 function Field({
   label,
+
   type = "text",
+
   placeholder,
+
   children,
+
   className = "",
+
   required = true,
+
   ...rest
 }: FieldProps) {
   return (
@@ -106,18 +198,25 @@ function Field({
 
 function formatCpf(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   return digits
+
     .replace(/^(\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3}\.\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3}\.\d{3}\.\d{3})(\d{1,2})$/, "$1-$2")
 }
 
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   if (digits.length <= 2) return digits ? `(${digits}` : ""
 
   const areaCode = digits.slice(0, 2)
+
   const subscriber = digits.slice(2)
+
   return `(${areaCode}) ${subscriber.slice(0, 5)}${
     subscriber.length > 5 ? `-${subscriber.slice(5)}` : ""
   }`
@@ -125,17 +224,25 @@ function formatPhone(value: string) {
 
 function PhoneField({
   label = "Celular",
+
   placeholder = "(11) 90000-0000",
+
   value,
+
   onChange,
 }: {
   label?: string
+
   placeholder?: string
+
   value?: string
+
   onChange?: (value: string) => void
 } = {}) {
   const [internalPhone, setInternalPhone] = useState("")
+
   const phone = value !== undefined ? value : internalPhone
+
   const setPhone = onChange ?? setInternalPhone
 
   return (
@@ -160,14 +267,18 @@ function PhoneField({
 
 function isValidCpf(value: string) {
   const digits = value.replace(/\D/g, "")
+
   if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
 
   const calculateDigit = (length: number) => {
     const sum = [...digits.slice(0, length)].reduce(
       (total, digit, index) => total + Number(digit) * (length + 1 - index),
+
       0,
     )
+
     const remainder = sum % 11
+
     return remainder < 2 ? 0 : 11 - remainder
   }
 
@@ -179,13 +290,19 @@ function isValidCpf(value: string) {
 
 function CpfField({
   label = "CPF do responsável",
+
   placeholder = "000.000.000-00",
+
   value,
+
   onChange,
 }: {
   label?: string
+
   placeholder?: string
+
   value: string
+
   onChange: (value: string) => void
 }) {
   return (
@@ -203,7 +320,9 @@ function CpfField({
           value={value}
           onChange={(event) => {
             const formattedValue = formatCpf(event.currentTarget.value)
+
             onChange(formattedValue)
+
             event.currentTarget.setCustomValidity(
               formattedValue.length === 14 && !isValidCpf(formattedValue)
                 ? "Informe um CPF válido."
@@ -218,9 +337,11 @@ function CpfField({
 
 function PasswordVisibilityButton({
   visible,
+
   toggle,
 }: {
   visible: boolean
+
   toggle: () => void
 }) {
   return (
@@ -242,9 +363,11 @@ function PasswordVisibilityButton({
 
 function AuthTabs({
   active,
+
   go,
 }: {
   active: "login" | "signup"
+
   go: (screen: Screen) => void
 }) {
   return (
@@ -269,24 +392,35 @@ function AuthTabs({
 
 function AccountModal({
   close,
+
   continueFlow,
 }: {
   close: () => void
+
   continueFlow: () => void
 }) {
   const [account, setAccount] = useState("vestibulando")
+
   const user = tokenStorage.getUser()
+
   const accounts = [
     {
       id: "vestibulando",
+
       title: "Vestibulando",
+
       description: "Preparação para o ENEM · Medicina",
+
       icon: "◎",
     },
+
     {
       id: "universitario",
+
       title: "Universitário",
+
       description: "Graduação · Engenharia Civil",
+
       icon: "◇",
     },
   ]
@@ -350,21 +484,32 @@ function AccountModal({
 
 function Login({ go }: { go: (screen: Screen) => void }) {
   const [email, setEmail] = useState("")
+
   const [password, setPassword] = useState("")
+
   const [showPassword, setShowPassword] = useState(false)
+
   const [rememberMe, setRememberMe] = useState(false)
+
   const [accounts, setAccounts] = useState(false)
+
   const [formAttempted, setFormAttempted] = useState(false)
+
   const [loading, setLoading] = useState(false)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sherlock_remembered_login")
+
       if (saved) {
         const parsed = JSON.parse(saved)
+
         if (parsed.email) setEmail(parsed.email)
+
         if (parsed.password) setPassword(parsed.password)
+
         setRememberMe(true)
       }
     } catch {
@@ -374,6 +519,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   function handleRememberChange(checked: boolean) {
     setRememberMe(checked)
+
     if (!checked) {
       try {
         localStorage.removeItem("sherlock_remembered_login")
@@ -385,6 +531,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         if (email || password) {
           localStorage.setItem(
             "sherlock_remembered_login",
+
             JSON.stringify({ email, password }),
           )
         }
@@ -396,12 +543,16 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   function fillAdminData() {
     setEmail("admin@admin.com")
+
     setPassword("Admin@123")
+
     setErrorMessage(null)
+
     if (rememberMe) {
       try {
         localStorage.setItem(
           "sherlock_remembered_login",
+
           JSON.stringify({ email: "admin@admin.com", password: "Admin@123" }),
         )
       } catch {
@@ -417,6 +568,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
       try {
         localStorage.setItem(
           "sherlock_remembered_login",
+
           JSON.stringify({ email, password }),
         )
       } catch {
@@ -431,14 +583,17 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     }
 
     setLoading(true)
+
     setErrorMessage(null)
 
     try {
       await authApi.login(email, password)
+
       setAccounts(true)
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao efetuar login"
+
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -456,7 +611,9 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         <div
           style={{
             display: "flex",
+
             justifyContent: "flex-end",
+
             marginBottom: "12px",
           }}
         >
@@ -465,14 +622,23 @@ function Login({ go }: { go: (screen: Screen) => void }) {
             className="text-button"
             style={{
               color: "var(--indigo)",
+
               fontSize: "12px",
+
               fontWeight: 700,
+
               padding: "4px 10px",
+
               background: "var(--lavender)",
+
               borderRadius: "999px",
+
               cursor: "pointer",
+
               maxWidth: "100%",
+
               whiteSpace: "normal",
+
               textAlign: "right",
             }}
             onClick={fillAdminData}
@@ -548,29 +714,39 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
 function formatBirthDate(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8)
+
   return digits
+
     .replace(/^(\d{2})(\d)/, "$1/$2")
+
     .replace(/^(\d{2}\/\d{2})(\d)/, "$1/$2")
 }
 
 function getBirthDateError(value: string) {
   if (!value) return ""
+
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return "Use o formato dd/mm/aaaa."
   }
+
   if (!parseBirthDate(value)) {
     return "Informe uma data válida, que não seja futura."
   }
+
   return ""
 }
 
 function parseBirthDate(value: string) {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+
   if (!match) return null
 
   const [, day, month, year] = match
+
   const date = new Date(Number(year), Number(month) - 1, Number(day))
+
   const today = new Date()
+
   today.setHours(0, 0, 0, 0)
 
   if (
@@ -587,9 +763,11 @@ function parseBirthDate(value: string) {
 
 function getAge(birthDate: string) {
   const date = parseBirthDate(birthDate)
+
   if (!date) return null
 
   const today = new Date()
+
   const hasHadBirthdayThisYear =
     today.getMonth() > date.getMonth() ||
     (today.getMonth() === date.getMonth() && today.getDate() >= date.getDate())
@@ -601,48 +779,79 @@ function getAge(birthDate: string) {
 
 function Signup({ go }: { go: (screen: Screen) => void }) {
   const [fullName, setFullName] = useState("")
+
   const [birthDate, setBirthDate] = useState("")
+
   const [phone, setPhone] = useState("")
+
   const [education, setEducation] = useState("")
+
   const [guardianCpf, setGuardianCpf] = useState("")
+
   const [guardianName, setGuardianName] = useState("")
+
   const [email, setEmail] = useState("")
+
   const [recoveryEmail, setRecoveryEmail] = useState("")
+
   const [password, setPassword] = useState("")
+
   const [confirmPassword, setConfirmPassword] = useState("")
+
   const [showPassword, setShowPassword] = useState(false)
+
   const [accepted, setAccepted] = useState(false)
+
   const [showTermsModal, setShowTermsModal] = useState(false)
+
   const [formAttempted, setFormAttempted] = useState(false)
+
   const [loading, setLoading] = useState(false)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const age = getAge(birthDate)
+
   const minor = age !== null && age < 18
 
   function fillTestData() {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+
     setFullName("Júlia Andrade")
+
     setBirthDate("15/06/2004")
+
     setPhone("(11) 90000-0000")
+
     setEducation("medio-completo")
+
     setEmail(`julia.andrade${randomSuffix}@email.com`)
+
     setRecoveryEmail(`nome${randomSuffix}@email.com`)
+
     setPassword("EduMentor2026@")
+
     setConfirmPassword("EduMentor2026@")
+
     setAccepted(true)
+
     setErrorMessage(null)
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
     if (!accepted) return
+
     if (age === null) return
+
     if (minor && !isValidCpf(guardianCpf)) return
 
     const parts = fullName.trim().split(/\s+/)
+
     if (parts.length < 2 || !parts[1]) {
       setErrorMessage("Por favor, digite seu nome e sobrenome completo.")
+
       return
     }
 
@@ -650,11 +859,13 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       setErrorMessage(
         "O e-mail deve ter o formato válido (ex: nome@dominio.com ou .com.br).",
       )
+
       return
     }
 
     if (password !== confirmPassword) {
       setErrorMessage("As duas senhas informadas não são iguais.")
+
       return
     }
 
@@ -670,6 +881,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       setErrorMessage(
         "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
       )
+
       return
     }
 
@@ -702,6 +914,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     }
 
     setLoading(true)
+
     setErrorMessage(null)
 
     // Converte dd/mm/aaaa -> YYYY-MM-DD (ISO) exigido pelo backend.
@@ -747,6 +960,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao cadastrar usuário"
+
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -764,7 +978,9 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
         <div
           style={{
             display: "flex",
+
             justifyContent: "flex-end",
+
             marginBottom: "12px",
           }}
         >
@@ -773,14 +989,23 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
             className="text-button"
             style={{
               color: "var(--indigo)",
+
               fontSize: "12px",
+
               fontWeight: 700,
+
               padding: "4px 10px",
+
               background: "var(--lavender)",
+
               borderRadius: "999px",
+
               cursor: "pointer",
+
               maxWidth: "100%",
+
               whiteSpace: "normal",
+
               textAlign: "right",
             }}
             onClick={fillTestData}
@@ -802,8 +1027,11 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                   className="text-button"
                   style={{
                     color: "var(--indigo)",
+
                     textDecoration: "underline",
+
                     fontWeight: 700,
+
                     cursor: "pointer",
                   }}
                   onClick={() => go("course")}
@@ -835,7 +1063,9 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                   value={birthDate}
                   onChange={(event) => {
                     const value = formatBirthDate(event.currentTarget.value)
+
                     setBirthDate(value)
+
                     event.currentTarget.setCustomValidity(
                       getBirthDateError(value),
                     )
@@ -902,8 +1132,8 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
             className="field-help"
             style={{ marginTop: "-6px", marginBottom: "8px" }}
           >
-            Mínimo 6 caracteres, com letra maiúscula, minúscula, número e
-            símbolo (@#$%).
+            Mínimo 8 e no máximo 20 caracteres, com letra maiúscula, minúscula,
+            número e símbolo (@#$%).
           </small>
           <label className="field">
             <span>Escolaridade</span>
@@ -987,15 +1217,21 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+
                   e.stopPropagation()
+
                   setShowTermsModal(true)
                 }}
                 className="underline hover:opacity-80 font-bold cursor-pointer"
                 style={{
                   color: "var(--indigo)",
+
                   background: "transparent",
+
                   border: "none",
+
                   padding: 0,
+
                   font: "inherit",
                 }}
               >
@@ -1024,19 +1260,27 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
 
 function PasswordScreen({
   reset,
+
   go,
 }: {
   reset?: boolean
+
   go: (screen: Screen) => void
 }) {
   const [sent, setSent] = useState(false)
+
   const [show, setShow] = useState(false)
+
   const [password, setPassword] = useState("")
+
   const [confirmation, setConfirmation] = useState("")
+
   const [formAttempted, setFormAttempted] = useState(false)
 
-  const validLength = password.length >= 8
+  const validLength = password.length >= 8 && password.length <= 20
+
   const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
+
   const same = password.length > 0 && password === confirmation
 
   return (
@@ -1059,6 +1303,7 @@ function PasswordScreen({
             onInvalidCapture={() => setFormAttempted(true)}
             onSubmit={(e) => {
               e.preventDefault()
+
               setSent(true)
             }}
           >
@@ -1086,6 +1331,7 @@ function PasswordScreen({
             onInvalidCapture={() => setFormAttempted(true)}
             onSubmit={(e) => {
               e.preventDefault()
+
               if (validLength && validMix && same) go("login")
             }}
           >
@@ -1113,7 +1359,7 @@ function PasswordScreen({
             </Field>
             <ul className="password-rules">
               <li className={validLength ? "valid" : ""}>
-                Pelo menos 8 caracteres
+                Entre 8 e 20 caracteres
               </li>
               <li className={validMix ? "valid" : ""}>Letras e números</li>
               <li className={same ? "valid" : ""}>As duas senhas são iguais</li>
@@ -1134,25 +1380,29 @@ function PasswordScreen({
 
 function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="auth-screen">
-      <div className="brand-panel-wrapper">
-        <BrandPanel />
-      </div>
-      <section className="auth-content">{children}</section>
-    </main>
+    <div className="auth-screen-wrapper">
+      <main className="auth-screen">
+        <div className="brand-panel-wrapper">
+          <BrandPanel />
+        </div>
+        <section className="auth-content">{children}</section>
+      </main>
+    </div>
   )
 }
 
 interface StepperProps {
   step: number
+
   back: () => void
 }
 
 function Stepper({ step, back }: StepperProps) {
   const labels = ["Curso-alvo", "Como começar", "Meta semanal"]
+
   return (
     <header className="onboarding-header">
-      <BrandLogo />
+      <BrandLogoMark />
       <div className="stepper">
         {labels.map((label, index) => (
           <div className={index + 1 <= step ? "complete" : ""} key={label}>
@@ -1171,18 +1421,24 @@ function Stepper({ step, back }: StepperProps) {
 
 function OnboardingLayout({
   step,
+
   back,
+
   children,
 }: {
   step: number
+
   back: () => void
+
   children: ReactNode
 }) {
   return (
-    <main className="onboarding">
-      <Stepper step={step} back={back} />
-      <section className="onboarding-content">{children}</section>
-    </main>
+    <div className="onboarding-screen-wrapper">
+      <main className="onboarding">
+        <Stepper step={step} back={back} />
+        <section className="onboarding-content">{children}</section>
+      </main>
+    </div>
   )
 }
 
@@ -1280,6 +1536,9 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 
   return (
     <OnboardingLayout step={1} back={() => go("signup")}>
+      <div className="course-mascot" aria-hidden="true">
+        <MentorinaCursoAlvo size={180} />
+      </div>
       <div className="center-heading">
         <h1>Qual curso você quer fazer?</h1>
         <p>
@@ -1415,17 +1674,25 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
 
 const QUIZ_ANSWERS = [
   { letter: "A", text: "10%" },
+
   { letter: "B", text: "15%" },
+
   { letter: "C", text: "16,7%" },
+
   { letter: "D", text: "20%" },
+
   { letter: "E", text: "25%" },
 ]
 
 const AREA_PROGRESS = [
   { label: "Linguagens", value: 100 },
+
   { label: "Humanas", value: 100 },
+
   { label: "Natureza", value: 50 },
+
   { label: "Matemática", value: 34 },
+
   { label: "Redação", value: 4 },
 ]
 
@@ -1489,15 +1756,20 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
 
 const SUBJECT_LIST = [
   "Matemática",
+
   "Ciências da Natureza",
+
   "Linguagens",
+
   "Ciências Humanas",
+
   "Redação",
 ]
 
 function Subjects({ go }: { go: (screen: Screen) => void }) {
   const [selected, setSelected] = useState([
     "Matemática",
+
     "Ciências da Natureza",
   ])
 
@@ -1518,6 +1790,7 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       <div className="subject-grid">
         {SUBJECT_LIST.map((subject, index) => {
           const isSelected = selected.includes(subject)
+
           return (
             <button
               type="button"
@@ -1551,7 +1824,9 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
 
 function Goal({ go }: { go: (screen: Screen) => void }) {
   const [hours, setHours] = useState(25)
+
   const [days, setDays] = useState(["Seg", "Ter", "Qua", "Qui", "Sex"])
+
   const week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
   return (
@@ -1639,6 +1914,7 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           type="button"
           onClick={() => {
             authApi.logout()
+
             go("login")
           }}
         >
@@ -1655,24 +1931,34 @@ export default function App() {
   switch (screen) {
     case "landing":
       return <LandingPage onNavigate={(dest) => setScreen(dest)} />
+
     case "login":
       return <Login go={setScreen} />
+
     case "signup":
       return <Signup go={setScreen} />
+
     case "recovery":
       return <PasswordScreen go={setScreen} />
+
     case "reset":
       return <PasswordScreen reset go={setScreen} />
+
     case "course":
       return <Course go={setScreen} />
+
     case "start":
       return <StartChoice go={setScreen} />
+
     case "quiz":
       return <Quiz go={setScreen} />
+
     case "subjects":
       return <Subjects go={setScreen} />
+
     case "goal":
       return <Goal go={setScreen} />
+
     case "done":
       return <Done go={setScreen} />
   }

@@ -57,6 +57,8 @@ jobs:
           context: .
           file: ./dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=https://api.sherlock.qacoders.dev.br/api
           tags: ghcr.io/qacoders-academy/sherlock-frontend:${{ github.event.workflow_run.head_sha }}
 
   deploy:
