@@ -1630,24 +1630,23 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 }
 
 function StartChoice({ go }: { go: (screen: Screen) => void }) {
-  const [choice, setChoice] = useState<"nivelamento" | "materias" | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState<"nivelamento" | "materias" | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // RN04/RN05: registra o modo de início e navega para a sub-tela.
-  async function handleContinue() {
-    if (!choice || saving) return
-    setSaving(true)
+  // Cada card dispara o próprio CTA: persiste o modo e navega.
+  async function choose(mode: "nivelamento" | "materias") {
+    if (saving) return
+    setSaving(mode)
     setErrorMessage(null)
     try {
-      await onboardingApi.setStartMode(choice)
-      go(choice === "nivelamento" ? "quiz" : "subjects")
+      await onboardingApi.setStartMode(mode)
+      go(mode === "nivelamento" ? "quiz" : "subjects")
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao registrar a escolha."
       setErrorMessage(message)
-    } finally {
-      setSaving(false)
+      setSaving(null)
     }
   }
 
@@ -1655,12 +1654,12 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("course")}>
       <div className="start-choice">
         <div className="start-choice-mascot" aria-hidden="true">
-          <Mascot pose="lendo" size={140} />
+          <Mascot pose="pensando" size={160} />
         </div>
         <h1 className="start-choice-title">Como você quer começar?</h1>
         <p className="start-choice-subtitle">
-          O nivelamento mostra seu nível em cada área e ajuda a IA a montar uma
-          trilha no seu ritmo.
+          Escolha como prefere montar sua trilha de estudos. Dá para mudar essa
+          decisão depois no seu perfil.
         </p>
 
         {errorMessage && (
@@ -1669,62 +1668,75 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           </div>
         )}
 
-        <div className="start-choice-options" role="radiogroup">
-          <button
-            type="button"
-            className={`start-option${choice === "nivelamento" ? " selected" : ""}`}
-            role="radio"
-            aria-checked={choice === "nivelamento"}
-            onClick={() => setChoice("nivelamento")}
-          >
-            <span className="start-option-radio" aria-hidden="true" />
-            <span className="start-option-body">
-              <span className="start-option-head">
-                <strong>Fazer o nivelamento</strong>
-                <em className="start-option-badge">Recomendado</em>
-              </span>
-              <span className="start-option-text">
-                8 questões · cerca de 25 minutos. Descubra o seu nível em cada
-                área.
-              </span>
+        <div className="start-choice-options">
+          <article className="start-card start-card--recommended">
+            <span className="start-card-icon start-card-icon--indigo" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="4.5" />
+                <circle cx="12" cy="12" r="1" fill="#ffffff" stroke="none" />
+              </svg>
             </span>
-          </button>
+            <span className="start-card-badge">Recomendado</span>
+            <h2 className="start-card-title">Fazer o nivelamento rápido</h2>
+            <p className="start-card-text">
+              8 questões · cerca de 25 minutos. A IA descobre seu nível em cada
+              área e monta uma trilha no seu ritmo.
+            </p>
+            <p className="start-card-info">
+              Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+              assim sua trilha fica mais certeira.
+            </p>
+            <button
+              className="primary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("nivelamento")}
+            >
+              {saving === "nivelamento" ? "Salvando..." : "Começar nivelamento"}
+            </button>
+          </article>
 
-          <button
-            type="button"
-            className={`start-option${choice === "materias" ? " selected" : ""}`}
-            role="radio"
-            aria-checked={choice === "materias"}
-            onClick={() => setChoice("materias")}
-          >
-            <span className="start-option-radio" aria-hidden="true" />
-            <span className="start-option-body">
-              <span className="start-option-head">
-                <strong>Escolher as matérias</strong>
-              </span>
-              <span className="start-option-text">
-                Você escolhe as matérias que quer focar e a IA gera a trilha
-                delas.
-              </span>
+          <article className="start-card">
+            <span className="start-card-icon start-card-icon--lavender" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#4f3cf0"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 6.5c-1.8-1.2-4-1.5-6-1.5v12c2 0 4.2.3 6 1.5 1.8-1.2 4-1.5 6-1.5V5c-2 0-4.2.3-6 1.5Z" />
+                <path d="M12 6.5V18" />
+              </svg>
             </span>
-          </button>
+            <h2 className="start-card-title">Escolher as matérias</h2>
+            <p className="start-card-text">
+              Você escolhe as matérias que quer focar e a IA gera a trilha
+              delas, sem o nivelamento.
+            </p>
+            <button
+              className="secondary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("materias")}
+            >
+              {saving === "materias" ? "Salvando..." : "Escolher matérias"}
+            </button>
+          </article>
         </div>
-
-        {choice === "nivelamento" && (
-          <p className="start-choice-note">
-            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
-            assim sua trilha fica mais certeira.
-          </p>
-        )}
-
-        <button
-          className="primary-button narrow"
-          type="button"
-          disabled={!choice || saving}
-          onClick={() => void handleContinue()}
-        >
-          {saving ? "Salvando..." : "Continuar"}
-        </button>
       </div>
     </OnboardingLayout>
   )

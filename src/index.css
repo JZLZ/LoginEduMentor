@@ -1336,79 +1336,48 @@ form {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   margin: 8px 0 0;
+  align-items: stretch;
 }
 
-.start-option {
+.start-card {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   gap: 14px;
-  padding: 24px;
+  padding: 28px;
   text-align: left;
   background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 15px;
-  cursor: pointer;
-  transition:
-    box-shadow 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(23, 21, 46, 0.06);
 }
 
-.start-option:hover {
-  box-shadow: 0 8px 20px rgba(23, 21, 46, 0.08);
-}
-
-.start-option.selected {
-  background: var(--lavender);
+.start-card--recommended {
   border: 2px solid var(--indigo);
 }
 
-.start-option-radio {
+.start-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  margin-top: 2px;
-  border: 1.5px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  position: relative;
 }
 
-.start-option.selected .start-option-radio {
-  border: 2px solid var(--indigo);
-}
-
-.start-option.selected .start-option-radio::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 999px;
+.start-card-icon--indigo {
   background: var(--indigo);
 }
 
-.start-option-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.start-card-icon--lavender {
+  background: var(--lavender);
 }
 
-.start-option-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.start-option-head strong {
-  font-size: 16px;
-  color: var(--ink);
-}
-
-.start-option-badge {
-  padding: 3px 10px;
+.start-card-badge {
+  padding: 4px 12px;
   font-size: 11px;
   font-weight: 700;
-  font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
@@ -1416,19 +1385,34 @@ form {
   border-radius: 999px;
 }
 
-.start-option-text {
+.start-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.start-card-text {
+  margin: 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 22px;
 }
 
-.start-choice-note {
-  max-width: 560px;
+.start-card-info {
   margin: 0;
-  color: var(--muted);
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--ink);
   font-size: 13px;
   line-height: 20px;
-  text-align: center;
+  background: var(--lavender);
+  border-radius: 12px;
+}
+
+.start-card-cta {
+  width: 100%;
+  margin-top: auto;
 }
 
 /* ==========================================================================
