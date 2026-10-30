@@ -1024,7 +1024,24 @@ form {
 }
 
 .onboarding-header > .brand-logo {
-  width: min(180px, 100%);
+  width: min(160px, 100%);
+  justify-self: start;
+}
+
+.onboarding-header > .brand-logomark {
+  justify-self: start;
+}
+
+/* Logo SVG oficial (header do onboarding) */
+.brand-logomark {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logomark-svg {
+  height: 30px;
+  width: auto;
+  display: block;
 }
 
 .onboarding-header > .stepper {
@@ -1115,6 +1132,13 @@ form {
   gap: 16px;
   width: min(696px, 100%);
   margin: 0 auto;
+}
+
+.course-mascot {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 4px;
 }
 
 .course-single {
