@@ -40,6 +40,7 @@ import type {
 } from "./services/api"
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
+import MentorinaPensando from "./components/MentorinaPensando"
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -1654,7 +1655,7 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("course")}>
       <div className="start-choice">
         <div className="start-choice-mascot" aria-hidden="true">
-          <Mascot pose="pensando" size={160} />
+          <MentorinaPensando size={160} />
         </div>
         <h1 className="start-choice-title">Como você quer começar?</h1>
         <p className="start-choice-subtitle">
