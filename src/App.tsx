@@ -2553,16 +2553,43 @@ const GOAL_OPTIONS = [
 ]
 
 function Goal({ go }: { go: (screen: Screen) => void }) {
-  const [selected, setSelected] = useState<number>(5)
+  const [selected, setSelected] = useState<3 | 5 | 7>(5)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Persiste a meta semanal escolhida (dias por semana) para uso posterior.
-  function handleContinue() {
-    try {
-      localStorage.setItem("sherlock_weekly_goal_days", String(selected))
-    } catch {
-      // ignore
+  // Pré-seleciona a meta semanal já registrada no perfil, se houver.
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.weeklyGoalDays) setSelected(data.weeklyGoalDays)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
     }
-    go("done")
+  }, [])
+
+  // Persiste a meta semanal escolhida (dias por semana) no backend.
+  async function handleContinue() {
+    if (saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setWeeklyGoal(selected)
+      go("done")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Erro ao registrar a meta semanal.",
+      )
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -2577,6 +2604,12 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
           seu perfil.
         </p>
 
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
         <div className="goal-options" role="radiogroup">
           {GOAL_OPTIONS.map((opt) => {
             const isSelected = selected === opt.days
@@ -2589,7 +2622,7 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
                 className={`goal-option goal-option--${opt.accent}${
                   isSelected ? " selected" : ""
                 }${opt.recommended ? " recommended" : ""}`}
-                onClick={() => setSelected(opt.days)}
+                onClick={() => setSelected(opt.days as 3 | 5 | 7)}
               >
                 {opt.tags && (
                   <span className="goal-option-tags">
@@ -2615,9 +2648,10 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
         <button
           className="primary-button narrow"
           type="button"
-          onClick={handleContinue}
+          disabled={saving}
+          onClick={() => void handleContinue()}
         >
-          Continuar
+          {saving ? "Salvando..." : "Continuar"}
         </button>
       </div>
     </OnboardingLayout>
