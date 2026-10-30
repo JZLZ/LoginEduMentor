@@ -1687,9 +1687,6 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
                 8 questões · cerca de 25 minutos. Descubra o seu nível em cada
                 área.
               </span>
-              <span className="start-option-warning">
-                Responda sem consultar: a Mentorina percebe chutes e pesquisas.
-              </span>
             </span>
           </button>
 
@@ -1712,6 +1709,13 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
             </span>
           </button>
         </div>
+
+        {choice === "nivelamento" && (
+          <p className="start-choice-note">
+            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+            assim sua trilha fica mais certeira.
+          </p>
+        )}
 
         <button
           className="primary-button narrow"
