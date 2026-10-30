@@ -356,4 +356,18 @@ export const onboardingApi = {
     )
     return res.data
   },
+
+  /** Registra o modo de início escolhido na Tela 02 (Como começar). */
+  setStartMode: async (
+    mode: "nivelamento" | "materias",
+  ): Promise<{ startMode: "nivelamento" | "materias" | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { startMode: "nivelamento" | "materias" | null }
+    }>("/onboarding/start-mode", {
+      method: "PUT",
+      body: JSON.stringify({ mode }),
+    })
+    return res.data
+  },
 }

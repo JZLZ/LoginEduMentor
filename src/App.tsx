@@ -1436,6 +1436,29 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 }
 
 function StartChoice({ go }: { go: (screen: Screen) => void }) {
+  const [saving, setSaving] = useState<"nivelamento" | "materias" | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // RN04/RN05: registra o modo de início e navega para a sub-tela.
+  async function choose(
+    mode: "nivelamento" | "materias",
+    destination: Screen,
+  ) {
+    if (saving) return
+    setSaving(mode)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setStartMode(mode)
+      go(destination)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao registrar a escolha."
+      setErrorMessage(message)
+    } finally {
+      setSaving(null)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("course")}>
       <div className="center-heading">
@@ -1445,6 +1468,11 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           trilha no seu ritmo.
         </p>
       </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <div className="choice-grid">
         <article className="choice-card recommended">
           <div>
@@ -1453,14 +1481,19 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           </div>
           <h2>Fazer o nivelamento</h2>
           <p>
-            6 questões · cerca de 10 min. Descubra o seu nível em cada área.
+            8 questões · cerca de 25 minutos. Descubra o seu nível em cada área.
+          </p>
+          <p className="choice-warning">
+            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+            assim sua trilha fica mais certeira.
           </p>
           <button
             className="primary-button"
             type="button"
-            onClick={() => go("quiz")}
+            disabled={saving !== null}
+            onClick={() => void choose("nivelamento", "quiz")}
           >
-            Fazer nivelamento
+            {saving === "nivelamento" ? "Salvando..." : "Fazer nivelamento"}
           </button>
         </article>
         <article className="choice-card">
@@ -1474,9 +1507,10 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           <button
             className="secondary-button"
             type="button"
-            onClick={() => go("subjects")}
+            disabled={saving !== null}
+            onClick={() => void choose("materias", "subjects")}
           >
-            Escolher matérias
+            {saving === "materias" ? "Salvando..." : "Escolher matérias"}
           </button>
         </article>
       </div>

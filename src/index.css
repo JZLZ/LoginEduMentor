@@ -1161,6 +1161,15 @@ form {
   padding: 31px;
 }
 
+.choice-warning {
+  padding: 10px 12px;
+  background: var(--lavender);
+  border-radius: 10px;
+  color: var(--indigo);
+  font-size: 13px;
+  line-height: 18px;
+}
+
 .choice-card > div {
   min-height: 52px;
   display: flex;
