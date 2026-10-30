@@ -6,15 +6,25 @@ import type {
   ReactNode,
 } from "react"
 // ============================================================================
+
 // PARTES DO LOGO (EduMentor AI) - Importação das camadas exportadas do Figma:
+
 // ============================================================================
+
 // 1. Ícone/Símbolo (Group): Balão roxo com escadaria branca e brilhos verdes
+
 import logoMark from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Group.png"
+
 // 2. Tipografia principal (Vector): Palavra "EduMentor"
+
 import logoWord from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector.png"
+
 // 3. Fundo do badge (Vector-1): Pílula verde-limão de destaque
+
 import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-1.png"
+
 // 4. Texto do badge (Vector-2): Sigla "AI" em preto dentro da pílula
+
 import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png"
 import {
   assessmentApi,
@@ -34,6 +44,7 @@ type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" |
  * Componente do Logo completo da marca EduMentor AI.
  * Utilizado nas telas de autenticação (Login/Cadastro) e no cabeçalho do Onboarding.
  */
+
 function BrandLogo() {
   return (
     <div className="brand-logo" role="img" aria-label="EduMentor AI">
@@ -148,17 +159,25 @@ function BrandPanel() {
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
+
   className?: string
+
   children?: ReactNode
 }
 
 function Field({
   label,
+
   type = "text",
+
   placeholder,
+
   children,
+
   className = "",
+
   required = true,
+
   ...rest
 }: FieldProps) {
   return (
@@ -180,18 +199,25 @@ function Field({
 
 function formatCpf(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   return digits
+
     .replace(/^(\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3}\.\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3}\.\d{3}\.\d{3})(\d{1,2})$/, "$1-$2")
 }
 
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   if (digits.length <= 2) return digits ? `(${digits}` : ""
 
   const areaCode = digits.slice(0, 2)
+
   const subscriber = digits.slice(2)
+
   return `(${areaCode}) ${subscriber.slice(0, 5)}${
     subscriber.length > 5 ? `-${subscriber.slice(5)}` : ""
   }`
@@ -199,17 +225,25 @@ function formatPhone(value: string) {
 
 function PhoneField({
   label = "Celular",
+
   placeholder = "(11) 90000-0000",
+
   value,
+
   onChange,
 }: {
   label?: string
+
   placeholder?: string
+
   value?: string
+
   onChange?: (value: string) => void
 } = {}) {
   const [internalPhone, setInternalPhone] = useState("")
+
   const phone = value !== undefined ? value : internalPhone
+
   const setPhone = onChange ?? setInternalPhone
 
   return (
@@ -234,14 +268,18 @@ function PhoneField({
 
 function isValidCpf(value: string) {
   const digits = value.replace(/\D/g, "")
+
   if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false
 
   const calculateDigit = (length: number) => {
     const sum = [...digits.slice(0, length)].reduce(
       (total, digit, index) => total + Number(digit) * (length + 1 - index),
+
       0,
     )
+
     const remainder = sum % 11
+
     return remainder < 2 ? 0 : 11 - remainder
   }
 
@@ -253,13 +291,19 @@ function isValidCpf(value: string) {
 
 function CpfField({
   label = "CPF do responsável",
+
   placeholder = "000.000.000-00",
+
   value,
+
   onChange,
 }: {
   label?: string
+
   placeholder?: string
+
   value: string
+
   onChange: (value: string) => void
 }) {
   return (
@@ -277,7 +321,9 @@ function CpfField({
           value={value}
           onChange={(event) => {
             const formattedValue = formatCpf(event.currentTarget.value)
+
             onChange(formattedValue)
+
             event.currentTarget.setCustomValidity(
               formattedValue.length === 14 && !isValidCpf(formattedValue)
                 ? "Informe um CPF válido."
@@ -292,9 +338,11 @@ function CpfField({
 
 function PasswordVisibilityButton({
   visible,
+
   toggle,
 }: {
   visible: boolean
+
   toggle: () => void
 }) {
   return (
@@ -316,9 +364,11 @@ function PasswordVisibilityButton({
 
 function AuthTabs({
   active,
+
   go,
 }: {
   active: "login" | "signup"
+
   go: (screen: Screen) => void
 }) {
   return (
@@ -343,24 +393,35 @@ function AuthTabs({
 
 function AccountModal({
   close,
+
   continueFlow,
 }: {
   close: () => void
+
   continueFlow: () => void
 }) {
   const [account, setAccount] = useState("vestibulando")
+
   const user = tokenStorage.getUser()
+
   const accounts = [
     {
       id: "vestibulando",
+
       title: "Vestibulando",
+
       description: "Preparação para o ENEM · Medicina",
+
       icon: "◎",
     },
+
     {
       id: "universitario",
+
       title: "Universitário",
+
       description: "Graduação · Engenharia Civil",
+
       icon: "◇",
     },
   ]
@@ -424,21 +485,32 @@ function AccountModal({
 
 function Login({ go }: { go: (screen: Screen) => void }) {
   const [email, setEmail] = useState("")
+
   const [password, setPassword] = useState("")
+
   const [showPassword, setShowPassword] = useState(false)
+
   const [rememberMe, setRememberMe] = useState(false)
+
   const [accounts, setAccounts] = useState(false)
+
   const [formAttempted, setFormAttempted] = useState(false)
+
   const [loading, setLoading] = useState(false)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sherlock_remembered_login")
+
       if (saved) {
         const parsed = JSON.parse(saved)
+
         if (parsed.email) setEmail(parsed.email)
+
         if (parsed.password) setPassword(parsed.password)
+
         setRememberMe(true)
       }
     } catch {
@@ -448,6 +520,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   function handleRememberChange(checked: boolean) {
     setRememberMe(checked)
+
     if (!checked) {
       try {
         localStorage.removeItem("sherlock_remembered_login")
@@ -459,6 +532,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         if (email || password) {
           localStorage.setItem(
             "sherlock_remembered_login",
+
             JSON.stringify({ email, password }),
           )
         }
@@ -470,12 +544,16 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   function fillAdminData() {
     setEmail("admin@admin.com")
+
     setPassword("Admin@123")
+
     setErrorMessage(null)
+
     if (rememberMe) {
       try {
         localStorage.setItem(
           "sherlock_remembered_login",
+
           JSON.stringify({ email: "admin@admin.com", password: "Admin@123" }),
         )
       } catch {
@@ -491,6 +569,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
       try {
         localStorage.setItem(
           "sherlock_remembered_login",
+
           JSON.stringify({ email, password }),
         )
       } catch {
@@ -505,14 +584,17 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     }
 
     setLoading(true)
+
     setErrorMessage(null)
 
     try {
       await authApi.login(email, password)
+
       setAccounts(true)
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao efetuar login"
+
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -530,7 +612,9 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         <div
           style={{
             display: "flex",
+
             justifyContent: "flex-end",
+
             marginBottom: "12px",
           }}
         >
@@ -539,14 +623,23 @@ function Login({ go }: { go: (screen: Screen) => void }) {
             className="text-button"
             style={{
               color: "var(--indigo)",
+
               fontSize: "12px",
+
               fontWeight: 700,
+
               padding: "4px 10px",
+
               background: "var(--lavender)",
+
               borderRadius: "999px",
+
               cursor: "pointer",
+
               maxWidth: "100%",
+
               whiteSpace: "normal",
+
               textAlign: "right",
             }}
             onClick={fillAdminData}
@@ -622,29 +715,39 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
 function formatBirthDate(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8)
+
   return digits
+
     .replace(/^(\d{2})(\d)/, "$1/$2")
+
     .replace(/^(\d{2}\/\d{2})(\d)/, "$1/$2")
 }
 
 function getBirthDateError(value: string) {
   if (!value) return ""
+
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return "Use o formato dd/mm/aaaa."
   }
+
   if (!parseBirthDate(value)) {
     return "Informe uma data válida, que não seja futura."
   }
+
   return ""
 }
 
 function parseBirthDate(value: string) {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+
   if (!match) return null
 
   const [, day, month, year] = match
+
   const date = new Date(Number(year), Number(month) - 1, Number(day))
+
   const today = new Date()
+
   today.setHours(0, 0, 0, 0)
 
   if (
@@ -661,9 +764,11 @@ function parseBirthDate(value: string) {
 
 function getAge(birthDate: string) {
   const date = parseBirthDate(birthDate)
+
   if (!date) return null
 
   const today = new Date()
+
   const hasHadBirthdayThisYear =
     today.getMonth() > date.getMonth() ||
     (today.getMonth() === date.getMonth() && today.getDate() >= date.getDate())
@@ -675,48 +780,79 @@ function getAge(birthDate: string) {
 
 function Signup({ go }: { go: (screen: Screen) => void }) {
   const [fullName, setFullName] = useState("")
+
   const [birthDate, setBirthDate] = useState("")
+
   const [phone, setPhone] = useState("")
+
   const [education, setEducation] = useState("")
+
   const [guardianCpf, setGuardianCpf] = useState("")
+
   const [guardianName, setGuardianName] = useState("")
+
   const [email, setEmail] = useState("")
+
   const [recoveryEmail, setRecoveryEmail] = useState("")
+
   const [password, setPassword] = useState("")
+
   const [confirmPassword, setConfirmPassword] = useState("")
+
   const [showPassword, setShowPassword] = useState(false)
+
   const [accepted, setAccepted] = useState(false)
+
   const [showTermsModal, setShowTermsModal] = useState(false)
+
   const [formAttempted, setFormAttempted] = useState(false)
+
   const [loading, setLoading] = useState(false)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const age = getAge(birthDate)
+
   const minor = age !== null && age < 18
 
   function fillTestData() {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+
     setFullName("Júlia Andrade")
+
     setBirthDate("15/06/2004")
+
     setPhone("(11) 90000-0000")
+
     setEducation("medio-completo")
+
     setEmail(`julia.andrade${randomSuffix}@email.com`)
+
     setRecoveryEmail(`nome${randomSuffix}@email.com`)
+
     setPassword("EduMentor2026@")
+
     setConfirmPassword("EduMentor2026@")
+
     setAccepted(true)
+
     setErrorMessage(null)
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
     if (!accepted) return
+
     if (age === null) return
+
     if (minor && !isValidCpf(guardianCpf)) return
 
     const parts = fullName.trim().split(/\s+/)
+
     if (parts.length < 2 || !parts[1]) {
       setErrorMessage("Por favor, digite seu nome e sobrenome completo.")
+
       return
     }
 
@@ -724,11 +860,13 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       setErrorMessage(
         "O e-mail deve ter o formato válido (ex: nome@dominio.com ou .com.br).",
       )
+
       return
     }
 
     if (password !== confirmPassword) {
       setErrorMessage("As duas senhas informadas não são iguais.")
+
       return
     }
 
@@ -744,6 +882,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       setErrorMessage(
         "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
       )
+
       return
     }
 
@@ -776,6 +915,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     }
 
     setLoading(true)
+
     setErrorMessage(null)
 
     // Converte dd/mm/aaaa -> YYYY-MM-DD (ISO) exigido pelo backend.
@@ -821,6 +961,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao cadastrar usuário"
+
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -838,7 +979,9 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
         <div
           style={{
             display: "flex",
+
             justifyContent: "flex-end",
+
             marginBottom: "12px",
           }}
         >
@@ -847,14 +990,23 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
             className="text-button"
             style={{
               color: "var(--indigo)",
+
               fontSize: "12px",
+
               fontWeight: 700,
+
               padding: "4px 10px",
+
               background: "var(--lavender)",
+
               borderRadius: "999px",
+
               cursor: "pointer",
+
               maxWidth: "100%",
+
               whiteSpace: "normal",
+
               textAlign: "right",
             }}
             onClick={fillTestData}
@@ -876,8 +1028,11 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                   className="text-button"
                   style={{
                     color: "var(--indigo)",
+
                     textDecoration: "underline",
+
                     fontWeight: 700,
+
                     cursor: "pointer",
                   }}
                   onClick={() => go("course")}
@@ -909,7 +1064,9 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                   value={birthDate}
                   onChange={(event) => {
                     const value = formatBirthDate(event.currentTarget.value)
+
                     setBirthDate(value)
+
                     event.currentTarget.setCustomValidity(
                       getBirthDateError(value),
                     )
@@ -976,8 +1133,8 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
             className="field-help"
             style={{ marginTop: "-6px", marginBottom: "8px" }}
           >
-            Mínimo 6 caracteres, com letra maiúscula, minúscula, número e
-            símbolo (@#$%).
+            Mínimo 8 e no máximo 20 caracteres, com letra maiúscula, minúscula,
+            número e símbolo (@#$%).
           </small>
           <label className="field">
             <span>Escolaridade</span>
@@ -1061,15 +1218,21 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+
                   e.stopPropagation()
+
                   setShowTermsModal(true)
                 }}
                 className="underline hover:opacity-80 font-bold cursor-pointer"
                 style={{
                   color: "var(--indigo)",
+
                   background: "transparent",
+
                   border: "none",
+
                   padding: 0,
+
                   font: "inherit",
                 }}
               >
@@ -1098,19 +1261,27 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
 
 function PasswordScreen({
   reset,
+
   go,
 }: {
   reset?: boolean
+
   go: (screen: Screen) => void
 }) {
   const [sent, setSent] = useState(false)
+
   const [show, setShow] = useState(false)
+
   const [password, setPassword] = useState("")
+
   const [confirmation, setConfirmation] = useState("")
+
   const [formAttempted, setFormAttempted] = useState(false)
 
-  const validLength = password.length >= 8
+  const validLength = password.length >= 8 && password.length <= 20
+
   const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
+
   const same = password.length > 0 && password === confirmation
 
   return (
@@ -1133,6 +1304,7 @@ function PasswordScreen({
             onInvalidCapture={() => setFormAttempted(true)}
             onSubmit={(e) => {
               e.preventDefault()
+
               setSent(true)
             }}
           >
@@ -1160,6 +1332,7 @@ function PasswordScreen({
             onInvalidCapture={() => setFormAttempted(true)}
             onSubmit={(e) => {
               e.preventDefault()
+
               if (validLength && validMix && same) go("login")
             }}
           >
@@ -1187,7 +1360,7 @@ function PasswordScreen({
             </Field>
             <ul className="password-rules">
               <li className={validLength ? "valid" : ""}>
-                Pelo menos 8 caracteres
+                Entre 8 e 20 caracteres
               </li>
               <li className={validMix ? "valid" : ""}>Letras e números</li>
               <li className={same ? "valid" : ""}>As duas senhas são iguais</li>
@@ -1208,22 +1381,26 @@ function PasswordScreen({
 
 function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="auth-screen">
-      <div className="brand-panel-wrapper">
-        <BrandPanel />
-      </div>
-      <section className="auth-content">{children}</section>
-    </main>
+    <div className="auth-screen-wrapper">
+      <main className="auth-screen">
+        <div className="brand-panel-wrapper">
+          <BrandPanel />
+        </div>
+        <section className="auth-content">{children}</section>
+      </main>
+    </div>
   )
 }
 
 interface StepperProps {
   step: number
+
   back: () => void
 }
 
 function Stepper({ step, back }: StepperProps) {
   const labels = ["Curso-alvo", "Como começar", "Meta semanal"]
+
   return (
     <header className="onboarding-header">
       <BrandLogoMark />
@@ -1245,18 +1422,24 @@ function Stepper({ step, back }: StepperProps) {
 
 function OnboardingLayout({
   step,
+
   back,
+
   children,
 }: {
   step: number
+
   back: () => void
+
   children: ReactNode
 }) {
   return (
-    <main className="onboarding">
-      <Stepper step={step} back={back} />
-      <section className="onboarding-content">{children}</section>
-    </main>
+    <div className="onboarding-screen-wrapper">
+      <main className="onboarding">
+        <Stepper step={step} back={back} />
+        <section className="onboarding-content">{children}</section>
+      </main>
+    </div>
   )
 }
 
@@ -1659,9 +1842,13 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
 
 const SUBJECT_LIST = [
   "Matemática",
+
   "Ciências da Natureza",
+
   "Linguagens",
+
   "Ciências Humanas",
+
   "Redação",
 ]
 
@@ -1716,6 +1903,7 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       <div className="subject-grid">
         {SUBJECT_LIST.map((subject, index) => {
           const isSelected = selected.includes(subject)
+
           return (
             <button
               type="button"
@@ -1861,7 +2049,9 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
 
 function Goal({ go }: { go: (screen: Screen) => void }) {
   const [hours, setHours] = useState(25)
+
   const [days, setDays] = useState(["Seg", "Ter", "Qua", "Qui", "Sex"])
+
   const week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
   return (
@@ -1949,6 +2139,7 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           type="button"
           onClick={() => {
             authApi.logout()
+
             go("login")
           }}
         >
@@ -1965,26 +2156,35 @@ export default function App() {
   switch (screen) {
     case "landing":
       return <LandingPage onNavigate={(dest) => setScreen(dest)} />
+
     case "login":
       return <Login go={setScreen} />
+
     case "signup":
       return <Signup go={setScreen} />
+
     case "recovery":
       return <PasswordScreen go={setScreen} />
+
     case "reset":
       return <PasswordScreen reset go={setScreen} />
+
     case "course":
       return <Course go={setScreen} />
+
     case "start":
       return <StartChoice go={setScreen} />
+
     case "quiz":
       return <Quiz go={setScreen} />
+
     case "subjects":
       return <Subjects go={setScreen} />
     case "language":
       return <ForeignLanguage go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
+
     case "done":
       return <Done go={setScreen} />
   }
