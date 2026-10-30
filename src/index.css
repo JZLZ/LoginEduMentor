@@ -1604,6 +1604,35 @@ form {
   text-align: center;
 }
 
+.restarted-card {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.restarted-mascot {
+  display: flex;
+  justify-content: center;
+}
+
+.restarted-card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.restarted-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
 .info-strip {
   width: min(756px, 100%);
   margin: 0 auto;

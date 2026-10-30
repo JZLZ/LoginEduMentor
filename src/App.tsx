@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type {
   FormEvent,
   InputHTMLAttributes,
@@ -38,7 +38,7 @@ import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import TermsModal from "./TermsModal"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "goal" | "done"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -1986,7 +1986,7 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
     setErrorMessage(null)
     try {
       await onboardingApi.setForeignLanguage(language)
-      go("goal")
+      go("langquiz")
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error ? err.message : "Erro ao registrar a língua.",
@@ -2043,6 +2043,228 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
       >
         {saving ? "Salvando..." : "Continuar"}
       </button>
+    </OnboardingLayout>
+  )
+}
+
+function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [question, setQuestion] = useState<QuizQuestion | null>(null)
+  const [index, setIndex] = useState(1)
+  const [total, setTotal] = useState(5)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shownAt, setShownAt] = useState<number>(Date.now())
+
+  // Mantém o sessionId acessível aos listeners de interrupção (RN10).
+  const sessionRef = useRef<string | null>(null)
+  sessionRef.current = sessionId
+
+  // Lê a língua escolhida e inicia o nivelamento de língua (5 questões).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    onboardingApi
+      .getMe()
+      .then((profile) => {
+        if (!active) return
+        if (!profile.foreignLanguage) {
+          go("language")
+          return
+        }
+        return assessmentApi
+          .start("lingua", profile.foreignLanguage)
+          .then((data) => {
+            if (!active) return
+            setSessionId(data.sessionId)
+            setTotal(data.total)
+            setIndex(data.index)
+            setQuestion(data.question)
+            setShownAt(Date.now())
+          })
+      })
+      .catch((err: unknown) => {
+        if (active)
+          setErrorMessage(
+            err instanceof Error
+              ? err.message
+              : "Erro ao iniciar o nivelamento de língua.",
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [go])
+
+  // RN10 — interrupção: ao ocultar a aba ou recarregar, descarta a sessão.
+  useEffect(() => {
+    function handleInterrupt() {
+      const id = sessionRef.current
+      if (!id) return
+      try {
+        localStorage.setItem("sherlock_langquiz_interrupted", "1")
+      } catch {
+        // ignore
+      }
+      void assessmentApi.discard(id).catch(() => undefined)
+    }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") handleInterrupt()
+    }
+    window.addEventListener("beforeunload", handleInterrupt)
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => {
+      window.removeEventListener("beforeunload", handleInterrupt)
+      document.removeEventListener("visibilitychange", onVisibility)
+    }
+  }, [])
+
+  // Ao voltar à aba, se houve interrupção, encaminha para "recomeçou".
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== "visible") return
+      let interrupted = false
+      try {
+        interrupted =
+          localStorage.getItem("sherlock_langquiz_interrupted") === "1"
+      } catch {
+        // ignore
+      }
+      if (interrupted && sessionRef.current) {
+        try {
+          localStorage.removeItem("sherlock_langquiz_interrupted")
+        } catch {
+          // ignore
+        }
+        go("restarted")
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [go])
+
+  const isLast = index >= total
+
+  async function submit() {
+    if (!sessionId || !answer || submitting) return
+    setSubmitting(true)
+    setErrorMessage(null)
+    const elapsedMs = Date.now() - shownAt
+    try {
+      const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
+      if (res.finished) {
+        await assessmentApi.finish(sessionId)
+        go("goal")
+        return
+      }
+      setIndex(res.index)
+      setQuestion(res.question)
+      setAnswer(null)
+      setShownAt(Date.now())
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a resposta.",
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
+
+  return (
+    <OnboardingLayout step={2} back={() => go("language")}>
+      <div className="quiz-layout">
+        <section className="quiz-main">
+          {errorMessage && (
+            <div className="form-alert error" role="alert">
+              {errorMessage}
+            </div>
+          )}
+          {loading || !question ? (
+            <div className="question-card">Carregando questão...</div>
+          ) : (
+            <>
+              <div className="quiz-meta">
+                <span>Língua estrangeira</span>
+                <b>
+                  Questão {index} de {total}
+                </b>
+              </div>
+              <div className="progress-segments">
+                {progressSegments.map((n) => (
+                  <i className={n <= index ? "filled" : ""} key={n} />
+                ))}
+              </div>
+              <div className="question-card">{question.statement}</div>
+              <div className="answers">
+                {question.options.map(({ letter, text }) => (
+                  <button
+                    type="button"
+                    className={answer === letter ? "selected" : ""}
+                    onClick={() => setAnswer(letter)}
+                    key={letter}
+                  >
+                    <i>{letter}</i>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="primary-button quiz-next"
+                type="button"
+                disabled={!answer || submitting}
+                onClick={() => void submit()}
+              >
+                {submitting
+                  ? "Enviando..."
+                  : isLast
+                    ? "Finalizar"
+                    : "Próxima"}
+              </button>
+            </>
+          )}
+        </section>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
+  return (
+    <OnboardingLayout step={2} back={() => go("language")}>
+      <div className="restarted-card">
+        <div className="restarted-mascot" aria-hidden="true">
+          <MentorinaCursoAlvo size={120} />
+        </div>
+        <h1>Seu nivelamento recomeçou</h1>
+        <p>
+          Sem problema, acontece. Para o resultado ser justo, o nivelamento
+          recomeça com novas questões sempre que a tela é fechada, recarregada
+          ou perde o foco. Assim a Mentorina mede seu nível de verdade.
+        </p>
+        <div className="restarted-actions">
+          <button
+            className="primary-button narrow"
+            type="button"
+            onClick={() => go("langquiz")}
+          >
+            Recomeçar nivelamento
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => go("subjects")}
+          >
+            Prefiro escolher as matérias
+          </button>
+        </div>
+      </div>
     </OnboardingLayout>
   )
 }
@@ -2182,6 +2404,10 @@ export default function App() {
       return <Subjects go={setScreen} />
     case "language":
       return <ForeignLanguage go={setScreen} />
+    case "langquiz":
+      return <LanguageQuiz go={setScreen} />
+    case "restarted":
+      return <AssessmentRestarted go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
 

@@ -419,6 +419,14 @@ export const assessmentApi = {
     )
     return res.data
   },
+
+  /** Descarta a sessão (interrupção do nivelamento de língua — RN10). */
+  discard: async (sessionId: string): Promise<void> => {
+    await apiFetch<{ message: string; data: { status: string } }>(
+      `/assessment/${sessionId}/discard`,
+      { method: "POST" },
+    )
+  },
 }
 
 /**
