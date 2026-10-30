@@ -1250,6 +1250,15 @@ form {
   padding: 31px;
 }
 
+.choice-warning {
+  padding: 10px 12px;
+  background: var(--lavender);
+  border-radius: 10px;
+  color: var(--indigo);
+  font-size: 13px;
+  line-height: 18px;
+}
+
 .choice-card > div {
   min-height: 52px;
   display: flex;
@@ -1296,16 +1305,15 @@ form {
    ========================================================================== */
 
 .quiz-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 624px) 320px;
-  gap: 32px;
-  align-items: start;
+  display: flex;
+  justify-content: center;
 }
 
 .quiz-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: min(624px, 100%);
 }
 
 .quiz-meta {
@@ -1526,6 +1534,74 @@ form {
   font-style: normal;
   background: var(--indigo);
   border-radius: 999px;
+}
+
+.language-choice {
+  width: min(756px, 100%);
+  margin: 0 auto;
+}
+
+.language-choice-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--indigo);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.language-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.language-options button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.language-options button.selected {
+  border: 2px solid var(--indigo);
+  background: var(--lavender);
+}
+
+.language-options button > i {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--indigo);
+  min-height: 18px;
+}
+
+.language-options button span {
+  font-weight: 700;
+  color: var(--ink, #17152e);
+}
+
+.language-options button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.language-choice--wide {
+  width: min(560px, 100%);
+}
+
+.language-hint {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .info-strip {

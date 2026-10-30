@@ -27,17 +27,18 @@ import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de E
 
 import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png"
 import {
+  assessmentApi,
   authApi,
   coursesApi,
   onboardingApi,
   tokenStorage,
 } from "./services/api"
-import type { CourseOption } from "./services/api"
+import type { CourseOption, QuizQuestion } from "./services/api"
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import TermsModal from "./TermsModal"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "goal" | "done"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -1624,6 +1625,29 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 }
 
 function StartChoice({ go }: { go: (screen: Screen) => void }) {
+  const [saving, setSaving] = useState<"nivelamento" | "materias" | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // RN04/RN05: registra o modo de início e navega para a sub-tela.
+  async function choose(
+    mode: "nivelamento" | "materias",
+    destination: Screen,
+  ) {
+    if (saving) return
+    setSaving(mode)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setStartMode(mode)
+      go(destination)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao registrar a escolha."
+      setErrorMessage(message)
+    } finally {
+      setSaving(null)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("course")}>
       <div className="center-heading">
@@ -1633,6 +1657,11 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           trilha no seu ritmo.
         </p>
       </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <div className="choice-grid">
         <article className="choice-card recommended">
           <div>
@@ -1641,14 +1670,19 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           </div>
           <h2>Fazer o nivelamento</h2>
           <p>
-            6 questões · cerca de 10 min. Descubra o seu nível em cada área.
+            8 questões · cerca de 25 minutos. Descubra o seu nível em cada área.
+          </p>
+          <p className="choice-warning">
+            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+            assim sua trilha fica mais certeira.
           </p>
           <button
             className="primary-button"
             type="button"
-            onClick={() => go("quiz")}
+            disabled={saving !== null}
+            onClick={() => void choose("nivelamento", "quiz")}
           >
-            Fazer nivelamento
+            {saving === "nivelamento" ? "Salvando..." : "Fazer nivelamento"}
           </button>
         </article>
         <article className="choice-card">
@@ -1662,9 +1696,10 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
           <button
             className="secondary-button"
             type="button"
-            onClick={() => go("subjects")}
+            disabled={saving !== null}
+            onClick={() => void choose("materias", "subjects")}
           >
-            Escolher matérias
+            {saving === "materias" ? "Salvando..." : "Escolher matérias"}
           </button>
         </article>
       </div>
@@ -1672,83 +1707,134 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
   )
 }
 
-const QUIZ_ANSWERS = [
-  { letter: "A", text: "10%" },
-
-  { letter: "B", text: "15%" },
-
-  { letter: "C", text: "16,7%" },
-
-  { letter: "D", text: "20%" },
-
-  { letter: "E", text: "25%" },
-]
-
-const AREA_PROGRESS = [
-  { label: "Linguagens", value: 100 },
-
-  { label: "Humanas", value: 100 },
-
-  { label: "Natureza", value: 50 },
-
-  { label: "Matemática", value: 34 },
-
-  { label: "Redação", value: 4 },
-]
-
 function Quiz({ go }: { go: (screen: Screen) => void }) {
-  const [answer, setAnswer] = useState("C")
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [question, setQuestion] = useState<QuizQuestion | null>(null)
+  const [index, setIndex] = useState(1)
+  const [total, setTotal] = useState(8)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shownAt, setShownAt] = useState<number>(Date.now())
+
+  // Inicia o nivelamento geral ao montar (RN04).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    assessmentApi
+      .start("geral")
+      .then((data) => {
+        if (!active) return
+        setSessionId(data.sessionId)
+        setTotal(data.total)
+        setIndex(data.index)
+        setQuestion(data.question)
+        setShownAt(Date.now())
+      })
+      .catch((err: unknown) => {
+        if (active)
+          setErrorMessage(
+            err instanceof Error ? err.message : "Erro ao iniciar o nivelamento.",
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const isLast = index >= total
+
+  // Registra a resposta e avança (RN07) ou finaliza (RN08).
+  async function submit() {
+    if (!sessionId || !answer || submitting) return
+    setSubmitting(true)
+    setErrorMessage(null)
+    const elapsedMs = Date.now() - shownAt
+    try {
+      const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
+      if (res.finished) {
+        await assessmentApi.finish(sessionId)
+        // Guarda o id para a tela de resultado (fluxo seguinte).
+        try {
+          localStorage.setItem("sherlock_assessment_session", sessionId)
+        } catch {
+          // ignore
+        }
+        go("language")
+        return
+      }
+      setIndex(res.index)
+      setQuestion(res.question)
+      setAnswer(null)
+      setShownAt(Date.now())
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a resposta.",
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
 
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="quiz-layout">
         <section className="quiz-main">
-          <div className="quiz-meta">
-            <span>Matemática</span>
-            <b>Questão 3 de 6</b>
-          </div>
-          <div className="progress-segments">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <i className={n <= 3 ? "filled" : ""} key={n} />
-            ))}
-          </div>
-          <div className="question-card">
-            Uma loja vende camisetas por R$ 30,00 cada. Na promoção, quem leva 3
-            paga R$ 75,00. Qual é o desconto por camiseta, em porcentagem?
-          </div>
-          <div className="answers">
-            {QUIZ_ANSWERS.map(({ letter, text }) => (
-              <button
-                type="button"
-                className={answer === letter ? "selected" : ""}
-                onClick={() => setAnswer(letter)}
-                key={letter}
-              >
-                <i>{letter}</i>
-                {text}
-              </button>
-            ))}
-          </div>
-          <button
-            className="primary-button quiz-next"
-            type="button"
-            onClick={() => go("subjects")}
-          >
-            Próxima
-          </button>
-        </section>
-        <aside className="area-progress">
-          <h2>Progresso por área</h2>
-          {AREA_PROGRESS.map(({ label, value }) => (
-            <div key={label}>
-              <span>{label}</span>
-              <small>{value === 100 ? "Concluída" : `${value}%`}</small>
-              <i>
-                <b style={{ width: `${value}%` }} />
-              </i>
+          {errorMessage && (
+            <div className="form-alert error" role="alert">
+              {errorMessage}
             </div>
-          ))}
-        </aside>
+          )}
+          {loading || !question ? (
+            <div className="question-card">Carregando questão...</div>
+          ) : (
+            <>
+              <div className="quiz-meta">
+                <span>{question.area}</span>
+                <b>
+                  Questão {index} de {total}
+                </b>
+              </div>
+              <div className="progress-segments">
+                {progressSegments.map((n) => (
+                  <i className={n <= index ? "filled" : ""} key={n} />
+                ))}
+              </div>
+              <div className="question-card">{question.statement}</div>
+              <div className="answers">
+                {question.options.map(({ letter, text }) => (
+                  <button
+                    type="button"
+                    className={answer === letter ? "selected" : ""}
+                    onClick={() => setAnswer(letter)}
+                    key={letter}
+                  >
+                    <i>{letter}</i>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="primary-button quiz-next"
+                type="button"
+                disabled={!answer || submitting}
+                onClick={() => void submit()}
+              >
+                {submitting
+                  ? "Enviando..."
+                  : isLast
+                    ? "Finalizar"
+                    : "Próxima"}
+              </button>
+            </>
+          )}
+        </section>
       </div>
     </OnboardingLayout>
   )
@@ -1767,11 +1853,10 @@ const SUBJECT_LIST = [
 ]
 
 function Subjects({ go }: { go: (screen: Screen) => void }) {
-  const [selected, setSelected] = useState([
-    "Matemática",
-
-    "Ciências da Natureza",
-  ])
+  const [selected, setSelected] = useState<string[]>([])
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function toggle(subject: string) {
     setSelected((items) =>
@@ -1781,12 +1866,40 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
     )
   }
 
+  // RN04: habilita só com >=1 matéria e 1 língua.
+  const canContinue = selected.length > 0 && language !== null
+
+  // RN05: registra as escolhas e segue para a próxima etapa (língua estrangeira).
+  async function handleContinue() {
+    if (!canContinue || !language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setSubjects({
+        subjects: selected,
+        foreignLanguage: language,
+      })
+      go("language")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar as matérias.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="center-heading">
         <h1>Quais matérias você quer focar?</h1>
-        <p>Selecione uma ou mais. A IA gera uma trilha para cada matéria.</p>
+        <p>Selecione uma ou mais matérias e a sua língua estrangeira.</p>
       </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <div className="subject-grid">
         {SUBJECT_LIST.map((subject, index) => {
           const isSelected = selected.includes(subject)
@@ -1806,6 +1919,29 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
           )
         })}
       </div>
+      <div className="language-choice">
+        <span className="language-choice-label">Língua estrangeira</span>
+        <div className="language-options">
+          {(
+            [
+              { id: "ingles", label: "Inglês" },
+              { id: "espanhol", label: "Espanhol" },
+            ] as const
+          ).map((opt) => (
+            <button
+              type="button"
+              className={language === opt.id ? "selected" : ""}
+              aria-pressed={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
+            >
+              <i>{language === opt.id ? "✓" : ""}</i>
+              <span>{opt.label}</span>
+              <small>5 questões na prova de Linguagens</small>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="info-strip">
         ⓘ Uma trilha por vez: termine uma para liberar a próxima. A ordem da
         seleção define a prioridade.
@@ -1813,10 +1949,99 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       <button
         className="primary-button narrow"
         type="button"
-        disabled={!selected.length}
-        onClick={() => go("goal")}
+        disabled={!canContinue || saving}
+        onClick={() => void handleContinue()}
       >
-        Continuar
+        {saving ? "Salvando..." : "Continuar"}
+      </button>
+    </OnboardingLayout>
+  )
+}
+
+function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Pré-seleciona a língua já escolhida (ex.: vinda da Tela 03c).
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.foreignLanguage) setLanguage(data.foreignLanguage)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // RN04: registra e segue para Gerando trilha (enquanto 05 não existe, vai para goal).
+  async function handleContinue() {
+    if (!language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setForeignLanguage(language)
+      go("goal")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a língua.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <OnboardingLayout step={2} back={() => go("subjects")}>
+      <div className="center-heading">
+        <h1>Qual língua estrangeira você vai fazer?</h1>
+        <p>
+          No ENEM você escolhe uma delas. A Mentorina coloca essa língua na sua
+          trilha de Linguagens.
+        </p>
+      </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
+      <div className="language-choice language-choice--wide">
+        <div className="language-options">
+          {(
+            [
+              { id: "ingles", label: "Inglês" },
+              { id: "espanhol", label: "Espanhol" },
+            ] as const
+          ).map((opt) => (
+            <button
+              type="button"
+              className={language === opt.id ? "selected" : ""}
+              aria-pressed={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
+            >
+              <i>{language === opt.id ? "✓" : ""}</i>
+              <span>{opt.label}</span>
+              <small>5 questões na prova de Linguagens</small>
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="language-hint">
+        Dá para trocar depois em Perfil › Língua estrangeira.
+      </p>
+      <button
+        className="primary-button narrow"
+        type="button"
+        disabled={!language || saving}
+        onClick={() => void handleContinue()}
+      >
+        {saving ? "Salvando..." : "Continuar"}
       </button>
     </OnboardingLayout>
   )
@@ -1955,7 +2180,8 @@ export default function App() {
 
     case "subjects":
       return <Subjects go={setScreen} />
-
+    case "language":
+      return <ForeignLanguage go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
 
