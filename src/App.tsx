@@ -1630,83 +1630,97 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 }
 
 function StartChoice({ go }: { go: (screen: Screen) => void }) {
-  const [saving, setSaving] = useState<"nivelamento" | "materias" | null>(null)
+  const [choice, setChoice] = useState<"nivelamento" | "materias" | null>(null)
+  const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // RN04/RN05: registra o modo de início e navega para a sub-tela.
-  async function choose(
-    mode: "nivelamento" | "materias",
-    destination: Screen,
-  ) {
-    if (saving) return
-    setSaving(mode)
+  async function handleContinue() {
+    if (!choice || saving) return
+    setSaving(true)
     setErrorMessage(null)
     try {
-      await onboardingApi.setStartMode(mode)
-      go(destination)
+      await onboardingApi.setStartMode(choice)
+      go(choice === "nivelamento" ? "quiz" : "subjects")
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao registrar a escolha."
       setErrorMessage(message)
     } finally {
-      setSaving(null)
+      setSaving(false)
     }
   }
 
   return (
     <OnboardingLayout step={2} back={() => go("course")}>
-      <div className="center-heading">
-        <h1>Como você quer começar?</h1>
-        <p>
+      <div className="start-choice">
+        <div className="start-choice-mascot" aria-hidden="true">
+          <Mascot pose="lendo" size={140} />
+        </div>
+        <h1 className="start-choice-title">Como você quer começar?</h1>
+        <p className="start-choice-subtitle">
           O nivelamento mostra seu nível em cada área e ajuda a IA a montar uma
           trilha no seu ritmo.
         </p>
-      </div>
-      {errorMessage && (
-        <div className="form-alert error" role="alert">
-          {errorMessage}
+
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="start-choice-options" role="radiogroup">
+          <button
+            type="button"
+            className={`start-option${choice === "nivelamento" ? " selected" : ""}`}
+            role="radio"
+            aria-checked={choice === "nivelamento"}
+            onClick={() => setChoice("nivelamento")}
+          >
+            <span className="start-option-radio" aria-hidden="true" />
+            <span className="start-option-body">
+              <span className="start-option-head">
+                <strong>Fazer o nivelamento</strong>
+                <em className="start-option-badge">Recomendado</em>
+              </span>
+              <span className="start-option-text">
+                8 questões · cerca de 25 minutos. Descubra o seu nível em cada
+                área.
+              </span>
+              <span className="start-option-warning">
+                Responda sem consultar: a Mentorina percebe chutes e pesquisas.
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`start-option${choice === "materias" ? " selected" : ""}`}
+            role="radio"
+            aria-checked={choice === "materias"}
+            onClick={() => setChoice("materias")}
+          >
+            <span className="start-option-radio" aria-hidden="true" />
+            <span className="start-option-body">
+              <span className="start-option-head">
+                <strong>Escolher as matérias</strong>
+              </span>
+              <span className="start-option-text">
+                Você escolhe as matérias que quer focar e a IA gera a trilha
+                delas.
+              </span>
+            </span>
+          </button>
         </div>
-      )}
-      <div className="choice-grid">
-        <article className="choice-card recommended">
-          <div>
-            <i>◎</i>
-            <span>Recomendado</span>
-          </div>
-          <h2>Fazer o nivelamento</h2>
-          <p>
-            8 questões · cerca de 25 minutos. Descubra o seu nível em cada área.
-          </p>
-          <p className="choice-warning">
-            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
-            assim sua trilha fica mais certeira.
-          </p>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={saving !== null}
-            onClick={() => void choose("nivelamento", "quiz")}
-          >
-            {saving === "nivelamento" ? "Salvando..." : "Fazer nivelamento"}
-          </button>
-        </article>
-        <article className="choice-card">
-          <div>
-            <i>▤</i>
-          </div>
-          <h2>Escolher as matérias</h2>
-          <p>
-            Você escolhe as matérias que quer focar e a IA gera a trilha delas.
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={saving !== null}
-            onClick={() => void choose("materias", "subjects")}
-          >
-            {saving === "materias" ? "Salvando..." : "Escolher matérias"}
-          </button>
-        </article>
+
+        <button
+          className="primary-button narrow"
+          type="button"
+          disabled={!choice || saving}
+          onClick={() => void handleContinue()}
+        >
+          {saving ? "Salvando..." : "Continuar"}
+        </button>
       </div>
     </OnboardingLayout>
   )

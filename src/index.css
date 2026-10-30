@@ -1301,6 +1301,134 @@ form {
 }
 
 /* ==========================================================================
+   Step 2: Como começar (radio-card layout, fiel ao Figma)
+   ========================================================================== */
+
+.start-choice {
+  width: min(836px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.start-choice-mascot {
+  display: flex;
+  justify-content: center;
+}
+
+.start-choice-title {
+  margin: 4px 0 0;
+}
+
+.start-choice-subtitle {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.start-choice-options {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 8px 0 0;
+}
+
+.start-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px;
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid #ff6b57;
+  border-radius: 20px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.start-option:hover {
+  box-shadow: 0 8px 20px rgba(23, 21, 46, 0.08);
+}
+
+.start-option.selected {
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px rgba(79, 60, 240, 0.15);
+}
+
+.start-option-radio {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  position: relative;
+}
+
+.start-option.selected .start-option-radio {
+  border-color: var(--indigo);
+}
+
+.start-option.selected .start-option-radio::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: var(--indigo);
+}
+
+.start-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.start-option-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.start-option-head strong {
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.start-option-badge {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--lime);
+  border-radius: 999px;
+}
+
+.start-option-text {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.start-option-warning {
+  color: #ff6b57;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* ==========================================================================
    Step 2a: Quiz
    ========================================================================== */
 
@@ -2216,6 +2344,7 @@ form {
   .field-row,
   .course-fields,
   .choice-grid,
+  .start-choice-options,
   .subject-grid,
   .modal-actions {
     grid-template-columns: 1fr;
