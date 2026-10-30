@@ -42,6 +42,7 @@ import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import MentorinaPensando from "./components/MentorinaPensando"
 import MentorinaLendo from "./components/MentorinaLendo"
+// MentorinaLendo também é usado na tela "nivelamento recomeçou" (mascote oficial).
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -2307,41 +2308,36 @@ function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("language")}>
       <div className="restarted-wrap">
         <div className="restarted-mascot" aria-hidden="true">
-          <Mascot pose="interrogacao" size={150} />
+          <MentorinaLendo size={150} />
         </div>
         <h1 className="restarted-title">Seu nivelamento recomeçou</h1>
         <p className="restarted-subtitle">
-          Sem problema, acontece. Vamos fazer de novo, com um novo conjunto de
-          questões.
+          Sem problema: acontece. Vamos fazer de novo com calma.
         </p>
 
         <div className="restarted-card">
           <div className="restarted-block">
             <h2>Por que recomeçou?</h2>
             <p>
-              Para o resultado ser justo, o nivelamento reinicia sempre que a
-              tela é fechada, recarregada ou perde o foco. Assim evitamos
-              consultas e medimos seu nível de verdade.
+              Você saiu da tela ou a conexão caiu durante o nivelamento. Para o
+              seu resultado ser justo, ele volta do zero.
             </p>
           </div>
 
           <div className="restarted-block">
             <h2>O que muda?</h2>
             <p>
-              Você responde novas questões equivalentes, no mesmo formato e com
-              a mesma dificuldade. Nada do seu progresso anterior é perdido.
+              Você recebe 8 novas questões, de novo 2 fáceis, 3 médias e 3
+              difíceis, misturando as áreas.
             </p>
           </div>
+        </div>
 
-          <div className="restarted-tip">
-            <div className="restarted-tip-mascot" aria-hidden="true">
-              <Mascot pose="pensando" size={56} />
-            </div>
-            <p>
-              <strong>Dica da Mentorina:</strong> reserve alguns minutos sem
-              interrupções e responda com calma. É rapidinho e vale a pena.
-            </p>
-          </div>
+        <div className="restarted-tip">
+          <p>
+            <strong>Dica da Mentorina:</strong> reserve cerca de 25 minutos, com
+            boa conexão, e responda sem sair da tela.
+          </p>
         </div>
 
         <div className="restarted-actions">
