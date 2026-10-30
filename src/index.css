@@ -1926,7 +1926,7 @@ form {
 
 /* Tela 06 — Resultado do nivelamento */
 .result-card {
-  width: min(560px, 100%);
+  width: min(836px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1936,22 +1936,36 @@ form {
 }
 
 .result-counts {
-  display: flex;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
   gap: 16px;
+  align-items: stretch;
 }
 
 .result-count {
-  min-width: 120px;
-  padding: 16px 20px;
+  padding: 20px 24px;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.result-count-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .result-count strong {
-  font-size: 32px;
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 36px;
   line-height: 1;
 }
 
@@ -1960,67 +1974,66 @@ form {
   font-size: 13px;
 }
 
-.result-count--ok {
-  background: #e3f5ec;
+.result-count-ok {
+  color: var(--indigo);
 }
 
-.result-count--ok strong {
-  color: #137a51;
-}
-
-.result-count--err {
-  background: #fdecea;
-}
-
-.result-count--err strong {
-  color: #c0392b;
+.result-count-err {
+  color: #ff6b57;
 }
 
 .result-level {
-  width: 100%;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  padding: 20px 24px;
   border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  background: var(--ink);
 }
 
 .result-level-label {
-  display: block;
-  margin-bottom: 10px;
-  color: var(--indigo);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--lime);
+}
+
+.result-level-name {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: #ffffff;
 }
 
 .result-level-badges {
   display: flex;
-  justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
 .result-level-badges b {
-  padding: 7px 16px;
-  font-size: 13px;
+  padding: 5px 14px;
+  font-size: 12px;
   font-weight: 700;
-  background: var(--lavender);
-  color: var(--indigo);
+  background: #333052;
+  color: #ffffff;
   border-radius: 999px;
-  opacity: 0.5;
 }
 
 .result-level-badges b.active {
-  background: var(--indigo);
-  color: white;
-  opacity: 1;
+  background: var(--lime);
+  color: var(--ink);
 }
 
 .result-level-note {
-  margin-top: 12px;
+  margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .info-strip {
@@ -2400,6 +2413,7 @@ form {
   .language-options,
   .goal-options,
   .subject-grid,
+  .result-counts,
   .modal-actions {
     grid-template-columns: 1fr;
   }

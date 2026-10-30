@@ -2468,47 +2468,54 @@ function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("goal")}>
       <div className="result-card">
         <div className="result-mascot" aria-hidden="true">
-          <MentorinaCursoAlvo size={130} />
+          <MentorinaComemorando size={130} />
         </div>
-        <h1>Seu nivelamento está pronto!</h1>
-        {loading ? (
-          <p>Calculando seu resultado...</p>
-        ) : result ? (
-          <>
+        <div className="center-heading">
+          <h1>Seu nivelamento está pronto!</h1>
+          {loading ? (
+            <p>Calculando seu resultado...</p>
+          ) : result ? (
             <p>Veja como você foi nas {result.total} questões.</p>
+          ) : (
+            <p>
+              Não encontramos um nivelamento recente. Você pode seguir e
+              ajustar sua trilha pela meta semanal.
+            </p>
+          )}
+        </div>
+
+        {!loading && result && (
+          <>
             <div className="result-counts">
-              <div className="result-count result-count--ok">
-                <strong>{result.correct}</strong>
-                <small>acertos</small>
+              <div className="result-count">
+                <span className="result-count-label">Acertos</span>
+                <strong className="result-count-ok">{result.correct}</strong>
+                <small>de {result.total} questões</small>
               </div>
-              <div className="result-count result-count--err">
-                <strong>{result.wrong}</strong>
-                <small>erros</small>
+              <div className="result-count">
+                <span className="result-count-label">Erros</span>
+                <strong className="result-count-err">{result.wrong}</strong>
+                <small>de {result.total} questões</small>
+              </div>
+              <div className="result-level">
+                <span className="result-level-label">Seu nível</span>
+                <strong className="result-level-name">{level}</strong>
+                <div className="result-level-badges">
+                  {levels.map((lv) => (
+                    <b className={lv === level ? "active" : ""} key={lv}>
+                      {lv}
+                    </b>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="result-level">
-              <span className="result-level-label">Seu nível</span>
-              <div className="result-level-badges">
-                {levels.map((lv) => (
-                  <b
-                    className={lv === level ? "active" : ""}
-                    key={lv}
-                  >
-                    {lv}
-                  </b>
-                ))}
-              </div>
-              <p className="result-level-note">
-                Sua trilha começa pelos tópicos em que você mais precisa evoluir.
-              </p>
-            </div>
+            <p className="result-level-note">
+              Sua trilha começa pelos tópicos em que você mais errou e já está
+              pronta na sua Home.
+            </p>
           </>
-        ) : (
-          <p>
-            Não encontramos um nivelamento recente. Você pode seguir e ajustar
-            sua trilha pela meta semanal.
-          </p>
         )}
+
         <button
           className="primary-button narrow"
           type="button"
