@@ -42,6 +42,7 @@ import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import MentorinaPensando from "./components/MentorinaPensando"
 import MentorinaLendo from "./components/MentorinaLendo"
+import MentorinaComemorando from "./components/MentorinaComemorando"
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -2387,6 +2388,9 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
   return (
     <OnboardingLayout step={2} back={() => go("goal")}>
       <div className="generating-card">
+        <div className="generating-mascot" aria-hidden="true">
+          <MentorinaComemorando size={150} />
+        </div>
         <div className="center-heading">
           <h1>A Mentorina está montando sua trilha</h1>
           <p>Isso leva só alguns segundos. Não feche esta tela.</p>
