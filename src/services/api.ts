@@ -493,6 +493,45 @@ export const onboardingApi = {
     return res.data
   },
 
+  /** Registra a meta semanal de estudo em dias (3, 5 ou 7). */
+  setWeeklyGoal: async (
+    days: 3 | 5 | 7,
+  ): Promise<{ weeklyGoalDays: 3 | 5 | 7 | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { weeklyGoalDays: 3 | 5 | 7 | null }
+    }>("/onboarding/weekly-goal", {
+      method: "PUT",
+      body: JSON.stringify({ days }),
+    })
+    return res.data
+  },
+
+  /**
+   * Conclui o onboarding (Tela final). Opcionalmente informa o id da sessão
+   * de nivelamento para o backend derivar e gravar o nível apurado.
+   */
+  complete: async (
+    assessmentSessionId?: string,
+  ): Promise<{
+    completed: boolean
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: {
+        completed: boolean
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+      }
+    }>("/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(
+        assessmentSessionId ? { assessmentSessionId } : {},
+      ),
+    })
+    return res.data
+  },
+
   /** Retorna o perfil de onboarding (para pré-seleção). */
   getMe: async (): Promise<{
     targetCourseId: string | null
@@ -500,6 +539,9 @@ export const onboardingApi = {
     startMode: "nivelamento" | "materias" | null
     subjects: string[]
     foreignLanguage: "ingles" | "espanhol" | null
+    weeklyGoalDays: 3 | 5 | 7 | null
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+    completed: boolean
   }> => {
     const res = await apiFetch<{
       message: string
@@ -509,6 +551,9 @@ export const onboardingApi = {
         startMode: "nivelamento" | "materias" | null
         subjects: string[]
         foreignLanguage: "ingles" | "espanhol" | null
+        weeklyGoalDays: 3 | 5 | 7 | null
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+        completed: boolean
       }
     }>("/onboarding/me", { method: "GET" })
     return res.data

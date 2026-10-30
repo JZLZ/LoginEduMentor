@@ -40,6 +40,9 @@ import type {
 } from "./services/api"
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
+import MentorinaPensando from "./components/MentorinaPensando"
+import MentorinaLendo from "./components/MentorinaLendo"
+import MentorinaComemorando from "./components/MentorinaComemorando"
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -1634,79 +1637,109 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // RN04/RN05: registra o modo de início e navega para a sub-tela.
-  async function choose(
-    mode: "nivelamento" | "materias",
-    destination: Screen,
-  ) {
+  // Cada card dispara o próprio CTA: persiste o modo e navega.
+  async function choose(mode: "nivelamento" | "materias") {
     if (saving) return
     setSaving(mode)
     setErrorMessage(null)
     try {
       await onboardingApi.setStartMode(mode)
-      go(destination)
+      go(mode === "nivelamento" ? "quiz" : "subjects")
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao registrar a escolha."
       setErrorMessage(message)
-    } finally {
       setSaving(null)
     }
   }
 
   return (
     <OnboardingLayout step={2} back={() => go("course")}>
-      <div className="center-heading">
-        <h1>Como você quer começar?</h1>
-        <p>
-          O nivelamento mostra seu nível em cada área e ajuda a IA a montar uma
-          trilha no seu ritmo.
-        </p>
-      </div>
-      {errorMessage && (
-        <div className="form-alert error" role="alert">
-          {errorMessage}
+      <div className="start-choice">
+        <div className="start-choice-mascot" aria-hidden="true">
+          <MentorinaPensando size={160} />
         </div>
-      )}
-      <div className="choice-grid">
-        <article className="choice-card recommended">
-          <div>
-            <i>◎</i>
-            <span>Recomendado</span>
+        <h1 className="start-choice-title">Como você quer começar?</h1>
+        <p className="start-choice-subtitle">
+          Escolha como prefere montar sua trilha de estudos. Dá para mudar essa
+          decisão depois no seu perfil.
+        </p>
+
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
           </div>
-          <h2>Fazer o nivelamento</h2>
-          <p>
-            8 questões · cerca de 25 minutos. Descubra o seu nível em cada área.
-          </p>
-          <p className="choice-warning">
-            Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
-            assim sua trilha fica mais certeira.
-          </p>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={saving !== null}
-            onClick={() => void choose("nivelamento", "quiz")}
-          >
-            {saving === "nivelamento" ? "Salvando..." : "Fazer nivelamento"}
-          </button>
-        </article>
-        <article className="choice-card">
-          <div>
-            <i>▤</i>
-          </div>
-          <h2>Escolher as matérias</h2>
-          <p>
-            Você escolhe as matérias que quer focar e a IA gera a trilha delas.
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={saving !== null}
-            onClick={() => void choose("materias", "subjects")}
-          >
-            {saving === "materias" ? "Salvando..." : "Escolher matérias"}
-          </button>
-        </article>
+        )}
+
+        <div className="start-choice-options">
+          <article className="start-card start-card--recommended">
+            <span className="start-card-icon start-card-icon--indigo" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="4.5" />
+                <circle cx="12" cy="12" r="1" fill="#ffffff" stroke="none" />
+              </svg>
+            </span>
+            <span className="start-card-badge">Recomendado</span>
+            <h2 className="start-card-title">Fazer o nivelamento rápido</h2>
+            <p className="start-card-text">
+              8 questões · cerca de 25 minutos. A IA descobre seu nível em cada
+              área e monta uma trilha no seu ritmo.
+            </p>
+            <p className="start-card-info">
+              Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+              assim sua trilha fica mais certeira.
+            </p>
+            <button
+              className="primary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("nivelamento")}
+            >
+              {saving === "nivelamento" ? "Salvando..." : "Começar nivelamento"}
+            </button>
+          </article>
+
+          <article className="start-card">
+            <span className="start-card-icon start-card-icon--lavender" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#4f3cf0"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 6.5c-1.8-1.2-4-1.5-6-1.5v12c2 0 4.2.3 6 1.5 1.8-1.2 4-1.5 6-1.5V5c-2 0-4.2.3-6 1.5Z" />
+                <path d="M12 6.5V18" />
+              </svg>
+            </span>
+            <h2 className="start-card-title">Escolher as matérias</h2>
+            <p className="start-card-text">
+              Você escolhe as matérias que quer focar e a IA gera a trilha
+              delas, sem o nivelamento.
+            </p>
+            <button
+              className="secondary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("materias")}
+            >
+              {saving === "materias" ? "Salvando..." : "Escolher matérias"}
+            </button>
+          </article>
+        </div>
       </div>
     </OnboardingLayout>
   )
@@ -1785,8 +1818,6 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
     }
   }
 
-  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
-
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="quiz-layout">
@@ -1806,9 +1837,19 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
                   Questão {index} de {total}
                 </b>
               </div>
-              <div className="progress-segments">
-                {progressSegments.map((n) => (
-                  <i className={n <= index ? "filled" : ""} key={n} />
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
                 ))}
               </div>
               <div className="question-card">{question.statement}</div>
@@ -2003,6 +2044,9 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
 
   return (
     <OnboardingLayout step={2} back={() => go("subjects")}>
+      <div className="language-mascot" aria-hidden="true">
+        <MentorinaLendo size={150} />
+      </div>
       <div className="center-heading">
         <h1>Qual língua estrangeira você vai fazer?</h1>
         <p>
@@ -2016,23 +2060,26 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
         </div>
       )}
       <div className="language-choice language-choice--wide">
-        <div className="language-options">
+        <div className="language-options" role="radiogroup">
           {(
             [
-              { id: "ingles", label: "Inglês" },
-              { id: "espanhol", label: "Espanhol" },
+              { id: "ingles", label: "Inglês", desc: "5 questões de inglês na prova de Linguagens" },
+              { id: "espanhol", label: "Espanhol", desc: "5 questões de espanhol na prova de Linguagens" },
             ] as const
           ).map((opt) => (
             <button
               type="button"
-              className={language === opt.id ? "selected" : ""}
-              aria-pressed={language === opt.id}
+              className={`language-option${language === opt.id ? " selected" : ""}`}
+              role="radio"
+              aria-checked={language === opt.id}
               onClick={() => setLanguage(opt.id)}
               key={opt.id}
             >
-              <i>{language === opt.id ? "✓" : ""}</i>
-              <span>{opt.label}</span>
-              <small>5 questões na prova de Linguagens</small>
+              <span className="language-option-radio" aria-hidden="true" />
+              <span className="language-option-body">
+                <strong>{opt.label}</strong>
+                <small>{opt.desc}</small>
+              </span>
             </button>
           ))}
         </div>
@@ -2185,8 +2232,6 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
     }
   }
 
-  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
-
   return (
     <OnboardingLayout step={2} back={() => go("language")}>
       <div className="quiz-layout">
@@ -2206,9 +2251,19 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
                   Questão {index} de {total}
                 </b>
               </div>
-              <div className="progress-segments">
-                {progressSegments.map((n) => (
-                  <i className={n <= index ? "filled" : ""} key={n} />
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
                 ))}
               </div>
               <div className="question-card">{question.statement}</div>
@@ -2250,41 +2305,36 @@ function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("language")}>
       <div className="restarted-wrap">
         <div className="restarted-mascot" aria-hidden="true">
-          <Mascot pose="interrogacao" size={150} />
+          <MentorinaPensando size={150} />
         </div>
         <h1 className="restarted-title">Seu nivelamento recomeçou</h1>
         <p className="restarted-subtitle">
-          Sem problema, acontece. Vamos fazer de novo, com um novo conjunto de
-          questões.
+          Sem problema: acontece. Vamos fazer de novo com calma.
         </p>
 
         <div className="restarted-card">
           <div className="restarted-block">
             <h2>Por que recomeçou?</h2>
             <p>
-              Para o resultado ser justo, o nivelamento reinicia sempre que a
-              tela é fechada, recarregada ou perde o foco. Assim evitamos
-              consultas e medimos seu nível de verdade.
+              Você saiu da tela ou a conexão caiu durante o nivelamento. Para o
+              seu resultado ser justo, ele volta do zero.
             </p>
           </div>
 
           <div className="restarted-block">
             <h2>O que muda?</h2>
             <p>
-              Você responde novas questões equivalentes, no mesmo formato e com
-              a mesma dificuldade. Nada do seu progresso anterior é perdido.
+              Você recebe 8 novas questões, de novo 2 fáceis, 3 médias e 3
+              difíceis, misturando as áreas.
             </p>
           </div>
+        </div>
 
-          <div className="restarted-tip">
-            <div className="restarted-tip-mascot" aria-hidden="true">
-              <Mascot pose="pensando" size={56} />
-            </div>
-            <p>
-              <strong>Dica da Mentorina:</strong> reserve alguns minutos sem
-              interrupções e responda com calma. É rapidinho e vale a pena.
-            </p>
-          </div>
+        <div className="restarted-tip">
+          <p>
+            <strong>Dica da Mentorina:</strong> reserve cerca de 25 minutos, com
+            boa conexão, e responda sem sair da tela.
+          </p>
         </div>
 
         <div className="restarted-actions">
@@ -2335,18 +2385,15 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
     }
   }, [go])
 
-  const percent = Math.round((step / GENERATING_STEPS.length) * 100)
-
   return (
     <OnboardingLayout step={2} back={() => go("goal")}>
       <div className="generating-card">
         <div className="generating-mascot" aria-hidden="true">
-          <MentorinaCursoAlvo size={140} />
+          <MentorinaComemorando size={150} />
         </div>
-        <h1>A Mentorina está montando sua trilha</h1>
-        <p>Isso leva só alguns segundos. Não feche esta tela.</p>
-        <div className="generating-progress" aria-hidden="true">
-          <b style={{ width: `${percent}%` }} />
+        <div className="center-heading">
+          <h1>A Mentorina está montando sua trilha</h1>
+          <p>Isso leva só alguns segundos. Não feche esta tela.</p>
         </div>
         <ul className="generating-steps">
           {GENERATING_STEPS.map((label, i) => {
@@ -2354,7 +2401,22 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
               i < step ? "done" : i === step ? "active" : "pending"
             return (
               <li className={`generating-step ${state}`} key={label}>
-                <i>{i < step ? "✓" : i === step ? "●" : "○"}</i>
+                <span className="generating-step-icon" aria-hidden="true">
+                  {state === "done" ? (
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  ) : null}
+                </span>
                 <span>{label}</span>
               </li>
             )
@@ -2406,47 +2468,54 @@ function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("goal")}>
       <div className="result-card">
         <div className="result-mascot" aria-hidden="true">
-          <MentorinaCursoAlvo size={130} />
+          <MentorinaComemorando size={130} />
         </div>
-        <h1>Seu nivelamento está pronto!</h1>
-        {loading ? (
-          <p>Calculando seu resultado...</p>
-        ) : result ? (
-          <>
+        <div className="center-heading">
+          <h1>Seu nivelamento está pronto!</h1>
+          {loading ? (
+            <p>Calculando seu resultado...</p>
+          ) : result ? (
             <p>Veja como você foi nas {result.total} questões.</p>
+          ) : (
+            <p>
+              Não encontramos um nivelamento recente. Você pode seguir e
+              ajustar sua trilha pela meta semanal.
+            </p>
+          )}
+        </div>
+
+        {!loading && result && (
+          <>
             <div className="result-counts">
-              <div className="result-count result-count--ok">
-                <strong>{result.correct}</strong>
-                <small>acertos</small>
+              <div className="result-count">
+                <span className="result-count-label">Acertos</span>
+                <strong className="result-count-ok">{result.correct}</strong>
+                <small>de {result.total} questões</small>
               </div>
-              <div className="result-count result-count--err">
-                <strong>{result.wrong}</strong>
-                <small>erros</small>
+              <div className="result-count">
+                <span className="result-count-label">Erros</span>
+                <strong className="result-count-err">{result.wrong}</strong>
+                <small>de {result.total} questões</small>
+              </div>
+              <div className="result-level">
+                <span className="result-level-label">Seu nível</span>
+                <strong className="result-level-name">{level}</strong>
+                <div className="result-level-badges">
+                  {levels.map((lv) => (
+                    <b className={lv === level ? "active" : ""} key={lv}>
+                      {lv}
+                    </b>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="result-level">
-              <span className="result-level-label">Seu nível</span>
-              <div className="result-level-badges">
-                {levels.map((lv) => (
-                  <b
-                    className={lv === level ? "active" : ""}
-                    key={lv}
-                  >
-                    {lv}
-                  </b>
-                ))}
-              </div>
-              <p className="result-level-note">
-                Sua trilha começa pelos tópicos em que você mais precisa evoluir.
-              </p>
-            </div>
+            <p className="result-level-note">
+              Sua trilha começa pelos tópicos em que você mais errou e já está
+              pronta na sua Home.
+            </p>
           </>
-        ) : (
-          <p>
-            Não encontramos um nivelamento recente. Você pode seguir e ajustar
-            sua trilha pela meta semanal.
-          </p>
         )}
+
         <button
           className="primary-button narrow"
           type="button"
@@ -2459,79 +2528,141 @@ function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
   )
 }
 
+const GOAL_OPTIONS = [
+  {
+    days: 3,
+    title: "Leve",
+    description: "3 dias por semana. Ritmo tranquilo para encaixar na rotina.",
+    accent: "indigo" as const,
+  },
+  {
+    days: 5,
+    title: "Ideal",
+    description:
+      "5 dias por semana. O equilíbrio que a Mentorina recomenda para evoluir.",
+    accent: "lime" as const,
+    recommended: true,
+    tags: ["Ideal", "Mais escolhido"],
+  },
+  {
+    days: 7,
+    title: "Intenso",
+    description: "7 dias por semana. Para quem quer acelerar a preparação.",
+    accent: "coral" as const,
+  },
+]
+
 function Goal({ go }: { go: (screen: Screen) => void }) {
-  const [hours, setHours] = useState(25)
+  const [selected, setSelected] = useState<3 | 5 | 7>(5)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [days, setDays] = useState(["Seg", "Ter", "Qua", "Qui", "Sex"])
+  // Pré-seleciona a meta semanal já registrada no perfil, se houver.
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.weeklyGoalDays) setSelected(data.weeklyGoalDays)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
-  const week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+  // Persiste a meta semanal e conclui o onboarding no backend. O nível é
+  // derivado no servidor a partir da sessão de nivelamento (quando houver).
+  async function handleContinue() {
+    if (saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setWeeklyGoal(selected)
+      let assessmentSessionId: string | undefined
+      try {
+        assessmentSessionId =
+          localStorage.getItem("sherlock_assessment_session") ?? undefined
+      } catch {
+        assessmentSessionId = undefined
+      }
+      await onboardingApi.complete(assessmentSessionId)
+      go("done")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Erro ao concluir o onboarding.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <OnboardingLayout step={3} back={() => go("subjects")}>
-      <div className="center-heading">
-        <h1>Quanto você quer estudar por semana?</h1>
-        <p>Dá para mudar depois no seu perfil.</p>
-      </div>
-      <div className="goal-grid">
-        <section className="goal-card">
-          <div className="hours-control">
-            <button
-              type="button"
-              aria-label="Diminuir horas"
-              onClick={() => setHours(Math.max(5, hours - 5))}
-            >
-              −
-            </button>
-            <span>
-              <strong>{hours}</strong>
-              <small>horas por semana</small>
-            </span>
-            <button
-              type="button"
-              aria-label="Aumentar horas"
-              onClick={() => setHours(Math.min(50, hours + 5))}
-            >
-              +
-            </button>
+      <div className="goal-choice">
+        <div className="goal-mascot" aria-hidden="true">
+          <Mascot pose="comemorando" size={130} />
+        </div>
+        <h1 className="goal-title">Qual sua meta de estudo semanal?</h1>
+        <p className="goal-subtitle">
+          Escolha o ritmo que combina com a sua rotina. Dá para mudar depois no
+          seu perfil.
+        </p>
+
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
           </div>
-          <h3>Dias de estudo</h3>
-          <div className="week-days">
-            {week.map((day) => (
+        )}
+
+        <div className="goal-options" role="radiogroup">
+          {GOAL_OPTIONS.map((opt) => {
+            const isSelected = selected === opt.days
+            return (
               <button
                 type="button"
-                className={days.includes(day) ? "selected" : ""}
-                onClick={() =>
-                  setDays((current) =>
-                    current.includes(day)
-                      ? current.filter((item) => item !== day)
-                      : [...current, day],
-                  )
-                }
-                key={day}
+                key={opt.days}
+                role="radio"
+                aria-checked={isSelected}
+                className={`goal-option goal-option--${opt.accent}${
+                  isSelected ? " selected" : ""
+                }${opt.recommended ? " recommended" : ""}`}
+                onClick={() => setSelected(opt.days as 3 | 5 | 7)}
               >
-                {day}
+                {opt.tags && (
+                  <span className="goal-option-tags">
+                    {opt.tags.map((tag, i) => (
+                      <em
+                        key={tag}
+                        className={i === 0 ? "goal-tag-primary" : "goal-tag"}
+                      >
+                        {tag}
+                      </em>
+                    ))}
+                  </span>
+                )}
+                <strong className="goal-option-number">{opt.days}</strong>
+                <span className="goal-option-unit">dias por semana</span>
+                <span className="goal-option-title">{opt.title}</span>
+                <span className="goal-option-text">{opt.description}</span>
               </button>
-            ))}
-          </div>
-          <p>
-            {days.length} dias · cerca de{" "}
-            {days.length ? Math.round(hours / days.length) : 0} horas por dia
-          </p>
-        </section>
-        <aside className="exam-card">
-          <span>ENEM · 1º dia em 08/11</span>
-          <strong>39</strong>
-          <h3>dias até a prova</h3>
-          <p>Sua trilha será montada até essa data.</p>
-        </aside>
+            )
+          })}
+        </div>
+
+        <button
+          className="primary-button narrow"
+          type="button"
+          disabled={saving}
+          onClick={() => void handleContinue()}
+        >
+          {saving ? "Salvando..." : "Continuar"}
+        </button>
       </div>
-      <button
-        className="primary-button narrow"
-        type="button"
-        onClick={() => go("done")}
-      >
-        ✦ Gerar minha trilha
-      </button>
     </OnboardingLayout>
   )
 }
@@ -2550,6 +2681,12 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           className="primary-button narrow"
           type="button"
           onClick={() => {
+            // Onboarding concluído: limpa a sessão de nivelamento residual.
+            try {
+              localStorage.removeItem("sherlock_assessment_session")
+            } catch {
+              // ignore
+            }
             authApi.logout()
 
             go("login")
