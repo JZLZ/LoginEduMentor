@@ -1321,6 +1321,12 @@ form {
 
 .start-choice-title {
   margin: 4px 0 0;
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 28px;
+  line-height: 36px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .start-choice-subtitle {
