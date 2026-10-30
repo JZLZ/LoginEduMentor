@@ -16,8 +16,14 @@ import logoWord from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Es
 import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-1.png"
 // 4. Texto do badge (Vector-2): Sigla "AI" em preto dentro da pílula
 import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png"
-import { authApi, coursesApi, onboardingApi, tokenStorage } from "./services/api"
-import type { CourseOption } from "./services/api"
+import {
+  assessmentApi,
+  authApi,
+  coursesApi,
+  onboardingApi,
+  tokenStorage,
+} from "./services/api"
+import type { CourseOption, QuizQuestion } from "./services/api"
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import TermsModal from "./TermsModal"
@@ -1518,75 +1524,134 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
   )
 }
 
-const QUIZ_ANSWERS = [
-  { letter: "A", text: "10%" },
-  { letter: "B", text: "15%" },
-  { letter: "C", text: "16,7%" },
-  { letter: "D", text: "20%" },
-  { letter: "E", text: "25%" },
-]
-
-const AREA_PROGRESS = [
-  { label: "Linguagens", value: 100 },
-  { label: "Humanas", value: 100 },
-  { label: "Natureza", value: 50 },
-  { label: "Matemática", value: 34 },
-  { label: "Redação", value: 4 },
-]
-
 function Quiz({ go }: { go: (screen: Screen) => void }) {
-  const [answer, setAnswer] = useState("C")
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [question, setQuestion] = useState<QuizQuestion | null>(null)
+  const [index, setIndex] = useState(1)
+  const [total, setTotal] = useState(8)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shownAt, setShownAt] = useState<number>(Date.now())
+
+  // Inicia o nivelamento geral ao montar (RN04).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    assessmentApi
+      .start("geral")
+      .then((data) => {
+        if (!active) return
+        setSessionId(data.sessionId)
+        setTotal(data.total)
+        setIndex(data.index)
+        setQuestion(data.question)
+        setShownAt(Date.now())
+      })
+      .catch((err: unknown) => {
+        if (active)
+          setErrorMessage(
+            err instanceof Error ? err.message : "Erro ao iniciar o nivelamento.",
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const isLast = index >= total
+
+  // Registra a resposta e avança (RN07) ou finaliza (RN08).
+  async function submit() {
+    if (!sessionId || !answer || submitting) return
+    setSubmitting(true)
+    setErrorMessage(null)
+    const elapsedMs = Date.now() - shownAt
+    try {
+      const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
+      if (res.finished) {
+        await assessmentApi.finish(sessionId)
+        // Guarda o id para a tela de resultado (fluxo seguinte).
+        try {
+          localStorage.setItem("sherlock_assessment_session", sessionId)
+        } catch {
+          // ignore
+        }
+        go("subjects")
+        return
+      }
+      setIndex(res.index)
+      setQuestion(res.question)
+      setAnswer(null)
+      setShownAt(Date.now())
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a resposta.",
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
 
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="quiz-layout">
         <section className="quiz-main">
-          <div className="quiz-meta">
-            <span>Matemática</span>
-            <b>Questão 3 de 6</b>
-          </div>
-          <div className="progress-segments">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <i className={n <= 3 ? "filled" : ""} key={n} />
-            ))}
-          </div>
-          <div className="question-card">
-            Uma loja vende camisetas por R$ 30,00 cada. Na promoção, quem leva 3
-            paga R$ 75,00. Qual é o desconto por camiseta, em porcentagem?
-          </div>
-          <div className="answers">
-            {QUIZ_ANSWERS.map(({ letter, text }) => (
-              <button
-                type="button"
-                className={answer === letter ? "selected" : ""}
-                onClick={() => setAnswer(letter)}
-                key={letter}
-              >
-                <i>{letter}</i>
-                {text}
-              </button>
-            ))}
-          </div>
-          <button
-            className="primary-button quiz-next"
-            type="button"
-            onClick={() => go("subjects")}
-          >
-            Próxima
-          </button>
-        </section>
-        <aside className="area-progress">
-          <h2>Progresso por área</h2>
-          {AREA_PROGRESS.map(({ label, value }) => (
-            <div key={label}>
-              <span>{label}</span>
-              <small>{value === 100 ? "Concluída" : `${value}%`}</small>
-              <i>
-                <b style={{ width: `${value}%` }} />
-              </i>
+          {errorMessage && (
+            <div className="form-alert error" role="alert">
+              {errorMessage}
             </div>
-          ))}
-        </aside>
+          )}
+          {loading || !question ? (
+            <div className="question-card">Carregando questão...</div>
+          ) : (
+            <>
+              <div className="quiz-meta">
+                <span>{question.area}</span>
+                <b>
+                  Questão {index} de {total}
+                </b>
+              </div>
+              <div className="progress-segments">
+                {progressSegments.map((n) => (
+                  <i className={n <= index ? "filled" : ""} key={n} />
+                ))}
+              </div>
+              <div className="question-card">{question.statement}</div>
+              <div className="answers">
+                {question.options.map(({ letter, text }) => (
+                  <button
+                    type="button"
+                    className={answer === letter ? "selected" : ""}
+                    onClick={() => setAnswer(letter)}
+                    key={letter}
+                  >
+                    <i>{letter}</i>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="primary-button quiz-next"
+                type="button"
+                disabled={!answer || submitting}
+                onClick={() => void submit()}
+              >
+                {submitting
+                  ? "Enviando..."
+                  : isLast
+                    ? "Finalizar"
+                    : "Próxima"}
+              </button>
+            </>
+          )}
+        </section>
       </div>
     </OnboardingLayout>
   )

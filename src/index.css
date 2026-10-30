@@ -1216,16 +1216,15 @@ form {
    ========================================================================== */
 
 .quiz-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 624px) 320px;
-  gap: 32px;
-  align-items: start;
+  display: flex;
+  justify-content: center;
 }
 
 .quiz-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: min(624px, 100%);
 }
 
 .quiz-meta {
