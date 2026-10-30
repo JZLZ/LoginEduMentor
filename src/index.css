@@ -1850,72 +1850,61 @@ form {
 
 /* Tela 05 — Gerando trilha */
 .generating-card {
-  width: min(520px, 100%);
+  width: min(480px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-
-.generating-card p {
-  color: var(--muted);
-}
-
-.generating-progress {
-  width: 100%;
-  height: 8px;
-  background: var(--lavender);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.generating-progress b {
-  display: block;
-  height: 100%;
-  background: var(--indigo);
-  border-radius: 999px;
-  transition: width 0.4s ease;
+  gap: 24px;
 }
 
 .generating-steps {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 20px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(23, 21, 46, 0.06);
 }
 
 .generating-step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   color: var(--muted);
 }
 
-.generating-step i {
-  font-style: normal;
-  color: var(--border-strong);
+.generating-step-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  position: relative;
+}
+
+.generating-step.active .generating-step-icon,
+.generating-step.done .generating-step-icon {
+  border: none;
+  background: var(--indigo);
 }
 
 .generating-step.active {
-  color: var(--ink, #17152e);
+  color: var(--ink);
   font-weight: 700;
 }
 
-.generating-step.active i {
-  color: var(--indigo);
-}
-
 .generating-step.done {
-  color: var(--ink, #17152e);
-}
-
-.generating-step.done i {
-  color: #137a51;
+  color: var(--ink);
 }
 
 /* Tela 06 — Resultado do nivelamento */

@@ -2384,18 +2384,12 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
     }
   }, [go])
 
-  const percent = Math.round((step / GENERATING_STEPS.length) * 100)
-
   return (
     <OnboardingLayout step={2} back={() => go("goal")}>
       <div className="generating-card">
-        <div className="generating-mascot" aria-hidden="true">
-          <MentorinaCursoAlvo size={140} />
-        </div>
-        <h1>A Mentorina está montando sua trilha</h1>
-        <p>Isso leva só alguns segundos. Não feche esta tela.</p>
-        <div className="generating-progress" aria-hidden="true">
-          <b style={{ width: `${percent}%` }} />
+        <div className="center-heading">
+          <h1>A Mentorina está montando sua trilha</h1>
+          <p>Isso leva só alguns segundos. Não feche esta tela.</p>
         </div>
         <ul className="generating-steps">
           {GENERATING_STEPS.map((label, i) => {
@@ -2403,7 +2397,22 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
               i < step ? "done" : i === step ? "active" : "pending"
             return (
               <li className={`generating-step ${state}`} key={label}>
-                <i>{i < step ? "✓" : i === step ? "●" : "○"}</i>
+                <span className="generating-step-icon" aria-hidden="true">
+                  {state === "pending" ? null : (
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  )}
+                </span>
                 <span>{label}</span>
               </li>
             )
