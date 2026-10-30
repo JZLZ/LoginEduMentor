@@ -1803,8 +1803,6 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
     }
   }
 
-  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
-
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="quiz-layout">
@@ -1818,16 +1816,23 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
             <div className="question-card">Carregando questão...</div>
           ) : (
             <>
+              <div className="quiz-mascot" aria-hidden="true">
+                <Mascot pose="pensando" size={120} />
+              </div>
               <div className="quiz-meta">
                 <span>{question.area}</span>
                 <b>
                   Questão {index} de {total}
                 </b>
               </div>
-              <div className="progress-segments">
-                {progressSegments.map((n) => (
-                  <i className={n <= index ? "filled" : ""} key={n} />
-                ))}
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                <b style={{ width: `${(index / total) * 100}%` }} />
               </div>
               <div className="question-card">{question.statement}</div>
               <div className="answers">
@@ -2203,8 +2208,6 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
     }
   }
 
-  const progressSegments = Array.from({ length: total }, (_, i) => i + 1)
-
   return (
     <OnboardingLayout step={2} back={() => go("language")}>
       <div className="quiz-layout">
@@ -2218,16 +2221,23 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
             <div className="question-card">Carregando questão...</div>
           ) : (
             <>
+              <div className="quiz-mascot" aria-hidden="true">
+                <Mascot pose="pensando" size={120} />
+              </div>
               <div className="quiz-meta">
                 <span>Língua estrangeira</span>
                 <b>
                   Questão {index} de {total}
                 </b>
               </div>
-              <div className="progress-segments">
-                {progressSegments.map((n) => (
-                  <i className={n <= index ? "filled" : ""} key={n} />
-                ))}
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                <b style={{ width: `${(index / total) * 100}%` }} />
               </div>
               <div className="question-card">{question.statement}</div>
               <div className="answers">
