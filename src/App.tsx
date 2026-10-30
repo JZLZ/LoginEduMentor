@@ -19,6 +19,7 @@ import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estu
 import { authApi, coursesApi, onboardingApi, tokenStorage } from "./services/api"
 import type { CourseOption } from "./services/api"
 import LandingPage from "./components/LandingPage"
+import MascotMinhoquinha from "./components/MascotMinhoquinha"
 import TermsModal from "./TermsModal"
 
 type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "goal" | "done"
@@ -41,6 +42,47 @@ function BrandLogo() {
 
       {/* PARTE 4: Texto "AI" em preto centralizado sobre o badge verde */}
       <img className="brand-logo-ai" src={logoAi} alt="" />
+    </div>
+  )
+}
+
+/**
+ * Logo da marca em SVG inline (fiel ao Figma), usado no cabeçalho do onboarding.
+ * Ícone roxo (balão + escadaria branca + brilho lima) + "EduMentor" + badge "AI".
+ */
+function BrandLogoMark() {
+  return (
+    <div className="brand-logomark" role="img" aria-label="EduMentor AI">
+      <svg
+        className="brand-logomark-icon"
+        viewBox="0 0 48 48"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* Balão roxo arredondado com rabicho */}
+        <path
+          d="M10 4h28a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H20l-9 7v-7h-1a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"
+          fill="#4F3CF0"
+        />
+        {/* Escadaria branca */}
+        <path
+          d="M14 30h6v-6h6v-6h6"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Brilho lima no topo da escada */}
+        <circle cx="32" cy="17" r="3.1" fill="#C6F432" />
+        <path
+          d="M31 11.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1Z"
+          fill="#C6F432"
+        />
+      </svg>
+      <span className="brand-logomark-word">EduMentor</span>
+      <span className="brand-logomark-badge">AI</span>
     </div>
   )
 }
@@ -1152,7 +1194,7 @@ function Stepper({ step, back }: StepperProps) {
   const labels = ["Curso-alvo", "Como começar", "Meta semanal"]
   return (
     <header className="onboarding-header">
-      <BrandLogo />
+      <BrandLogoMark />
       <div className="stepper">
         {labels.map((label, index) => (
           <div className={index + 1 <= step ? "complete" : ""} key={label}>
@@ -1280,6 +1322,9 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 
   return (
     <OnboardingLayout step={1} back={() => go("signup")}>
+      <div className="course-mascot" aria-hidden="true">
+        <MascotMinhoquinha size={170} variant="soundwave" />
+      </div>
       <div className="center-heading">
         <h1>Qual curso você quer fazer?</h1>
         <p>

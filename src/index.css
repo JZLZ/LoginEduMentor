@@ -937,7 +937,49 @@ form {
 }
 
 .onboarding-header > .brand-logo {
-  width: min(180px, 100%);
+  width: min(160px, 100%);
+  justify-self: start;
+}
+
+.onboarding-header > .brand-logomark {
+  justify-self: start;
+}
+
+/* Logo SVG inline (header do onboarding) */
+.brand-logomark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logomark-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.brand-logomark-word {
+  font-family: "Bricolage Grotesque", "Nunito Sans", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--ink, #17152e);
+  line-height: 1;
+}
+
+.brand-logomark-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  background: #c6f432;
+  color: #17152e;
+  font-family: "Nunito Sans", sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  line-height: 1;
 }
 
 .onboarding-header > .stepper {
@@ -1026,6 +1068,13 @@ form {
   gap: 16px;
   width: min(696px, 100%);
   margin: 0 auto;
+}
+
+.course-mascot {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 4px;
 }
 
 .course-single {

@@ -2,7 +2,7 @@ interface MascotProps {
   size?: number
   className?: string
   mood?: "happy" | "thinking" | "smart" | "waving" | "joy"
-  variant?: "stairs" | "coiled" | "avatar" | "question" | "v6"
+  variant?: "stairs" | "coiled" | "avatar" | "question" | "soundwave" | "v6"
   coilColor?: "purple" | "white"
 }
 
@@ -512,6 +512,188 @@ export default function MascotMinhoquinha({
 
             {/* Detalhe coral de adorno */}
             <circle cx="45" cy="74" r="4" fill="#FF6B57" />
+          </g>
+        </svg>
+      </div>
+    )
+  }
+  if (variant === "soundwave") {
+    // Pose oficial da tela "Curso-alvo": U roxo com ondas sonoras coral à
+    // esquerda e a cabeça verde (óculos, sorriso) na ponta direita.
+    return (
+      <div
+        className={`relative select-none inline-block ${className}`}
+        style={{ width: size, height: size }}
+        role="img"
+        aria-label="Mentorina, a tutora mascote do EduMentor AI"
+      >
+        <svg
+          viewBox="0 0 230 230"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full h-full"
+        >
+          <defs>
+            <radialGradient
+              id="mascotSoundwaveHeadGrad"
+              cx="40%"
+              cy="28%"
+              r="75%"
+              fx="40%"
+              fy="28%"
+            >
+              <stop offset="0%" stopColor="#E4FF8A" />
+              <stop offset="52%" stopColor="#C6F432" />
+              <stop offset="100%" stopColor="#9FCC18" />
+            </radialGradient>
+          </defs>
+
+          {/* Sombra no chão */}
+          <ellipse
+            cx="120"
+            cy="206"
+            rx="60"
+            ry="10"
+            fill="#17152E"
+            opacity="0.10"
+          />
+
+          {/* Ondas sonoras coral (2 arcos) à esquerda */}
+          <path
+            d="M 40 66 Q 24 102 40 138"
+            fill="none"
+            stroke="#FF6B57"
+            strokeWidth="9"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 58 78 Q 47 102 58 126"
+            fill="none"
+            stroke="#FF6B57"
+            strokeWidth="9"
+            strokeLinecap="round"
+          />
+
+          {/* Corpo (gancho/vírgula alongado inclinado) — sombra profunda */}
+          <path
+            d="M 78 74 C 70 104, 92 150, 120 168 C 150 188, 182 176, 190 142 C 196 116, 190 96, 184 82"
+            fill="none"
+            stroke="#3420C2"
+            strokeWidth="34"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Corpo — roxo vibrante */}
+          <path
+            d="M 78 72 C 70 102, 92 148, 120 166 C 150 186, 182 174, 190 140 C 196 114, 190 94, 184 80"
+            fill="none"
+            stroke="#4F3CF0"
+            strokeWidth="34"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Brilho lavanda sutil ao longo da curva interna */}
+          <path
+            d="M 90 78 C 83 106, 101 146, 126 162"
+            fill="none"
+            stroke="#8E82FF"
+            strokeWidth="5"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
+
+          {/* Cabeça verde grande na ponta direita (acima) */}
+          <g>
+            <circle
+              cx="186"
+              cy="70"
+              r="42"
+              fill="url(#mascotSoundwaveHeadGrad)"
+            />
+            {/* Brilho 3D especular (grande, topo) */}
+            <ellipse
+              cx="170"
+              cy="48"
+              rx="17"
+              ry="8.5"
+              fill="#FFFFFF"
+              opacity="0.6"
+              transform="rotate(-28 170 48)"
+            />
+            {/* Bochechas coradas */}
+            <ellipse
+              cx="164"
+              cy="84"
+              rx="8"
+              ry="5"
+              fill="#FF8A6B"
+              opacity="0.75"
+            />
+            <ellipse
+              cx="208"
+              cy="84"
+              rx="8"
+              ry="5"
+              fill="#FF8A6B"
+              opacity="0.75"
+            />
+            {/* Óculos grandes redondos */}
+            <circle
+              cx="172"
+              cy="68"
+              r="15.5"
+              fill="rgba(255,255,255,0.14)"
+              stroke="#17152E"
+              strokeWidth="3.4"
+            />
+            <circle
+              cx="202"
+              cy="68"
+              r="15.5"
+              fill="rgba(255,255,255,0.14)"
+              stroke="#17152E"
+              strokeWidth="3.4"
+            />
+            {/* Ponte dos óculos */}
+            <path
+              d="M 186.5 66 Q 187 62 187.5 66"
+              fill="none"
+              stroke="#17152E"
+              strokeWidth="3.4"
+              strokeLinecap="round"
+            />
+            {/* Hastes dos óculos */}
+            <path
+              d="M 157 66 L 149 63 M 217 66 L 225 63"
+              fill="none"
+              stroke="#17152E"
+              strokeWidth="3.4"
+              strokeLinecap="round"
+            />
+            {/* Olhos fechados e felizes (arcos sorrindo) */}
+            <path
+              d="M 165 70 Q 172 62 179 70"
+              fill="none"
+              stroke="#17152E"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 195 70 Q 202 62 209 70"
+              fill="none"
+              stroke="#17152E"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+            />
+            {/* Boca aberta sorrindo com língua coral */}
+            <path
+              d="M 178 86 Q 187 98 196 86 Q 187 90 178 86 Z"
+              fill="#17152E"
+            />
+            <path
+              d="M 184 90 Q 187 95 190 90 Z"
+              fill="#FF6B57"
+            />
           </g>
         </svg>
       </div>
