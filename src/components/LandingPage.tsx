@@ -4767,12 +4767,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <span className="text-[#C6F432] font-bold text-[12px] uppercase tracking-wider mb-0.5">
                 AJUDA
               </span>
-              <a
-                href="mailto:contato@edumentor.ai"
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTermsModal(false)
+                  window.location.href = "mailto:contato@edumentor.ai"
+                }}
                 className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
               >
                 Fale com o suporte
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => setShowTermsModal(true)}
@@ -4782,7 +4786,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setShowTermsModal(true)}
+                onClick={() => setShowTermsModal(false)}
                 className="text-left hover:text-white transition-colors text-[12px] cursor-pointer"
               >
                 Privacidade
