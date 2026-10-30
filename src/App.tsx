@@ -2244,9 +2244,6 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
             <div className="question-card">Carregando questão...</div>
           ) : (
             <>
-              <div className="quiz-mascot" aria-hidden="true">
-                <Mascot pose="pensando" size={120} />
-              </div>
               <div className="quiz-meta">
                 <span>Língua estrangeira</span>
                 <b>

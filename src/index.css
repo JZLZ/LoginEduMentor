@@ -1458,12 +1458,6 @@ form {
   color: var(--muted);
 }
 
-.quiz-mascot {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
 .quiz-progress {
   width: 100%;
   display: flex;
