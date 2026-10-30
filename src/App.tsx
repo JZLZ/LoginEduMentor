@@ -42,7 +42,6 @@ import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import MentorinaPensando from "./components/MentorinaPensando"
 import MentorinaLendo from "./components/MentorinaLendo"
-// MentorinaLendo também é usado na tela "nivelamento recomeçou" (mascote oficial).
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -2308,7 +2307,7 @@ function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
     <OnboardingLayout step={2} back={() => go("language")}>
       <div className="restarted-wrap">
         <div className="restarted-mascot" aria-hidden="true">
-          <MentorinaLendo size={150} />
+          <MentorinaPensando size={150} />
         </div>
         <h1 className="restarted-title">Seu nivelamento recomeçou</h1>
         <p className="restarted-subtitle">
