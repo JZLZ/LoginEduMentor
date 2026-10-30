@@ -2402,7 +2402,7 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
             return (
               <li className={`generating-step ${state}`} key={label}>
                 <span className="generating-step-icon" aria-hidden="true">
-                  {state === "pending" ? null : (
+                  {state === "done" ? (
                     <svg
                       width="12"
                       height="12"
@@ -2415,7 +2415,7 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
                     >
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
-                  )}
+                  ) : null}
                 </span>
                 <span>{label}</span>
               </li>

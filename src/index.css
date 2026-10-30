@@ -1897,9 +1897,21 @@ form {
   position: relative;
 }
 
-.generating-step.active .generating-step-icon,
 .generating-step.done .generating-step-icon {
   border: none;
+  background: var(--indigo);
+}
+
+.generating-step.active .generating-step-icon {
+  border: 2px solid var(--indigo);
+  background: var(--surface);
+}
+
+.generating-step.active .generating-step-icon::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
   background: var(--indigo);
 }
 
