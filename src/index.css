@@ -1680,49 +1680,80 @@ form {
   text-transform: uppercase;
 }
 
+.language-mascot {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
 .language-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 24px;
 }
 
-.language-options button {
+.language-option {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 14px 16px;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 14px;
+  border-radius: 15px;
   cursor: pointer;
   text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
-.language-options button.selected {
+.language-option.selected {
   border: 2px solid var(--indigo);
   background: var(--lavender);
+  padding: 19px 23px;
 }
 
-.language-options button > i {
-  font-style: normal;
-  font-weight: 700;
-  color: var(--indigo);
-  min-height: 18px;
+.language-option-radio {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  position: relative;
 }
 
-.language-options button span {
-  font-weight: 700;
-  color: var(--ink, #17152e);
+.language-option.selected .language-option-radio {
+  border: 2px solid var(--indigo);
 }
 
-.language-options button small {
+.language-option.selected .language-option-radio::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: var(--indigo);
+}
+
+.language-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.language-option-body strong {
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.language-option-body small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .language-choice--wide {
-  width: min(560px, 100%);
+  width: min(836px, 100%);
 }
 
 .language-hint {
@@ -2367,6 +2398,7 @@ form {
   .course-fields,
   .choice-grid,
   .start-choice-options,
+  .language-options,
   .goal-options,
   .subject-grid,
   .modal-actions {

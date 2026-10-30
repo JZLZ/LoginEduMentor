@@ -41,6 +41,7 @@ import type {
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
 import MentorinaPensando from "./components/MentorinaPensando"
+import MentorinaLendo from "./components/MentorinaLendo"
 import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
@@ -2042,6 +2043,9 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
 
   return (
     <OnboardingLayout step={2} back={() => go("subjects")}>
+      <div className="language-mascot" aria-hidden="true">
+        <MentorinaLendo size={150} />
+      </div>
       <div className="center-heading">
         <h1>Qual língua estrangeira você vai fazer?</h1>
         <p>
@@ -2055,23 +2059,26 @@ function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
         </div>
       )}
       <div className="language-choice language-choice--wide">
-        <div className="language-options">
+        <div className="language-options" role="radiogroup">
           {(
             [
-              { id: "ingles", label: "Inglês" },
-              { id: "espanhol", label: "Espanhol" },
+              { id: "ingles", label: "Inglês", desc: "5 questões de inglês na prova de Linguagens" },
+              { id: "espanhol", label: "Espanhol", desc: "5 questões de espanhol na prova de Linguagens" },
             ] as const
           ).map((opt) => (
             <button
               type="button"
-              className={language === opt.id ? "selected" : ""}
-              aria-pressed={language === opt.id}
+              className={`language-option${language === opt.id ? " selected" : ""}`}
+              role="radio"
+              aria-checked={language === opt.id}
               onClick={() => setLanguage(opt.id)}
               key={opt.id}
             >
-              <i>{language === opt.id ? "✓" : ""}</i>
-              <span>{opt.label}</span>
-              <small>5 questões na prova de Linguagens</small>
+              <span className="language-option-radio" aria-hidden="true" />
+              <span className="language-option-body">
+                <strong>{opt.label}</strong>
+                <small>{opt.desc}</small>
+              </span>
             </button>
           ))}
         </div>
