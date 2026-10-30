@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react"
-
-import type { FormEvent, InputHTMLAttributes, ReactNode } from "react"
-
+import type {
+  FormEvent,
+  InputHTMLAttributes,
+  KeyboardEvent as ReactKeyboardEvent,
+  ReactNode,
+} from "react"
 // ============================================================================
 
 // PARTES DO LOGO (EduMentor AI) - Importação das camadas exportadas do Figma:
@@ -23,9 +26,13 @@ import logoBadge from "./assets/logo/EduMentor AI — Plataforma Adaptativa de E
 // 4. Texto do badge (Vector-2): Sigla "AI" em preto dentro da pílula
 
 import logoAi from "./assets/logo/EduMentor AI — Plataforma Adaptativa de Estudos e Tutoria/Vector-2.png"
-
-import { authApi, tokenStorage } from "./services/api"
-
+import {
+  authApi,
+  coursesApi,
+  onboardingApi,
+  tokenStorage,
+} from "./services/api"
+import type { CourseOption } from "./services/api"
 import LandingPage from "./components/LandingPage"
 
 import TermsModal from "./TermsModal"
@@ -795,20 +802,47 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
       return
     }
 
+    // Regras alinhadas ao backend (CadastroDto): 8–20 caracteres.
     if (password.length < 8 || password.length > 20) {
       setErrorMessage("A senha deve ter entre 8 e 20 caracteres.")
+      return
+    }
+
+    // Maiúscula, minúscula, número e especial (!@#$%&*), sem espaços.
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])\S+$/
+    if (!passwordRegex.test(password)) {
+      setErrorMessage(
+        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
+      )
 
       return
     }
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).+$/
-
-    if (!passwordRegex.test(password)) {
-      setErrorMessage(
-        "A senha precisa conter pelo menos: uma letra maiúscula, uma minúscula, um número e um caractere especial (@#$%).",
+    // Sem números sequenciais (ex.: 123, 321) — regra do backend.
+    if (
+      /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+        password,
       )
+    ) {
+      setErrorMessage("A senha não pode conter números sequenciais.")
+      return
+    }
 
+    // O e-mail de recuperação precisa existir e ser diferente do principal.
+    const recovery = recoveryEmail.trim().toLowerCase()
+    if (!recovery) {
+      setErrorMessage("Informe um e-mail de recuperação.")
+      return
+    }
+    if (recovery === email.trim().toLowerCase()) {
+      setErrorMessage(
+        "O e-mail de recuperação deve ser diferente do e-mail principal.",
+      )
+      return
+    }
+
+    if (!education) {
+      setErrorMessage("Selecione sua escolaridade.")
       return
     }
 
@@ -816,28 +850,44 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
 
     setErrorMessage(null)
 
-    const name = parts[0]
+    // Converte dd/mm/aaaa -> YYYY-MM-DD (ISO) exigido pelo backend.
+    const [dd, mm, yyyy] = birthDate.split("/")
+    const dataNascimento = `${yyyy}-${mm}-${dd}`
 
-    const surname = parts.slice(1).join(" ")
+    // Mapeia os valores do select para o enum Escolaridade do backend.
+    const escolaridadeMap: Record<string, string> = {
+      "fundamental-incompleto": "ENSINO_FUNDAMENTAL",
+      "fundamental-completo": "ENSINO_FUNDAMENTAL",
+      "medio-incompleto": "ENSINO_MEDIO",
+      "medio-completo": "ENSINO_MEDIO",
+      "superior-incompleto": "ENSINO_SUPERIOR",
+      "superior-completo": "ENSINO_SUPERIOR",
+      "pos-graduacao": "POS_GRADUACAO",
+    }
 
     try {
-      await authApi.register({
-        name,
-
-        surname,
-
-        email,
-
-        password,
+      await authApi.cadastrar({
+        nomeCompleto: fullName.trim().replace(/\s+/g, " "),
+        dataNascimento,
+        escolaridade: escolaridadeMap[education] ?? "ENSINO_MEDIO",
+        celular: phone,
+        email: email.trim().toLowerCase(),
+        emailRecuperacao: recovery,
+        senha: password,
+        confirmarSenha: confirmPassword,
+        termosAceitos: accepted,
+        ...(minor
+          ? {
+              responsavelLegal: {
+                nomeCompleto: guardianName.trim(),
+                cpf: guardianCpf.replace(/\D/g, ""),
+              },
+            }
+          : {}),
       })
 
-      // Realiza login automático com o novo usuário para obter o token JWT
-
-      try {
-        await authApi.login(email, password)
-      } catch {
-        // Se login falhar por algum motivo, prossegue normalmente
-      }
+      // Login automático: o cadastro criou a conta, então o login funciona.
+      await authApi.login(email, password)
 
       go("course")
     } catch (err: unknown) {
@@ -1328,6 +1378,97 @@ function OnboardingLayout({
 }
 
 function Course({ go }: { go: (screen: Screen) => void }) {
+  const [query, setQuery] = useState("")
+  const [options, setOptions] = useState<CourseOption[]>([])
+  const [selected, setSelected] = useState<CourseOption | null>(null)
+  const [weightAreas, setWeightAreas] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [highlight, setHighlight] = useState(-1)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // RN02: busca no servidor (ignora acento/caixa), com debounce.
+  useEffect(() => {
+    const term = query.trim()
+    // Se o texto não corresponde mais ao curso selecionado, invalida a seleção (RN03).
+    if (selected && term !== selected.name) {
+      setSelected(null)
+      setWeightAreas([])
+    }
+    if (term.length < 2) {
+      setOptions([])
+      return
+    }
+    let active = true
+    setLoading(true)
+    const timer = setTimeout(async () => {
+      try {
+        const items = await coursesApi.search(term)
+        if (active) {
+          setOptions(items)
+          setHighlight(-1)
+        }
+      } catch {
+        if (active) setOptions([])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }, 300)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [query, selected])
+
+  // RN07/RN11: ao selecionar um curso válido, carrega e exibe as áreas de peso.
+  async function selectCourse(option: CourseOption) {
+    setSelected(option)
+    setQuery(option.name)
+    setOptions([])
+    setOpen(false)
+    setErrorMessage(null)
+    try {
+      const areas = await coursesApi.getWeightAreas(option.id)
+      setWeightAreas(areas)
+    } catch {
+      setWeightAreas([])
+    }
+  }
+
+  function onKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (!open || options.length === 0) return
+    if (event.key === "ArrowDown") {
+      event.preventDefault()
+      setHighlight((h) => Math.min(h + 1, options.length - 1))
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault()
+      setHighlight((h) => Math.max(h - 1, 0))
+    } else if (event.key === "Enter" && highlight >= 0) {
+      event.preventDefault()
+      void selectCourse(options[highlight])
+    } else if (event.key === "Escape") {
+      setOpen(false)
+    }
+  }
+
+  // RN08/RN09: só avança com curso válido; persiste a escolha antes de seguir.
+  async function handleContinue() {
+    if (!selected) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setTargetCourse(selected.id)
+      go("start")
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao registrar o curso."
+      setErrorMessage(message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <OnboardingLayout step={1} back={() => go("signup")}>
       <div className="center-heading">
@@ -1337,27 +1478,78 @@ function Course({ go }: { go: (screen: Screen) => void }) {
           curso.
         </p>
       </div>
-      <div className="course-fields">
-        <Field label="Curso" placeholder="Medicina" />
-        <Field
-          label="Universidade"
-          placeholder="Universidade de São Paulo (USP)"
-        />
+      <div className="course-single">
+        <label className="field course-combobox">
+          <span>Curso (obrigatório)</span>
+          <span className="input-shell">
+            <input
+              type="text"
+              role="combobox"
+              aria-expanded={open && options.length > 0}
+              aria-autocomplete="list"
+              aria-controls="course-options"
+              placeholder="Busque seu curso. Ex.: Medicina"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setOpen(true)
+              }}
+              onFocus={() => setOpen(true)}
+              onBlur={() => setTimeout(() => setOpen(false), 150)}
+              onKeyDown={onKeyDown}
+              autoComplete="off"
+            />
+          </span>
+          {open && (loading || options.length > 0) && (
+            <ul className="course-options" id="course-options" role="listbox">
+              {loading && options.length === 0 ? (
+                <li className="course-option muted">Buscando...</li>
+              ) : (
+                options.map((option, index) => (
+                  <li
+                    key={option.id}
+                    role="option"
+                    aria-selected={index === highlight}
+                    className={`course-option ${
+                      index === highlight ? "active" : ""
+                    }`}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      void selectCourse(option)
+                    }}
+                    onMouseEnter={() => setHighlight(index)}
+                  >
+                    {option.name}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </label>
       </div>
-      <div className="weight-card">
-        <span>Áreas com mais peso para Medicina</span>
-        <div>
-          <b>Ciências da Natureza</b>
-          <b>Matemática</b>
-          <b>Redação</b>
+      {selected && weightAreas.length > 0 && (
+        <div className="weight-card">
+          <span>Áreas com mais peso para {selected.name}</span>
+          <div>
+            {weightAreas.map((area) => (
+              <b key={area}>{area}</b>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <button
         className="primary-button narrow"
         type="button"
-        onClick={() => go("start")}
+        disabled={!selected || saving}
+        aria-disabled={!selected || saving}
+        onClick={handleContinue}
       >
-        Continuar
+        {saving ? "Salvando..." : "Continuar"}
       </button>
     </OnboardingLayout>
   )
