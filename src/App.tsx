@@ -2487,79 +2487,98 @@ function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
   )
 }
 
+const GOAL_OPTIONS = [
+  {
+    days: 3,
+    title: "Leve",
+    description: "3 dias por semana. Ritmo tranquilo para encaixar na rotina.",
+    accent: "indigo" as const,
+  },
+  {
+    days: 5,
+    title: "Ideal",
+    description:
+      "5 dias por semana. O equilíbrio que a Mentorina recomenda para evoluir.",
+    accent: "lime" as const,
+    recommended: true,
+    tags: ["Ideal", "Mais escolhido"],
+  },
+  {
+    days: 7,
+    title: "Intenso",
+    description: "7 dias por semana. Para quem quer acelerar a preparação.",
+    accent: "coral" as const,
+  },
+]
+
 function Goal({ go }: { go: (screen: Screen) => void }) {
-  const [hours, setHours] = useState(25)
+  const [selected, setSelected] = useState<number>(5)
 
-  const [days, setDays] = useState(["Seg", "Ter", "Qua", "Qui", "Sex"])
-
-  const week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+  // Persiste a meta semanal escolhida (dias por semana) para uso posterior.
+  function handleContinue() {
+    try {
+      localStorage.setItem("sherlock_weekly_goal_days", String(selected))
+    } catch {
+      // ignore
+    }
+    go("done")
+  }
 
   return (
     <OnboardingLayout step={3} back={() => go("subjects")}>
-      <div className="center-heading">
-        <h1>Quanto você quer estudar por semana?</h1>
-        <p>Dá para mudar depois no seu perfil.</p>
-      </div>
-      <div className="goal-grid">
-        <section className="goal-card">
-          <div className="hours-control">
-            <button
-              type="button"
-              aria-label="Diminuir horas"
-              onClick={() => setHours(Math.max(5, hours - 5))}
-            >
-              −
-            </button>
-            <span>
-              <strong>{hours}</strong>
-              <small>horas por semana</small>
-            </span>
-            <button
-              type="button"
-              aria-label="Aumentar horas"
-              onClick={() => setHours(Math.min(50, hours + 5))}
-            >
-              +
-            </button>
-          </div>
-          <h3>Dias de estudo</h3>
-          <div className="week-days">
-            {week.map((day) => (
+      <div className="goal-choice">
+        <div className="goal-mascot" aria-hidden="true">
+          <Mascot pose="comemorando" size={130} />
+        </div>
+        <h1 className="goal-title">Qual sua meta de estudo semanal?</h1>
+        <p className="goal-subtitle">
+          Escolha o ritmo que combina com a sua rotina. Dá para mudar depois no
+          seu perfil.
+        </p>
+
+        <div className="goal-options" role="radiogroup">
+          {GOAL_OPTIONS.map((opt) => {
+            const isSelected = selected === opt.days
+            return (
               <button
                 type="button"
-                className={days.includes(day) ? "selected" : ""}
-                onClick={() =>
-                  setDays((current) =>
-                    current.includes(day)
-                      ? current.filter((item) => item !== day)
-                      : [...current, day],
-                  )
-                }
-                key={day}
+                key={opt.days}
+                role="radio"
+                aria-checked={isSelected}
+                className={`goal-option goal-option--${opt.accent}${
+                  isSelected ? " selected" : ""
+                }${opt.recommended ? " recommended" : ""}`}
+                onClick={() => setSelected(opt.days)}
               >
-                {day}
+                {opt.tags && (
+                  <span className="goal-option-tags">
+                    {opt.tags.map((tag, i) => (
+                      <em
+                        key={tag}
+                        className={i === 0 ? "goal-tag-primary" : "goal-tag"}
+                      >
+                        {tag}
+                      </em>
+                    ))}
+                  </span>
+                )}
+                <strong className="goal-option-number">{opt.days}</strong>
+                <span className="goal-option-unit">dias por semana</span>
+                <span className="goal-option-title">{opt.title}</span>
+                <span className="goal-option-text">{opt.description}</span>
               </button>
-            ))}
-          </div>
-          <p>
-            {days.length} dias · cerca de{" "}
-            {days.length ? Math.round(hours / days.length) : 0} horas por dia
-          </p>
-        </section>
-        <aside className="exam-card">
-          <span>ENEM · 1º dia em 08/11</span>
-          <strong>39</strong>
-          <h3>dias até a prova</h3>
-          <p>Sua trilha será montada até essa data.</p>
-        </aside>
+            )
+          })}
+        </div>
+
+        <button
+          className="primary-button narrow"
+          type="button"
+          onClick={handleContinue}
+        >
+          Continuar
+        </button>
       </div>
-      <button
-        className="primary-button narrow"
-        type="button"
-        onClick={() => go("done")}
-      >
-        ✦ Gerar minha trilha
-      </button>
     </OnboardingLayout>
   )
 }
