@@ -1829,9 +1829,6 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
             <div className="question-card">Carregando questão...</div>
           ) : (
             <>
-              <div className="quiz-mascot" aria-hidden="true">
-                <Mascot pose="pensando" size={120} />
-              </div>
               <div className="quiz-meta">
                 <span>{question.area}</span>
                 <b>
@@ -1845,7 +1842,13 @@ function Quiz({ go }: { go: (screen: Screen) => void }) {
                 aria-valuemax={total}
                 aria-valuenow={index}
               >
-                <b style={{ width: `${(index / total) * 100}%` }} />
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
+                ))}
               </div>
               <div className="question-card">{question.statement}</div>
               <div className="answers">
@@ -2250,7 +2253,13 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
                 aria-valuemax={total}
                 aria-valuenow={index}
               >
-                <b style={{ width: `${(index / total) * 100}%` }} />
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
+                ))}
               </div>
               <div className="question-card">{question.statement}</div>
               <div className="answers">
