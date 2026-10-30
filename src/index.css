@@ -1604,6 +1604,266 @@ form {
   text-align: center;
 }
 
+.restarted-wrap {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.restarted-mascot {
+  display: flex;
+  justify-content: center;
+}
+
+.restarted-title {
+  margin: 4px 0 0;
+}
+
+.restarted-subtitle {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 24px;
+  max-width: 440px;
+}
+
+.restarted-card {
+  width: 100%;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid var(--lavender, #e4e0fb);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(23, 21, 46, 0.06);
+}
+
+.restarted-block h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink, #17152e);
+}
+
+.restarted-block p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.restarted-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f6f4ff;
+  border: 1px solid var(--lavender, #e4e0fb);
+  border-radius: 14px;
+}
+
+.restarted-tip-mascot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.restarted-tip p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.restarted-tip strong {
+  color: var(--ink, #17152e);
+}
+
+.restarted-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Tela 05 — Gerando trilha */
+.generating-card {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.generating-card p {
+  color: var(--muted);
+}
+
+.generating-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--lavender);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.generating-progress b {
+  display: block;
+  height: 100%;
+  background: var(--indigo);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.generating-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.generating-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.generating-step i {
+  font-style: normal;
+  color: var(--border-strong);
+}
+
+.generating-step.active {
+  color: var(--ink, #17152e);
+  font-weight: 700;
+}
+
+.generating-step.active i {
+  color: var(--indigo);
+}
+
+.generating-step.done {
+  color: var(--ink, #17152e);
+}
+
+.generating-step.done i {
+  color: #137a51;
+}
+
+/* Tela 06 — Resultado do nivelamento */
+.result-card {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.result-counts {
+  display: flex;
+  gap: 16px;
+}
+
+.result-count {
+  min-width: 120px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.result-count strong {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.result-count small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.result-count--ok {
+  background: #e3f5ec;
+}
+
+.result-count--ok strong {
+  color: #137a51;
+}
+
+.result-count--err {
+  background: #fdecea;
+}
+
+.result-count--err strong {
+  color: #c0392b;
+}
+
+.result-level {
+  width: 100%;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.result-level-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--indigo);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.result-level-badges {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.result-level-badges b {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--lavender);
+  color: var(--indigo);
+  border-radius: 999px;
+  opacity: 0.5;
+}
+
+.result-level-badges b.active {
+  background: var(--indigo);
+  color: white;
+  opacity: 1;
+}
+
+.result-level-note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .info-strip {
   width: min(756px, 100%);
   margin: 0 auto;
