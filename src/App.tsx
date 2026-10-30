@@ -33,12 +33,17 @@ import {
   onboardingApi,
   tokenStorage,
 } from "./services/api"
-import type { CourseOption, QuizQuestion } from "./services/api"
+import type {
+  AssessmentResult,
+  CourseOption,
+  QuizQuestion,
+} from "./services/api"
 import LandingPage from "./components/LandingPage"
 import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
+import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "generating" | "result06" | "goal" | "done"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -2159,7 +2164,12 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
       const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
       if (res.finished) {
         await assessmentApi.finish(sessionId)
-        go("goal")
+        try {
+          localStorage.setItem("sherlock_assessment_session", sessionId)
+        } catch {
+          // ignore
+        }
+        go("generating")
         return
       }
       setIndex(res.index)
@@ -2238,16 +2248,45 @@ function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
 function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
   return (
     <OnboardingLayout step={2} back={() => go("language")}>
-      <div className="restarted-card">
+      <div className="restarted-wrap">
         <div className="restarted-mascot" aria-hidden="true">
-          <MentorinaCursoAlvo size={120} />
+          <Mascot pose="interrogacao" size={150} />
         </div>
-        <h1>Seu nivelamento recomeçou</h1>
-        <p>
-          Sem problema, acontece. Para o resultado ser justo, o nivelamento
-          recomeça com novas questões sempre que a tela é fechada, recarregada
-          ou perde o foco. Assim a Mentorina mede seu nível de verdade.
+        <h1 className="restarted-title">Seu nivelamento recomeçou</h1>
+        <p className="restarted-subtitle">
+          Sem problema, acontece. Vamos fazer de novo, com um novo conjunto de
+          questões.
         </p>
+
+        <div className="restarted-card">
+          <div className="restarted-block">
+            <h2>Por que recomeçou?</h2>
+            <p>
+              Para o resultado ser justo, o nivelamento reinicia sempre que a
+              tela é fechada, recarregada ou perde o foco. Assim evitamos
+              consultas e medimos seu nível de verdade.
+            </p>
+          </div>
+
+          <div className="restarted-block">
+            <h2>O que muda?</h2>
+            <p>
+              Você responde novas questões equivalentes, no mesmo formato e com
+              a mesma dificuldade. Nada do seu progresso anterior é perdido.
+            </p>
+          </div>
+
+          <div className="restarted-tip">
+            <div className="restarted-tip-mascot" aria-hidden="true">
+              <Mascot pose="pensando" size={56} />
+            </div>
+            <p>
+              <strong>Dica da Mentorina:</strong> reserve alguns minutos sem
+              interrupções e responda com calma. É rapidinho e vale a pena.
+            </p>
+          </div>
+        </div>
+
         <div className="restarted-actions">
           <button
             className="primary-button narrow"
@@ -2264,6 +2303,157 @@ function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
             Prefiro escolher as matérias
           </button>
         </div>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+const GENERATING_STEPS = [
+  "Ler curso e prioridades",
+  "Priorizar áreas de maior peso",
+  "Organizar tópicos e revisões",
+  "Adequar à sua meta semanal",
+]
+
+function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
+  const [step, setStep] = useState(0)
+
+  // RN02/RN04/RN06: evolui as etapas automaticamente (~20s no total) e, ao
+  // concluir, abre o Resultado automaticamente (RN05). Sem ação manual.
+  useEffect(() => {
+    const perStep = 1200
+    const timers = GENERATING_STEPS.map((_, i) =>
+      setTimeout(() => setStep(i + 1), perStep * (i + 1)),
+    )
+    const done = setTimeout(
+      () => go("result06"),
+      perStep * (GENERATING_STEPS.length + 1),
+    )
+    return () => {
+      timers.forEach(clearTimeout)
+      clearTimeout(done)
+    }
+  }, [go])
+
+  const percent = Math.round((step / GENERATING_STEPS.length) * 100)
+
+  return (
+    <OnboardingLayout step={2} back={() => go("goal")}>
+      <div className="generating-card">
+        <div className="generating-mascot" aria-hidden="true">
+          <MentorinaCursoAlvo size={140} />
+        </div>
+        <h1>A Mentorina está montando sua trilha</h1>
+        <p>Isso leva só alguns segundos. Não feche esta tela.</p>
+        <div className="generating-progress" aria-hidden="true">
+          <b style={{ width: `${percent}%` }} />
+        </div>
+        <ul className="generating-steps">
+          {GENERATING_STEPS.map((label, i) => {
+            const state =
+              i < step ? "done" : i === step ? "active" : "pending"
+            return (
+              <li className={`generating-step ${state}`} key={label}>
+                <i>{i < step ? "✓" : i === step ? "●" : "○"}</i>
+                <span>{label}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
+  const [result, setResult] = useState<AssessmentResult | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    let sessionId: string | null = null
+    try {
+      sessionId = localStorage.getItem("sherlock_assessment_session")
+    } catch {
+      sessionId = null
+    }
+    if (!sessionId) {
+      setLoading(false)
+      return
+    }
+    assessmentApi
+      .result(sessionId)
+      .then((data) => {
+        if (active) setResult(data)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const level = result?.level ?? null
+  const levels: AssessmentResult["level"][] = [
+    "Iniciante",
+    "Intermediário",
+    "Avançado",
+  ]
+
+  return (
+    <OnboardingLayout step={2} back={() => go("goal")}>
+      <div className="result-card">
+        <div className="result-mascot" aria-hidden="true">
+          <MentorinaCursoAlvo size={130} />
+        </div>
+        <h1>Seu nivelamento está pronto!</h1>
+        {loading ? (
+          <p>Calculando seu resultado...</p>
+        ) : result ? (
+          <>
+            <p>Veja como você foi nas {result.total} questões.</p>
+            <div className="result-counts">
+              <div className="result-count result-count--ok">
+                <strong>{result.correct}</strong>
+                <small>acertos</small>
+              </div>
+              <div className="result-count result-count--err">
+                <strong>{result.wrong}</strong>
+                <small>erros</small>
+              </div>
+            </div>
+            <div className="result-level">
+              <span className="result-level-label">Seu nível</span>
+              <div className="result-level-badges">
+                {levels.map((lv) => (
+                  <b
+                    className={lv === level ? "active" : ""}
+                    key={lv}
+                  >
+                    {lv}
+                  </b>
+                ))}
+              </div>
+              <p className="result-level-note">
+                Sua trilha começa pelos tópicos em que você mais precisa evoluir.
+              </p>
+            </div>
+          </>
+        ) : (
+          <p>
+            Não encontramos um nivelamento recente. Você pode seguir e ajustar
+            sua trilha pela meta semanal.
+          </p>
+        )}
+        <button
+          className="primary-button narrow"
+          type="button"
+          onClick={() => go("goal")}
+        >
+          Continuar
+        </button>
       </div>
     </OnboardingLayout>
   )
@@ -2408,6 +2598,10 @@ export default function App() {
       return <LanguageQuiz go={setScreen} />
     case "restarted":
       return <AssessmentRestarted go={setScreen} />
+    case "generating":
+      return <GeneratingTrack go={setScreen} />
+    case "result06":
+      return <AssessmentResult go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
 
