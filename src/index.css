@@ -945,41 +945,16 @@ form {
   justify-self: start;
 }
 
-/* Logo SVG inline (header do onboarding) */
+/* Logo SVG oficial (header do onboarding) */
 .brand-logomark {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
 }
 
-.brand-logomark-icon {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-}
-
-.brand-logomark-word {
-  font-family: "Bricolage Grotesque", "Nunito Sans", sans-serif;
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-  color: var(--ink, #17152e);
-  line-height: 1;
-}
-
-.brand-logomark-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 7px;
-  background: #c6f432;
-  color: #17152e;
-  font-family: "Nunito Sans", sans-serif;
-  font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  border-radius: 999px;
-  line-height: 1;
+.brand-logomark-svg {
+  height: 30px;
+  width: auto;
+  display: block;
 }
 
 .onboarding-header > .stepper {
