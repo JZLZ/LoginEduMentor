@@ -426,21 +426,109 @@ export const coursesApi = {
   },
 }
 
+export interface QuizQuestion {
+  id: string
+  area: string
+  statement: string
+  options: { letter: string; text: string }[]
+}
+
+interface StartAssessmentResponse {
+  message: string
+  data: {
+    sessionId: string
+    total: number
+    index: number
+    question: QuizQuestion
+  }
+}
+
+interface AnswerResponse {
+  message: string
+  data: {
+    index: number
+    total: number
+    finished: boolean
+    question: QuizQuestion | null
+  }
+}
+
+export interface AssessmentResult {
+  total: number
+  correct: number
+  wrong: number
+  level: "Iniciante" | "Intermediário" | "Avançado"
+}
+
+interface ResultResponse {
+  message: string
+  data: AssessmentResult
+}
+
 /**
- * Cliente de onboarding — persistência incremental do fluxo.
+ * Cliente de nivelamento (assessment) — sessão de questões.
  */
-
-export const onboardingApi = {
-  /** Retorna o estado atual do onboarding do usuário autenticado. */
-
-  getMe: async (): Promise<TargetCourseResponse["data"]> => {
-    const res = await apiFetch<TargetCourseResponse>("/onboarding/me", {
-      method: "GET",
+export const assessmentApi = {
+  /** Inicia uma sessão de nivelamento e retorna a 1ª questão. */
+  start: async (
+    type: "geral" | "lingua",
+    language?: "ingles" | "espanhol",
+  ): Promise<StartAssessmentResponse["data"]> => {
+    const res = await apiFetch<StartAssessmentResponse>("/assessment/start", {
+      method: "POST",
+      body: JSON.stringify(language ? { type, language } : { type }),
     })
 
     return res.data
   },
 
+  /** Registra a resposta da questão atual e retorna a próxima ou o fim. */
+  answer: async (
+    sessionId: string,
+    letter: string,
+    elapsedMs: number,
+  ): Promise<AnswerResponse["data"]> => {
+    const res = await apiFetch<AnswerResponse>(
+      `/assessment/${sessionId}/answer`,
+      {
+        method: "POST",
+        body: JSON.stringify({ letter, elapsedMs }),
+      },
+    )
+    return res.data
+  },
+
+  /** Finaliza a sessão (calcula pontuação/nível). */
+  finish: async (sessionId: string): Promise<AssessmentResult> => {
+    const res = await apiFetch<ResultResponse>(
+      `/assessment/${sessionId}/finish`,
+      { method: "POST" },
+    )
+    return res.data
+  },
+
+  /** Resultado da sessão. */
+  result: async (sessionId: string): Promise<AssessmentResult> => {
+    const res = await apiFetch<ResultResponse>(
+      `/assessment/${sessionId}/result`,
+      { method: "GET" },
+    )
+    return res.data
+  },
+
+  /** Descarta a sessão (interrupção do nivelamento de língua — RN10). */
+  discard: async (sessionId: string): Promise<void> => {
+    await apiFetch<{ message: string; data: { status: string } }>(
+      `/assessment/${sessionId}/discard`,
+      { method: "POST" },
+    )
+  },
+}
+
+/**
+ * Cliente de onboarding — persistência incremental do fluxo.
+ */
+export const onboardingApi = {
   /** Registra o curso-alvo escolhido na Tela 01. */
 
   setTargetCourse: async (
@@ -456,6 +544,118 @@ export const onboardingApi = {
       },
     )
 
+    return res.data
+  },
+
+  /** Registra o modo de início escolhido na Tela 02 (Como começar). */
+  setStartMode: async (
+    mode: "nivelamento" | "materias",
+  ): Promise<{ startMode: "nivelamento" | "materias" | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { startMode: "nivelamento" | "materias" | null }
+    }>("/onboarding/start-mode", {
+      method: "PUT",
+      body: JSON.stringify({ mode }),
+    })
+    return res.data
+  },
+
+  /** Registra as matérias (ordem = prioridade) e a língua (Tela 03c). */
+  setSubjects: async (payload: {
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol"
+  }): Promise<{
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { subjects: string[]; foreignLanguage: "ingles" | "espanhol" | null }
+    }>("/onboarding/subjects", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    })
+    return res.data
+  },
+
+  /** Registra apenas a língua estrangeira (Tela 03d). */
+  setForeignLanguage: async (
+    foreignLanguage: "ingles" | "espanhol",
+  ): Promise<{ foreignLanguage: "ingles" | "espanhol" | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { foreignLanguage: "ingles" | "espanhol" | null }
+    }>("/onboarding/foreign-language", {
+      method: "PUT",
+      body: JSON.stringify({ foreignLanguage }),
+    })
+    return res.data
+  },
+
+  /** Registra a meta semanal de estudo em dias (3, 5 ou 7). */
+  setWeeklyGoal: async (
+    days: 3 | 5 | 7,
+  ): Promise<{ weeklyGoalDays: 3 | 5 | 7 | null }> => {
+    const res = await apiFetch<{
+      message: string
+      data: { weeklyGoalDays: 3 | 5 | 7 | null }
+    }>("/onboarding/weekly-goal", {
+      method: "PUT",
+      body: JSON.stringify({ days }),
+    })
+    return res.data
+  },
+
+  /**
+   * Conclui o onboarding (Tela final). Opcionalmente informa o id da sessão
+   * de nivelamento para o backend derivar e gravar o nível apurado.
+   */
+  complete: async (
+    assessmentSessionId?: string,
+  ): Promise<{
+    completed: boolean
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: {
+        completed: boolean
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+      }
+    }>("/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(
+        assessmentSessionId ? { assessmentSessionId } : {},
+      ),
+    })
+    return res.data
+  },
+
+  /** Retorna o perfil de onboarding (para pré-seleção). */
+  getMe: async (): Promise<{
+    targetCourseId: string | null
+    targetCourseName: string | null
+    startMode: "nivelamento" | "materias" | null
+    subjects: string[]
+    foreignLanguage: "ingles" | "espanhol" | null
+    weeklyGoalDays: 3 | 5 | 7 | null
+    assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+    completed: boolean
+  }> => {
+    const res = await apiFetch<{
+      message: string
+      data: {
+        targetCourseId: string | null
+        targetCourseName: string | null
+        startMode: "nivelamento" | "materias" | null
+        subjects: string[]
+        foreignLanguage: "ingles" | "espanhol" | null
+        weeklyGoalDays: 3 | 5 | 7 | null
+        assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+        completed: boolean
+      }
+    }>("/onboarding/me", { method: "GET" })
     return res.data
   },
 }

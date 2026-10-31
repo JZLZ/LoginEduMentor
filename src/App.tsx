@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type {
   FormEvent,
   InputHTMLAttributes,
@@ -6,17 +6,26 @@ import type {
   ReactNode,
 } from "react"
 import {
+  assessmentApi,
   authApi,
   coursesApi,
   onboardingApi,
   tokenStorage,
 } from "./services/api"
-import type { CourseOption } from "./services/api"
+import type {
+  AssessmentResult,
+  CourseOption,
+  QuizQuestion,
+} from "./services/api"
 import LandingPage from "./components/LandingPage"
-
+import MentorinaCursoAlvo from "./components/MentorinaCursoAlvo"
+import MentorinaPensando from "./components/MentorinaPensando"
+import MentorinaLendo from "./components/MentorinaLendo"
+import MentorinaComemorando from "./components/MentorinaComemorando"
+import Mascot from "./components/Mascot"
 import TermsModal from "./TermsModal"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "generating" | "result06" | "goal" | "done"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -87,6 +96,73 @@ function BrandLogo({
         />
       </svg>
     </a>
+  )
+}
+
+/**
+ * Logo da marca em SVG inline (fiel ao Figma), usado no cabeçalho do onboarding.
+ * Ícone roxo (balão + escadaria branca + brilho lima) + "EduMentor" + badge "AI".
+ */
+function BrandLogoMark() {
+  // SVG oficial do logo exportado do Figma (ícone + "EduMentor" + badge "AI").
+  return (
+    <div className="brand-logomark" role="img" aria-label="EduMentor AI">
+      <svg
+        className="brand-logomark-svg"
+        width="177"
+        height="30"
+        viewBox="0 0 177 30"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <g clipPath="url(#clip0_logo)">
+          <path
+            d="M8.5 2H21.5C25.1 2 28 4.9 28 8.5V18.5C28 22.1 25.1 25 21.5 25H12L6.5 29C5.75 29.55 4.75 29 4.75 28.1V24.85C3.15 23.75 2 21.25 2 18.5V8.5C2 4.9 4.9 2 8.5 2Z"
+            fill="#4F3CF0"
+          />
+          <path
+            d="M7.5 20H12V16H16.5V12H22.5"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            stroke="white"
+          />
+          <path
+            d="M23.5 4.5C23.8 6.15 24.35 6.7 26 7C24.35 7.3 23.8 7.85 23.5 9.5C23.2 7.85 22.65 7.3 21 7C22.65 6.7 23.2 6.15 23.5 4.5Z"
+            fill="#C6F432"
+          />
+          <path
+            d="M22.5 13.75C23.4665 13.75 24.25 12.9665 24.25 12C24.25 11.0335 23.4665 10.25 22.5 10.25C21.5335 10.25 20.75 11.0335 20.75 12C20.75 12.9665 21.5335 13.75 22.5 13.75Z"
+            fill="#C6F432"
+          />
+          <g clipPath="url(#clip1_logo)">
+            <path
+              d="M41.34 22V8.8H44.58V22H41.34ZM43.7 22V19.4H51.74V22H43.7ZM43.7 16.52V14.18H50.74V16.52H43.7ZM43.7 11.4V8.8H51.68V11.4H43.7ZM56.9256 22.28C56.059 22.28 55.2923 22.06 54.6256 21.62C53.9723 21.1667 53.459 20.5267 53.0856 19.7C52.7123 18.86 52.5256 17.86 52.5256 16.7C52.5256 15.6067 52.6856 14.6533 53.0056 13.84C53.3256 13.0133 53.799 12.3667 54.4256 11.9C55.0523 11.4333 55.8323 11.2 56.7656 11.2C57.4323 11.2 57.9923 11.32 58.4456 11.56C58.9123 11.8 59.299 12.1667 59.6056 12.66C59.9123 13.14 60.1523 13.7467 60.3256 14.48H60.8056C60.7123 14.04 60.6256 13.62 60.5456 13.22C60.4656 12.8067 60.399 12.42 60.3456 12.06C60.3056 11.7 60.2856 11.38 60.2856 11.1V7.64H63.5256V16.94V22H60.8856L60.8456 18.86H60.4256C60.279 19.66 60.0456 20.3133 59.7256 20.82C59.419 21.3267 59.0323 21.7 58.5656 21.94C58.099 22.1667 57.5523 22.28 56.9256 22.28ZM58.0856 19.68C58.4856 19.68 58.8256 19.5933 59.1056 19.42C59.3856 19.2467 59.6123 19.0267 59.7856 18.76C59.959 18.48 60.0856 18.18 60.1656 17.86C60.259 17.5267 60.3056 17.2133 60.3056 16.92V16.52C60.3056 16.2533 60.2656 15.9933 60.1856 15.74C60.119 15.4733 60.019 15.22 59.8856 14.98C59.7656 14.74 59.6123 14.5333 59.4256 14.36C59.2523 14.1733 59.039 14.0267 58.7856 13.92C58.5456 13.8133 58.2856 13.76 58.0056 13.76C57.5656 13.76 57.1923 13.8867 56.8856 14.14C56.579 14.38 56.339 14.72 56.1656 15.16C55.9923 15.6 55.9056 16.12 55.9056 16.72C55.9056 17.3067 55.9923 17.8267 56.1656 18.28C56.3523 18.72 56.6056 19.0667 56.9256 19.32C57.259 19.56 57.6456 19.68 58.0856 19.68ZM69.1367 22.28C67.8967 22.28 66.9634 21.86 66.3367 21.02C65.7101 20.18 65.3967 18.8933 65.3967 17.16V11.44H68.6367V16.76C68.6367 17.7467 68.7767 18.4733 69.0567 18.94C69.3501 19.4067 69.7834 19.64 70.3567 19.64C70.7167 19.64 71.0234 19.5533 71.2767 19.38C71.5434 19.1933 71.7634 18.94 71.9367 18.62C72.1234 18.3 72.2567 17.9267 72.3367 17.5C72.4301 17.06 72.4767 16.58 72.4767 16.06V11.44H75.6967V17.7V22H73.1167L73.0567 18.68H72.6967C72.4967 19.52 72.2501 20.2067 71.9567 20.74C71.6634 21.2733 71.2834 21.6667 70.8167 21.92C70.3634 22.16 69.8034 22.28 69.1367 22.28ZM77.8353 22V8.8H82.6553L86.0553 18.28H86.1353L89.4553 8.8H94.0553V22H90.9953L91.1753 12.08H90.9553L87.1953 22H84.5553L80.8753 12.08H80.6553L80.8353 22H77.8353ZM101.222 22.28C100.342 22.28 99.5549 22.16 98.8616 21.92C98.1682 21.68 97.5816 21.3333 97.1016 20.88C96.6216 20.4267 96.2549 19.8667 96.0016 19.2C95.7482 18.5333 95.6216 17.7733 95.6216 16.92C95.6216 16.0933 95.7416 15.3267 95.9816 14.62C96.2216 13.9133 96.5682 13.3 97.0216 12.78C97.4882 12.26 98.0549 11.86 98.7216 11.58C99.4016 11.3 100.168 11.16 101.022 11.16C101.862 11.16 102.602 11.3 103.242 11.58C103.895 11.86 104.428 12.2667 104.842 12.8C105.268 13.3333 105.575 13.98 105.762 14.74C105.962 15.5 106.028 16.3733 105.962 17.36L97.7416 17.42V15.72L104.062 15.66L102.982 16.46C103.075 15.8067 103.035 15.2733 102.862 14.86C102.702 14.4333 102.455 14.12 102.122 13.92C101.802 13.72 101.442 13.62 101.042 13.62C100.575 13.62 100.162 13.7467 99.8016 14C99.4549 14.2533 99.1816 14.62 98.9816 15.1C98.7949 15.58 98.7016 16.1667 98.7016 16.86C98.7016 17.9533 98.9349 18.7467 99.4016 19.24C99.8816 19.7333 100.488 19.98 101.222 19.98C101.568 19.98 101.862 19.9333 102.102 19.84C102.342 19.7333 102.535 19.6067 102.682 19.46C102.842 19.3 102.962 19.1267 103.042 18.94C103.122 18.74 103.188 18.5533 103.242 18.38L106.042 18.94C105.962 19.4333 105.802 19.8867 105.562 20.3C105.335 20.7 105.028 21.0533 104.642 21.36C104.255 21.6533 103.782 21.88 103.222 22.04C102.662 22.2 101.995 22.28 101.222 22.28ZM107.462 22V15.68V11.44H110.062L110.102 14.64H110.502C110.662 13.8667 110.895 13.22 111.202 12.7C111.522 12.18 111.928 11.7933 112.422 11.54C112.915 11.2867 113.502 11.16 114.182 11.16C115.408 11.16 116.342 11.5867 116.982 12.44C117.622 13.2933 117.942 14.66 117.942 16.54V22H114.702V16.9C114.702 15.8333 114.548 15.06 114.242 14.58C113.948 14.0867 113.502 13.84 112.902 13.84C112.395 13.84 111.982 13.9933 111.662 14.3C111.342 14.5933 111.102 15 110.942 15.52C110.782 16.04 110.702 16.6267 110.702 17.28V22H107.462ZM123.897 22.26C122.644 22.26 121.724 21.9333 121.137 21.28C120.564 20.6133 120.277 19.56 120.277 18.12V13.96H118.777L118.837 11.48H119.837C120.304 11.48 120.65 11.4067 120.877 11.26C121.104 11.1133 121.244 10.8533 121.297 10.48L121.557 9.1H123.357V11.44H125.917V14.06H123.357V17.96C123.357 18.4267 123.47 18.7667 123.697 18.98C123.924 19.1933 124.264 19.3 124.717 19.3C124.957 19.3 125.19 19.2733 125.417 19.22C125.644 19.1667 125.83 19.0933 125.977 19V21.96C125.55 22.0933 125.164 22.1733 124.817 22.2C124.47 22.24 124.164 22.26 123.897 22.26ZM132.245 22.28C131.165 22.28 130.218 22.0733 129.405 21.66C128.592 21.2467 127.952 20.6267 127.485 19.8C127.018 18.9733 126.785 17.94 126.785 16.7C126.785 15.46 127.018 14.4333 127.485 13.62C127.952 12.7933 128.592 12.18 129.405 11.78C130.232 11.3667 131.178 11.16 132.245 11.16C133.325 11.16 134.272 11.3667 135.085 11.78C135.912 12.1933 136.558 12.8133 137.025 13.64C137.492 14.4533 137.725 15.48 137.725 16.72C137.725 17.9867 137.485 19.0333 137.005 19.86C136.525 20.6867 135.865 21.3 135.025 21.7C134.198 22.0867 133.272 22.28 132.245 22.28ZM132.345 19.94C132.812 19.94 133.205 19.8333 133.525 19.62C133.845 19.3933 134.078 19.0533 134.225 18.6C134.385 18.1467 134.465 17.5867 134.465 16.92C134.465 16.2133 134.378 15.62 134.205 15.14C134.045 14.6467 133.792 14.2733 133.445 14.02C133.112 13.7533 132.685 13.62 132.165 13.62C131.698 13.62 131.305 13.7333 130.985 13.96C130.665 14.1733 130.425 14.5067 130.265 14.96C130.105 15.4133 130.025 15.98 130.025 16.66C130.025 17.7533 130.225 18.5733 130.625 19.12C131.025 19.6667 131.598 19.94 132.345 19.94ZM139.152 22V17.04V11.44H141.792L141.852 15.06H142.252C142.346 14.1267 142.519 13.38 142.772 12.82C143.026 12.2467 143.386 11.8333 143.852 11.58C144.332 11.3267 144.926 11.2 145.632 11.2C145.752 11.2 145.879 11.2067 146.012 11.22C146.159 11.2333 146.326 11.26 146.512 11.3L146.392 14.74C146.166 14.6333 145.926 14.56 145.672 14.52C145.419 14.48 145.199 14.46 145.012 14.46C144.506 14.46 144.066 14.5667 143.692 14.78C143.319 14.98 143.026 15.2867 142.812 15.7C142.599 16.1133 142.459 16.6333 142.392 17.26V22H139.152Z"
+              fill="#17152E"
+            />
+          </g>
+          <rect x="153" y="3" width="24" height="13" rx="6.5" fill="#C6F432" />
+          <path
+            d="M160.126 12L162.142 6.06H164.275L166.291 12H164.707L163.285 7.194H163.141L161.71 12H160.126ZM161.323 10.884V9.912H165.31V10.884H161.323ZM167.046 12V6.06H168.522V12H167.046Z"
+            fill="#17152E"
+          />
+        </g>
+        <defs>
+          <clipPath id="clip0_logo">
+            <rect width="177" height="30" fill="white" />
+          </clipPath>
+          <clipPath id="clip1_logo">
+            <rect
+              width="137"
+              height="24"
+              fill="white"
+              transform="translate(40 3)"
+            />
+          </clipPath>
+        </defs>
+      </svg>
+    </div>
   )
 }
 
@@ -1431,23 +1507,21 @@ function Stepper({ step, back }: StepperProps) {
   const labels = ["Curso-alvo", "Como começar", "Meta semanal"]
 
   return (
-    <div className="onboarding-header-wrapper">
-      <header className="onboarding-header">
-        <BrandLogo />
-        <div className="stepper">
-          {labels.map((label, index) => (
-            <div className={index + 1 <= step ? "complete" : ""} key={label}>
-              <i>{index + 1 < step ? "✓" : index + 1}</i>
-              <span>{label}</span>
-              {index < 2 && <b />}
-            </div>
-          ))}
-        </div>
-        <button className="back-link" type="button" onClick={back}>
-          ← Voltar
-        </button>
-      </header>
-    </div>
+    <header className="onboarding-header">
+      <BrandLogoMark />
+      <div className="stepper">
+        {labels.map((label, index) => (
+          <div className={index + 1 <= step ? "complete" : ""} key={label}>
+            <i>{index + 1 < step ? "✓" : index + 1}</i>
+            <span>{label}</span>
+            {index < 2 && <b />}
+          </div>
+        ))}
+      </div>
+      <button className="back-link" type="button" onClick={back}>
+        ← Voltar
+      </button>
+    </header>
   )
 }
 
@@ -1568,6 +1642,9 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 
   return (
     <OnboardingLayout step={1} back={() => go("signup")}>
+      <div className="course-mascot" aria-hidden="true">
+        <MentorinaCursoAlvo size={180} />
+      </div>
       <div className="center-heading">
         <h1>Qual curso você quer fazer?</h1>
         <p>
@@ -1653,131 +1730,254 @@ function Course({ go }: { go: (screen: Screen) => void }) {
 }
 
 function StartChoice({ go }: { go: (screen: Screen) => void }) {
+  const [saving, setSaving] = useState<"nivelamento" | "materias" | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // RN04/RN05: registra o modo de início e navega para a sub-tela.
+  // Cada card dispara o próprio CTA: persiste o modo e navega.
+  async function choose(mode: "nivelamento" | "materias") {
+    if (saving) return
+    setSaving(mode)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setStartMode(mode)
+      go(mode === "nivelamento" ? "quiz" : "subjects")
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao registrar a escolha."
+      setErrorMessage(message)
+      setSaving(null)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("course")}>
-      <div className="center-heading">
-        <h1>Como você quer começar?</h1>
-        <p>
-          O nivelamento mostra seu nível em cada área e ajuda a IA a montar uma
-          trilha no seu ritmo.
+      <div className="start-choice">
+        <div className="start-choice-mascot" aria-hidden="true">
+          <MentorinaPensando size={160} />
+        </div>
+        <h1 className="start-choice-title">Como você quer começar?</h1>
+        <p className="start-choice-subtitle">
+          Escolha como prefere montar sua trilha de estudos. Dá para mudar essa
+          decisão depois no seu perfil.
         </p>
-      </div>
-      <div className="choice-grid">
-        <article className="choice-card recommended">
-          <div>
-            <i>◎</i>
-            <span>Recomendado</span>
+
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
           </div>
-          <h2>Fazer o nivelamento</h2>
-          <p>
-            6 questões · cerca de 10 min. Descubra o seu nível em cada área.
-          </p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => go("quiz")}
-          >
-            Fazer nivelamento
-          </button>
-        </article>
-        <article className="choice-card">
-          <div>
-            <i>▤</i>
-          </div>
-          <h2>Escolher as matérias</h2>
-          <p>
-            Você escolhe as matérias que quer focar e a IA gera a trilha delas.
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => go("subjects")}
-          >
-            Escolher matérias
-          </button>
-        </article>
+        )}
+
+        <div className="start-choice-options">
+          <article className="start-card start-card--recommended">
+            <span className="start-card-icon start-card-icon--indigo" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="4.5" />
+                <circle cx="12" cy="12" r="1" fill="#ffffff" stroke="none" />
+              </svg>
+            </span>
+            <span className="start-card-badge">Recomendado</span>
+            <h2 className="start-card-title">Fazer o nivelamento rápido</h2>
+            <p className="start-card-text">
+              8 questões · cerca de 25 minutos. A IA descobre seu nível em cada
+              área e monta uma trilha no seu ritmo.
+            </p>
+            <p className="start-card-info">
+              Responda sem consultar: a Mentorina percebe chutes e pesquisas, e
+              assim sua trilha fica mais certeira.
+            </p>
+            <button
+              className="primary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("nivelamento")}
+            >
+              {saving === "nivelamento" ? "Salvando..." : "Começar nivelamento"}
+            </button>
+          </article>
+
+          <article className="start-card">
+            <span className="start-card-icon start-card-icon--lavender" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#4f3cf0"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 6.5c-1.8-1.2-4-1.5-6-1.5v12c2 0 4.2.3 6 1.5 1.8-1.2 4-1.5 6-1.5V5c-2 0-4.2.3-6 1.5Z" />
+                <path d="M12 6.5V18" />
+              </svg>
+            </span>
+            <h2 className="start-card-title">Escolher as matérias</h2>
+            <p className="start-card-text">
+              Você escolhe as matérias que quer focar e a IA gera a trilha
+              delas, sem o nivelamento.
+            </p>
+            <button
+              className="secondary-button start-card-cta"
+              type="button"
+              disabled={saving !== null}
+              onClick={() => void choose("materias")}
+            >
+              {saving === "materias" ? "Salvando..." : "Escolher matérias"}
+            </button>
+          </article>
+        </div>
       </div>
     </OnboardingLayout>
   )
 }
 
-const QUIZ_ANSWERS = [
-  { letter: "A", text: "10%" },
-
-  { letter: "B", text: "15%" },
-
-  { letter: "C", text: "16,7%" },
-
-  { letter: "D", text: "20%" },
-
-  { letter: "E", text: "25%" },
-]
-
-const AREA_PROGRESS = [
-  { label: "Linguagens", value: 100 },
-
-  { label: "Humanas", value: 100 },
-
-  { label: "Natureza", value: 50 },
-
-  { label: "Matemática", value: 34 },
-
-  { label: "Redação", value: 4 },
-]
-
 function Quiz({ go }: { go: (screen: Screen) => void }) {
-  const [answer, setAnswer] = useState("C")
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [question, setQuestion] = useState<QuizQuestion | null>(null)
+  const [index, setIndex] = useState(1)
+  const [total, setTotal] = useState(8)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shownAt, setShownAt] = useState<number>(Date.now())
+
+  // Inicia o nivelamento geral ao montar (RN04).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    assessmentApi
+      .start("geral")
+      .then((data) => {
+        if (!active) return
+        setSessionId(data.sessionId)
+        setTotal(data.total)
+        setIndex(data.index)
+        setQuestion(data.question)
+        setShownAt(Date.now())
+      })
+      .catch((err: unknown) => {
+        if (active)
+          setErrorMessage(
+            err instanceof Error ? err.message : "Erro ao iniciar o nivelamento.",
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const isLast = index >= total
+
+  // Registra a resposta e avança (RN07) ou finaliza (RN08).
+  async function submit() {
+    if (!sessionId || !answer || submitting) return
+    setSubmitting(true)
+    setErrorMessage(null)
+    const elapsedMs = Date.now() - shownAt
+    try {
+      const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
+      if (res.finished) {
+        await assessmentApi.finish(sessionId)
+        // Guarda o id para a tela de resultado (fluxo seguinte).
+        try {
+          localStorage.setItem("sherlock_assessment_session", sessionId)
+        } catch {
+          // ignore
+        }
+        go("language")
+        return
+      }
+      setIndex(res.index)
+      setQuestion(res.question)
+      setAnswer(null)
+      setShownAt(Date.now())
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a resposta.",
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="quiz-layout">
         <section className="quiz-main">
-          <div className="quiz-meta">
-            <span>Matemática</span>
-            <b>Questão 3 de 6</b>
-          </div>
-          <div className="progress-segments">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <i className={n <= 3 ? "filled" : ""} key={n} />
-            ))}
-          </div>
-          <div className="question-card">
-            Uma loja vende camisetas por R$ 30,00 cada. Na promoção, quem leva 3
-            paga R$ 75,00. Qual é o desconto por camiseta, em porcentagem?
-          </div>
-          <div className="answers">
-            {QUIZ_ANSWERS.map(({ letter, text }) => (
-              <button
-                type="button"
-                className={answer === letter ? "selected" : ""}
-                onClick={() => setAnswer(letter)}
-                key={letter}
-              >
-                <i>{letter}</i>
-                {text}
-              </button>
-            ))}
-          </div>
-          <button
-            className="primary-button quiz-next"
-            type="button"
-            onClick={() => go("subjects")}
-          >
-            Próxima
-          </button>
-        </section>
-        <aside className="area-progress">
-          <h2>Progresso por área</h2>
-          {AREA_PROGRESS.map(({ label, value }) => (
-            <div key={label}>
-              <span>{label}</span>
-              <small>{value === 100 ? "Concluída" : `${value}%`}</small>
-              <i>
-                <b style={{ width: `${value}%` }} />
-              </i>
+          {errorMessage && (
+            <div className="form-alert error" role="alert">
+              {errorMessage}
             </div>
-          ))}
-        </aside>
+          )}
+          {loading || !question ? (
+            <div className="question-card">Carregando questão...</div>
+          ) : (
+            <>
+              <div className="quiz-meta">
+                <span>{question.area}</span>
+                <b>
+                  Questão {index} de {total}
+                </b>
+              </div>
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+              <div className="question-card">{question.statement}</div>
+              <div className="answers">
+                {question.options.map(({ letter, text }) => (
+                  <button
+                    type="button"
+                    className={answer === letter ? "selected" : ""}
+                    onClick={() => setAnswer(letter)}
+                    key={letter}
+                  >
+                    <i>{letter}</i>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="primary-button quiz-next"
+                type="button"
+                disabled={!answer || submitting}
+                onClick={() => void submit()}
+              >
+                {submitting
+                  ? "Enviando..."
+                  : isLast
+                    ? "Finalizar"
+                    : "Próxima"}
+              </button>
+            </>
+          )}
+        </section>
       </div>
     </OnboardingLayout>
   )
@@ -1796,11 +1996,10 @@ const SUBJECT_LIST = [
 ]
 
 function Subjects({ go }: { go: (screen: Screen) => void }) {
-  const [selected, setSelected] = useState([
-    "Matemática",
-
-    "Ciências da Natureza",
-  ])
+  const [selected, setSelected] = useState<string[]>([])
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function toggle(subject: string) {
     setSelected((items) =>
@@ -1810,12 +2009,40 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
     )
   }
 
+  // RN04: habilita só com >=1 matéria e 1 língua.
+  const canContinue = selected.length > 0 && language !== null
+
+  // RN05: registra as escolhas e segue para a próxima etapa (língua estrangeira).
+  async function handleContinue() {
+    if (!canContinue || !language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setSubjects({
+        subjects: selected,
+        foreignLanguage: language,
+      })
+      go("language")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar as matérias.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <OnboardingLayout step={2} back={() => go("start")}>
       <div className="center-heading">
         <h1>Quais matérias você quer focar?</h1>
-        <p>Selecione uma ou mais. A IA gera uma trilha para cada matéria.</p>
+        <p>Selecione uma ou mais matérias e a sua língua estrangeira.</p>
       </div>
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
       <div className="subject-grid">
         {SUBJECT_LIST.map((subject, index) => {
           const isSelected = selected.includes(subject)
@@ -1835,6 +2062,29 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
           )
         })}
       </div>
+      <div className="language-choice">
+        <span className="language-choice-label">Língua estrangeira</span>
+        <div className="language-options">
+          {(
+            [
+              { id: "ingles", label: "Inglês" },
+              { id: "espanhol", label: "Espanhol" },
+            ] as const
+          ).map((opt) => (
+            <button
+              type="button"
+              className={language === opt.id ? "selected" : ""}
+              aria-pressed={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
+            >
+              <i>{language === opt.id ? "✓" : ""}</i>
+              <span>{opt.label}</span>
+              <small>5 questões na prova de Linguagens</small>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="info-strip">
         ⓘ Uma trilha por vez: termine uma para liberar a próxima. A ordem da
         seleção define a prioridade.
@@ -1842,88 +2092,674 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       <button
         className="primary-button narrow"
         type="button"
-        disabled={!selected.length}
-        onClick={() => go("goal")}
+        disabled={!canContinue || saving}
+        onClick={() => void handleContinue()}
       >
-        Continuar
+        {saving ? "Salvando..." : "Continuar"}
       </button>
     </OnboardingLayout>
   )
 }
 
-function Goal({ go }: { go: (screen: Screen) => void }) {
-  const [hours, setHours] = useState(25)
+function ForeignLanguage({ go }: { go: (screen: Screen) => void }) {
+  const [language, setLanguage] = useState<"ingles" | "espanhol" | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [days, setDays] = useState(["Seg", "Ter", "Qua", "Qui", "Sex"])
+  // Pré-seleciona a língua já escolhida (ex.: vinda da Tela 03c).
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.foreignLanguage) setLanguage(data.foreignLanguage)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
-  const week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+  // RN04: registra e segue para Gerando trilha (enquanto 05 não existe, vai para goal).
+  async function handleContinue() {
+    if (!language || saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setForeignLanguage(language)
+      go("langquiz")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a língua.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <OnboardingLayout step={3} back={() => go("subjects")}>
+    <OnboardingLayout step={2} back={() => go("subjects")}>
+      <div className="language-mascot" aria-hidden="true">
+        <MentorinaLendo size={150} />
+      </div>
       <div className="center-heading">
-        <h1>Quanto você quer estudar por semana?</h1>
-        <p>Dá para mudar depois no seu perfil.</p>
+        <h1>Qual língua estrangeira você vai fazer?</h1>
+        <p>
+          No ENEM você escolhe uma delas. A Mentorina coloca essa língua na sua
+          trilha de Linguagens.
+        </p>
       </div>
-      <div className="goal-grid">
-        <section className="goal-card">
-          <div className="hours-control">
+      {errorMessage && (
+        <div className="form-alert error" role="alert">
+          {errorMessage}
+        </div>
+      )}
+      <div className="language-choice language-choice--wide">
+        <div className="language-options" role="radiogroup">
+          {(
+            [
+              { id: "ingles", label: "Inglês", desc: "5 questões de inglês na prova de Linguagens" },
+              { id: "espanhol", label: "Espanhol", desc: "5 questões de espanhol na prova de Linguagens" },
+            ] as const
+          ).map((opt) => (
             <button
               type="button"
-              aria-label="Diminuir horas"
-              onClick={() => setHours(Math.max(5, hours - 5))}
+              className={`language-option${language === opt.id ? " selected" : ""}`}
+              role="radio"
+              aria-checked={language === opt.id}
+              onClick={() => setLanguage(opt.id)}
+              key={opt.id}
             >
-              −
+              <span className="language-option-radio" aria-hidden="true" />
+              <span className="language-option-body">
+                <strong>{opt.label}</strong>
+                <small>{opt.desc}</small>
+              </span>
             </button>
-            <span>
-              <strong>{hours}</strong>
-              <small>horas por semana</small>
-            </span>
-            <button
-              type="button"
-              aria-label="Aumentar horas"
-              onClick={() => setHours(Math.min(50, hours + 5))}
-            >
-              +
-            </button>
-          </div>
-          <h3>Dias de estudo</h3>
-          <div className="week-days">
-            {week.map((day) => (
-              <button
-                type="button"
-                className={days.includes(day) ? "selected" : ""}
-                onClick={() =>
-                  setDays((current) =>
-                    current.includes(day)
-                      ? current.filter((item) => item !== day)
-                      : [...current, day],
-                  )
-                }
-                key={day}
-              >
-                {day}
-              </button>
-            ))}
-          </div>
-          <p>
-            {days.length} dias · cerca de{" "}
-            {days.length ? Math.round(hours / days.length) : 0} horas por dia
-          </p>
-        </section>
-        <aside className="exam-card">
-          <span>ENEM · 1º dia em 08/11</span>
-          <strong>39</strong>
-          <h3>dias até a prova</h3>
-          <p>Sua trilha será montada até essa data.</p>
-        </aside>
+          ))}
+        </div>
       </div>
+      <p className="language-hint">
+        Dá para trocar depois em Perfil › Língua estrangeira.
+      </p>
       <button
         className="primary-button narrow"
         type="button"
-        onClick={() => go("done")}
+        disabled={!language || saving}
+        onClick={() => void handleContinue()}
       >
-        ✦ Gerar minha trilha
+        {saving ? "Salvando..." : "Continuar"}
       </button>
+    </OnboardingLayout>
+  )
+}
+
+function LanguageQuiz({ go }: { go: (screen: Screen) => void }) {
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [question, setQuestion] = useState<QuizQuestion | null>(null)
+  const [index, setIndex] = useState(1)
+  const [total, setTotal] = useState(5)
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shownAt, setShownAt] = useState<number>(Date.now())
+
+  // Mantém o sessionId acessível aos listeners de interrupção (RN10).
+  const sessionRef = useRef<string | null>(null)
+  sessionRef.current = sessionId
+
+  // Lê a língua escolhida e inicia o nivelamento de língua (5 questões).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    onboardingApi
+      .getMe()
+      .then((profile) => {
+        if (!active) return
+        if (!profile.foreignLanguage) {
+          go("language")
+          return
+        }
+        return assessmentApi
+          .start("lingua", profile.foreignLanguage)
+          .then((data) => {
+            if (!active) return
+            setSessionId(data.sessionId)
+            setTotal(data.total)
+            setIndex(data.index)
+            setQuestion(data.question)
+            setShownAt(Date.now())
+          })
+      })
+      .catch((err: unknown) => {
+        if (active)
+          setErrorMessage(
+            err instanceof Error
+              ? err.message
+              : "Erro ao iniciar o nivelamento de língua.",
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [go])
+
+  // RN10 — interrupção: ao ocultar a aba ou recarregar, descarta a sessão.
+  useEffect(() => {
+    function handleInterrupt() {
+      const id = sessionRef.current
+      if (!id) return
+      try {
+        localStorage.setItem("sherlock_langquiz_interrupted", "1")
+      } catch {
+        // ignore
+      }
+      void assessmentApi.discard(id).catch(() => undefined)
+    }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") handleInterrupt()
+    }
+    window.addEventListener("beforeunload", handleInterrupt)
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => {
+      window.removeEventListener("beforeunload", handleInterrupt)
+      document.removeEventListener("visibilitychange", onVisibility)
+    }
+  }, [])
+
+  // Ao voltar à aba, se houve interrupção, encaminha para "recomeçou".
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== "visible") return
+      let interrupted = false
+      try {
+        interrupted =
+          localStorage.getItem("sherlock_langquiz_interrupted") === "1"
+      } catch {
+        // ignore
+      }
+      if (interrupted && sessionRef.current) {
+        try {
+          localStorage.removeItem("sherlock_langquiz_interrupted")
+        } catch {
+          // ignore
+        }
+        go("restarted")
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [go])
+
+  const isLast = index >= total
+
+  async function submit() {
+    if (!sessionId || !answer || submitting) return
+    setSubmitting(true)
+    setErrorMessage(null)
+    const elapsedMs = Date.now() - shownAt
+    try {
+      const res = await assessmentApi.answer(sessionId, answer, elapsedMs)
+      if (res.finished) {
+        await assessmentApi.finish(sessionId)
+        try {
+          localStorage.setItem("sherlock_assessment_session", sessionId)
+        } catch {
+          // ignore
+        }
+        go("generating")
+        return
+      }
+      setIndex(res.index)
+      setQuestion(res.question)
+      setAnswer(null)
+      setShownAt(Date.now())
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Erro ao registrar a resposta.",
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <OnboardingLayout step={2} back={() => go("language")}>
+      <div className="quiz-layout">
+        <section className="quiz-main">
+          {errorMessage && (
+            <div className="form-alert error" role="alert">
+              {errorMessage}
+            </div>
+          )}
+          {loading || !question ? (
+            <div className="question-card">Carregando questão...</div>
+          ) : (
+            <>
+              <div className="quiz-meta">
+                <span>Língua estrangeira</span>
+                <b>
+                  Questão {index} de {total}
+                </b>
+              </div>
+              <div
+                className="quiz-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={index}
+              >
+                {Array.from({ length: total }, (_, i) => (
+                  <span
+                    key={i}
+                    className={i < index ? "filled" : ""}
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+              <div className="question-card">{question.statement}</div>
+              <div className="answers">
+                {question.options.map(({ letter, text }) => (
+                  <button
+                    type="button"
+                    className={answer === letter ? "selected" : ""}
+                    onClick={() => setAnswer(letter)}
+                    key={letter}
+                  >
+                    <i>{letter}</i>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="primary-button quiz-next"
+                type="button"
+                disabled={!answer || submitting}
+                onClick={() => void submit()}
+              >
+                {submitting
+                  ? "Enviando..."
+                  : isLast
+                    ? "Finalizar"
+                    : "Próxima"}
+              </button>
+            </>
+          )}
+        </section>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+function AssessmentRestarted({ go }: { go: (screen: Screen) => void }) {
+  return (
+    <OnboardingLayout step={2} back={() => go("language")}>
+      <div className="restarted-wrap">
+        <div className="restarted-mascot" aria-hidden="true">
+          <MentorinaPensando size={150} />
+        </div>
+        <h1 className="restarted-title">Seu nivelamento recomeçou</h1>
+        <p className="restarted-subtitle">
+          Sem problema: acontece. Vamos fazer de novo com calma.
+        </p>
+
+        <div className="restarted-card">
+          <div className="restarted-block">
+            <h2>Por que recomeçou?</h2>
+            <p>
+              Você saiu da tela ou a conexão caiu durante o nivelamento. Para o
+              seu resultado ser justo, ele volta do zero.
+            </p>
+          </div>
+
+          <div className="restarted-block">
+            <h2>O que muda?</h2>
+            <p>
+              Você recebe 8 novas questões, de novo 2 fáceis, 3 médias e 3
+              difíceis, misturando as áreas.
+            </p>
+          </div>
+        </div>
+
+        <div className="restarted-tip">
+          <p>
+            <strong>Dica da Mentorina:</strong> reserve cerca de 25 minutos, com
+            boa conexão, e responda sem sair da tela.
+          </p>
+        </div>
+
+        <div className="restarted-actions">
+          <button
+            className="primary-button narrow"
+            type="button"
+            onClick={() => go("langquiz")}
+          >
+            Recomeçar nivelamento
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => go("subjects")}
+          >
+            Prefiro escolher as matérias
+          </button>
+        </div>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+const GENERATING_STEPS = [
+  "Ler curso e prioridades",
+  "Priorizar áreas de maior peso",
+  "Organizar tópicos e revisões",
+  "Adequar à sua meta semanal",
+]
+
+function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
+  const [step, setStep] = useState(0)
+
+  // RN02/RN04/RN06: evolui as etapas automaticamente (~20s no total) e, ao
+  // concluir, abre o Resultado automaticamente (RN05). Sem ação manual.
+  useEffect(() => {
+    const perStep = 1200
+    const timers = GENERATING_STEPS.map((_, i) =>
+      setTimeout(() => setStep(i + 1), perStep * (i + 1)),
+    )
+    const done = setTimeout(
+      () => go("result06"),
+      perStep * (GENERATING_STEPS.length + 1),
+    )
+    return () => {
+      timers.forEach(clearTimeout)
+      clearTimeout(done)
+    }
+  }, [go])
+
+  return (
+    <OnboardingLayout step={2} back={() => go("goal")}>
+      <div className="generating-card">
+        <div className="generating-mascot" aria-hidden="true">
+          <MentorinaComemorando size={150} />
+        </div>
+        <div className="center-heading">
+          <h1>A Mentorina está montando sua trilha</h1>
+          <p>Isso leva só alguns segundos. Não feche esta tela.</p>
+        </div>
+        <ul className="generating-steps">
+          {GENERATING_STEPS.map((label, i) => {
+            const state =
+              i < step ? "done" : i === step ? "active" : "pending"
+            return (
+              <li className={`generating-step ${state}`} key={label}>
+                <span className="generating-step-icon" aria-hidden="true">
+                  {state === "done" ? (
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  ) : null}
+                </span>
+                <span>{label}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+function AssessmentResult({ go }: { go: (screen: Screen) => void }) {
+  const [result, setResult] = useState<AssessmentResult | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    let sessionId: string | null = null
+    try {
+      sessionId = localStorage.getItem("sherlock_assessment_session")
+    } catch {
+      sessionId = null
+    }
+    if (!sessionId) {
+      setLoading(false)
+      return
+    }
+    assessmentApi
+      .result(sessionId)
+      .then((data) => {
+        if (active) setResult(data)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const level = result?.level ?? null
+  const levels: AssessmentResult["level"][] = [
+    "Iniciante",
+    "Intermediário",
+    "Avançado",
+  ]
+
+  return (
+    <OnboardingLayout step={2} back={() => go("goal")}>
+      <div className="result-card">
+        <div className="result-mascot" aria-hidden="true">
+          <MentorinaComemorando size={130} />
+        </div>
+        <div className="center-heading">
+          <h1>Seu nivelamento está pronto!</h1>
+          {loading ? (
+            <p>Calculando seu resultado...</p>
+          ) : result ? (
+            <p>Veja como você foi nas {result.total} questões.</p>
+          ) : (
+            <p>
+              Não encontramos um nivelamento recente. Você pode seguir e
+              ajustar sua trilha pela meta semanal.
+            </p>
+          )}
+        </div>
+
+        {!loading && result && (
+          <>
+            <div className="result-counts">
+              <div className="result-count">
+                <span className="result-count-label">Acertos</span>
+                <strong className="result-count-ok">{result.correct}</strong>
+                <small>de {result.total} questões</small>
+              </div>
+              <div className="result-count">
+                <span className="result-count-label">Erros</span>
+                <strong className="result-count-err">{result.wrong}</strong>
+                <small>de {result.total} questões</small>
+              </div>
+              <div className="result-level">
+                <span className="result-level-label">Seu nível</span>
+                <strong className="result-level-name">{level}</strong>
+                <div className="result-level-badges">
+                  {levels.map((lv) => (
+                    <b className={lv === level ? "active" : ""} key={lv}>
+                      {lv}
+                    </b>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="result-level-note">
+              Sua trilha começa pelos tópicos em que você mais errou e já está
+              pronta na sua Home.
+            </p>
+          </>
+        )}
+
+        <button
+          className="primary-button narrow"
+          type="button"
+          onClick={() => go("goal")}
+        >
+          Continuar
+        </button>
+      </div>
+    </OnboardingLayout>
+  )
+}
+
+const GOAL_OPTIONS = [
+  {
+    days: 3,
+    title: "Leve",
+    description: "3 dias por semana. Ritmo tranquilo para encaixar na rotina.",
+    accent: "indigo" as const,
+  },
+  {
+    days: 5,
+    title: "Ideal",
+    description:
+      "5 dias por semana. O equilíbrio que a Mentorina recomenda para evoluir.",
+    accent: "lime" as const,
+    recommended: true,
+    tags: ["Ideal", "Mais escolhido"],
+  },
+  {
+    days: 7,
+    title: "Intenso",
+    description: "7 dias por semana. Para quem quer acelerar a preparação.",
+    accent: "coral" as const,
+  },
+]
+
+function Goal({ go }: { go: (screen: Screen) => void }) {
+  const [selected, setSelected] = useState<3 | 5 | 7>(5)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Pré-seleciona a meta semanal já registrada no perfil, se houver.
+  useEffect(() => {
+    let active = true
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.weeklyGoalDays) setSelected(data.weeklyGoalDays)
+      })
+      .catch(() => {
+        // silencioso: apenas não pré-seleciona
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // Persiste a meta semanal e conclui o onboarding no backend. O nível é
+  // derivado no servidor a partir da sessão de nivelamento (quando houver).
+  async function handleContinue() {
+    if (saving) return
+    setSaving(true)
+    setErrorMessage(null)
+    try {
+      await onboardingApi.setWeeklyGoal(selected)
+      let assessmentSessionId: string | undefined
+      try {
+        assessmentSessionId =
+          localStorage.getItem("sherlock_assessment_session") ?? undefined
+      } catch {
+        assessmentSessionId = undefined
+      }
+      await onboardingApi.complete(assessmentSessionId)
+      go("done")
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Erro ao concluir o onboarding.",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <OnboardingLayout step={3} back={() => go("subjects")}>
+      <div className="goal-choice">
+        <div className="goal-mascot" aria-hidden="true">
+          <Mascot pose="comemorando" size={130} />
+        </div>
+        <h1 className="goal-title">Qual sua meta de estudo semanal?</h1>
+        <p className="goal-subtitle">
+          Escolha o ritmo que combina com a sua rotina. Dá para mudar depois no
+          seu perfil.
+        </p>
+
+        {errorMessage && (
+          <div className="form-alert error" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="goal-options" role="radiogroup">
+          {GOAL_OPTIONS.map((opt) => {
+            const isSelected = selected === opt.days
+            return (
+              <button
+                type="button"
+                key={opt.days}
+                role="radio"
+                aria-checked={isSelected}
+                className={`goal-option goal-option--${opt.accent}${
+                  isSelected ? " selected" : ""
+                }${opt.recommended ? " recommended" : ""}`}
+                onClick={() => setSelected(opt.days as 3 | 5 | 7)}
+              >
+                {opt.tags && (
+                  <span className="goal-option-tags">
+                    {opt.tags.map((tag, i) => (
+                      <em
+                        key={tag}
+                        className={i === 0 ? "goal-tag-primary" : "goal-tag"}
+                      >
+                        {tag}
+                      </em>
+                    ))}
+                  </span>
+                )}
+                <strong className="goal-option-number">{opt.days}</strong>
+                <span className="goal-option-unit">dias por semana</span>
+                <span className="goal-option-title">{opt.title}</span>
+                <span className="goal-option-text">{opt.description}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <button
+          className="primary-button narrow"
+          type="button"
+          disabled={saving}
+          onClick={() => void handleContinue()}
+        >
+          {saving ? "Salvando..." : "Continuar"}
+        </button>
+      </div>
     </OnboardingLayout>
   )
 }
@@ -1942,6 +2778,12 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           className="primary-button narrow"
           type="button"
           onClick={() => {
+            // Onboarding concluído: limpa a sessão de nivelamento residual.
+            try {
+              localStorage.removeItem("sherlock_assessment_session")
+            } catch {
+              // ignore
+            }
             authApi.logout()
 
             go("login")
@@ -1984,7 +2826,16 @@ export default function App() {
 
     case "subjects":
       return <Subjects go={setScreen} />
-
+    case "language":
+      return <ForeignLanguage go={setScreen} />
+    case "langquiz":
+      return <LanguageQuiz go={setScreen} />
+    case "restarted":
+      return <AssessmentRestarted go={setScreen} />
+    case "generating":
+      return <GeneratingTrack go={setScreen} />
+    case "result06":
+      return <AssessmentResult go={setScreen} />
     case "goal":
       return <Goal go={setScreen} />
 
