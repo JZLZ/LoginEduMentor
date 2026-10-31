@@ -139,14 +139,20 @@ button:focus-visible {
   max-height: 100vh;
   max-height: 100dvh;
   overflow: hidden;
-  padding: 56px 48px;
+  padding: 56px;
   color: white;
   background: var(--ink);
 }
 
 /* Tamanho ajustado do logo no painel de cadastro/login alinhado com o texto abaixo */
+.brand-panel > a,
 .brand-panel > .brand-logo {
+  position: absolute;
+  top: 56px;
+  left: 56px;
   width: 219px;
+  height: 39px;
+  gap: 10px;
   margin-left: 0;
 }
 
@@ -293,7 +299,7 @@ button:focus-visible {
 .brand-copy {
   position: absolute;
   top: 220px;
-  left: 48px;
+  left: 56px;
   right: 40px;
   text-align: left;
 }
@@ -1699,8 +1705,13 @@ form {
     padding: clamp(24px, 5vw, 40px);
   }
 
+  .brand-panel > a,
   .brand-panel > .brand-logo {
+    position: relative;
+    top: auto;
+    left: auto;
     width: clamp(202px, 34vw, 267px);
+    height: auto;
     transform: none;
     margin-left: 0;
   }
@@ -1823,8 +1834,13 @@ form {
     padding: 24px;
   }
 
+  .brand-panel > a,
   .brand-panel > .brand-logo {
+    position: relative;
+    top: auto;
+    left: auto;
     width: min(213px, 75vw);
+    height: auto;
     transform: none;
     margin-left: 0;
   }

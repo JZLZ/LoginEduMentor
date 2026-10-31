@@ -11,16 +11,23 @@ const TOKEN_KEY = "sherlock_auth_token"
 
 export interface UserTokenPayload {
   sub: string
+
   email: string
+
   name: string
+
   surname: string
+
   role: "user" | "sysadmin"
+
   exp?: number
+
   iat?: number
 }
 
 export interface LoginResponse {
   message: string
+
   data: {
     token: string
   }
@@ -28,43 +35,62 @@ export interface LoginResponse {
 
 export interface RegisterResponse {
   message: string
+
   data: {
     _id: string
+
     name: string
+
     surname: string
+
     email: string
+
     role: string
+
     createdAt?: string
+
     tempPassword?: string | null
   }
 }
 
 export interface ApiError {
   message: string | string[]
+
   error?: string
+
   statusCode?: number
 }
 
 export interface UserDetailsResponse {
   message: string
+
   data: unknown
 }
 
 /**
  * Decodifica o payload de um token JWT sem dependências externas.
  */
+
 export function parseJwt(token: string): UserTokenPayload | null {
   try {
     const parts = token.split(".")
+
     if (parts.length < 2) return null
+
     const base64Url = parts[1]
+
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+
     const jsonPayload = decodeURIComponent(
       atob(base64)
+
         .split("")
+
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+
         .join(""),
     )
+
     return JSON.parse(jsonPayload)
   } catch {
     return null
@@ -74,6 +100,7 @@ export function parseJwt(token: string): UserTokenPayload | null {
 /**
  * Utilitários para manipular o token no LocalStorage.
  */
+
 export const tokenStorage = {
   get: (): string | null => {
     try {
@@ -82,6 +109,7 @@ export const tokenStorage = {
       return null
     }
   },
+
   set: (token: string): void => {
     try {
       localStorage.setItem(TOKEN_KEY, token)
@@ -89,6 +117,7 @@ export const tokenStorage = {
       // Ignora erro de storage indisponível
     }
   },
+
   clear: (): void => {
     try {
       localStorage.removeItem(TOKEN_KEY)
@@ -96,8 +125,10 @@ export const tokenStorage = {
       // Ignora erro
     }
   },
+
   getUser: (): UserTokenPayload | null => {
     const token = tokenStorage.get()
+
     return token ? parseJwt(token) : null
   },
 }
@@ -105,11 +136,14 @@ export const tokenStorage = {
 /**
  * Função genérica para requisições à API do sherlock-backend.
  */
+
 async function apiFetch<T>(
   endpoint: string,
+
   options: RequestInit = {},
 ): Promise<T> {
   const token = tokenStorage.get()
+
   const headers = new Headers(options.headers || {})
 
   if (!headers.has("Content-Type")) {
@@ -125,6 +159,7 @@ async function apiFetch<T>(
     : `${API_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`
 
   let response: Response
+
   try {
     response = await fetch(url, { ...options, headers })
   } catch (err) {
@@ -137,9 +172,11 @@ async function apiFetch<T>(
 
   if (!response.ok) {
     const errorData = data as ApiError | null
+
     const message = Array.isArray(errorData?.message)
       ? errorData.message.join(". ")
       : errorData?.message || `Erro na requisição (${response.status})`
+
     throw new Error(message)
   }
 
@@ -150,19 +187,28 @@ export const authApi = {
   /**
    * Realiza login no backend sherlock-backend (POST /api/auth/login).
    */
+
   login: async (email: string, password: string): Promise<{
     token: string
+
     user: UserTokenPayload | null
   }> => {
-    // O backend espera { email, senha } e devolve o token no header
-    // Authorization (Bearer ...), não no corpo da resposta.
+    // O backend espera { email, password } e devolve token em data.token (ou header).
+
     const url = `${API_BASE_URL}/auth/login`
+
     let response: Response
+
     try {
       response = await fetch(url, {
         method: "POST",
+
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), senha: password.trim() }),
+
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+        }),
       })
     } catch {
       throw new Error(
@@ -170,28 +216,34 @@ export const authApi = {
       )
     }
 
-    const body = (await response.json().catch(() => null)) as
-      | { message?: string | string[]; data?: { status?: string } }
-      | null
+    const body = (await response.json().catch(() => null)) as {
+      message?: string | string[]
+      data?: { status?: string; token?: string }
+    } | null
 
     if (!response.ok) {
       const message = Array.isArray(body?.message)
         ? body?.message.join(". ")
         : body?.message || `Erro na requisição (${response.status})`
+
       throw new Error(message)
     }
 
     const token =
-      response.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? null
+      body?.data?.token ??
+      response.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ??
+      null
 
     if (!token) {
       // Múltiplas contas: seleção de perfil necessária (sem token nesta etapa).
+
       throw new Error(
         "Esta conta exige seleção de perfil antes de continuar. Tente novamente pelo fluxo de seleção.",
       )
     }
 
     tokenStorage.set(token)
+
     const user = parseJwt(token)
 
     return { token, user }
@@ -200,15 +252,21 @@ export const authApi = {
   /**
    * Realiza cadastro de usuário no backend (POST /api/user/register).
    */
+
   register: async (userData: {
     name: string
+
     surname: string
+
     email: string
+
     password?: string
+
     generatePassword?: boolean
   }): Promise<RegisterResponse> => {
     return await apiFetch<RegisterResponse>("/user/register", {
       method: "POST",
+
       body: JSON.stringify(userData),
     })
   },
@@ -218,20 +276,31 @@ export const authApi = {
    * É o fluxo oficial usado pela autenticação (coleção accounts), permitindo
    * login logo após o cadastro.
    */
+
   cadastrar: async (payload: {
     nomeCompleto: string
+
     dataNascimento: string
+
     escolaridade: string
+
     celular: string
+
     email: string
+
     emailRecuperacao: string
+
     senha: string
+
     confirmarSenha: string
+
     termosAceitos: boolean
+
     responsavelLegal?: { nomeCompleto: string; cpf: string }
   }): Promise<void> => {
     await apiFetch<unknown>("/auth/cadastro", {
       method: "POST",
+
       body: JSON.stringify(payload),
     })
   },
@@ -239,9 +308,11 @@ export const authApi = {
   /**
    * Valida o token JWT atual na rota protegida (GET /api/auth).
    */
+
   verifyToken: async (): Promise<boolean> => {
     try {
       await apiFetch<{ message: string }>("/auth", { method: "GET" })
+
       return true
     } catch {
       return false
@@ -251,6 +322,7 @@ export const authApi = {
   /**
    * Busca dados do usuário por ID (GET /api/user/:id).
    */
+
   getUserById: async (id: string) => {
     return await apiFetch<UserDetailsResponse>(`/user/${id}`, {
       method: "GET",
@@ -260,6 +332,7 @@ export const authApi = {
   /**
    * Desloga o usuário limpando o token armazenado.
    */
+
   logout: (): void => {
     tokenStorage.clear()
   },
@@ -267,42 +340,56 @@ export const authApi = {
   /**
    * Retorna a URL base configurada.
    */
+
   getBaseUrl: (): string => API_BASE_URL,
 }
 
 // ============================================================================
+
 // Onboarding — Tela 01 (Curso-alvo)
+
 // ============================================================================
 
 export interface CourseOption {
   id: string
+
   name: string
+
   slug: string
 }
 
 interface CourseSearchResponse {
   message: string
+
   data: {
     items: CourseOption[]
+
     page: number
+
     limit: number
+
     total: number
   }
 }
 
 interface WeightAreasResponse {
   message: string
+
   data: {
     courseId: string
+
     courseName: string
+
     weightAreas: string[]
   }
 }
 
 interface TargetCourseResponse {
   message: string
+
   data: {
     targetCourseId: string | null
+
     targetCourseName: string | null
   }
 }
@@ -310,23 +397,31 @@ interface TargetCourseResponse {
 /**
  * Cliente de cursos (catálogo oficial) — busca e áreas de maior peso.
  */
+
 export const coursesApi = {
   /** Busca cursos pelo termo (o backend ignora acento e maiúsculas/minúsculas). */
+
   search: async (term: string): Promise<CourseOption[]> => {
     const query = term.trim()
+
     const res = await apiFetch<CourseSearchResponse>(
       `/courses?search=${encodeURIComponent(query)}&limit=10`,
+
       { method: "GET" },
     )
+
     return res.data.items
   },
 
   /** Retorna as áreas de maior peso de um curso. */
+
   getWeightAreas: async (courseId: string): Promise<string[]> => {
     const res = await apiFetch<WeightAreasResponse>(
       `/courses/${courseId}/weight-areas`,
+
       { method: "GET" },
     )
+
     return res.data.weightAreas
   },
 }
@@ -334,26 +429,33 @@ export const coursesApi = {
 /**
  * Cliente de onboarding — persistência incremental do fluxo.
  */
+
 export const onboardingApi = {
   /** Retorna o estado atual do onboarding do usuário autenticado. */
+
   getMe: async (): Promise<TargetCourseResponse["data"]> => {
     const res = await apiFetch<TargetCourseResponse>("/onboarding/me", {
       method: "GET",
     })
+
     return res.data
   },
 
   /** Registra o curso-alvo escolhido na Tela 01. */
+
   setTargetCourse: async (
     courseId: string,
   ): Promise<TargetCourseResponse["data"]> => {
     const res = await apiFetch<TargetCourseResponse>(
       "/onboarding/target-course",
+
       {
         method: "PUT",
+
         body: JSON.stringify({ courseId }),
       },
     )
+
     return res.data
   },
 }
