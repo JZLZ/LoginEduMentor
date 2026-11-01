@@ -13,6 +13,7 @@ import {
   tokenStorage,
 } from "./services/api"
 import type {
+  AccountOptionDto,
   AssessmentResult,
   CourseOption,
   QuizQuestion,
@@ -427,40 +428,73 @@ function AuthTabs({
   )
 }
 
-function AccountModal({
-  close,
-
-  continueFlow,
-}: {
+interface AccountModalProps {
+  email: string
+  accounts: AccountOptionDto[]
+  selectionToken: string
   close: () => void
+  onSelectSuccess: () => void
+  onExpired: (message: string) => void
+}
 
-  continueFlow: () => void
-}) {
-  const [account, setAccount] = useState("vestibulando")
+function AccountModal({
+  email,
+  accounts,
+  selectionToken,
+  close,
+  onSelectSuccess,
+  onExpired,
+}: AccountModalProps) {
+  const [selectedType, setSelectedType] = useState<string>(
+    accounts[0]?.tipoPreparacao || "VESTIBULANDO"
+  )
+  const [submitting, setSubmitting] = useState(false)
+  const [modalError, setModalError] = useState<string | null>(null)
 
-  const user = tokenStorage.getUser()
+  const accountCards = accounts.map((acc) => {
+    const isVestibulando =
+      acc.tipoPreparacao === "VESTIBULANDO" || acc.tipoPreparacao === "ENEM"
+    const isUniversitario = acc.tipoPreparacao === "UNIVERSITARIO"
 
-  const accounts = [
-    {
-      id: "vestibulando",
+    return {
+      id: acc.tipoPreparacao,
+      title: isVestibulando
+        ? "Vestibulando"
+        : isUniversitario
+          ? "Universitário"
+          : acc.tipoPreparacao,
+      description: isVestibulando
+        ? "Preparação para o ENEM · Medicina"
+        : isUniversitario
+          ? "Graduação · Ensino Superior"
+          : `Perfil ${acc.tipoPreparacao}`,
+      icon: isVestibulando ? "◎" : isUniversitario ? "◇" : "◈",
+    }
+  })
 
-      title: "Vestibulando",
+  async function handleConfirm() {
+    setSubmitting(true)
+    setModalError(null)
+    try {
+      await authApi.selectAccount(selectionToken, selectedType)
+      onSelectSuccess()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao selecionar conta"
+      const isExpired =
+        msg.toLowerCase().includes("expirada") ||
+        msg.toLowerCase().includes("expirado") ||
+        msg.toLowerCase().includes("inválida") ||
+        msg.toLowerCase().includes("401")
 
-      description: "Preparação para o ENEM · Medicina",
-
-      icon: "◎",
-    },
-
-    {
-      id: "universitario",
-
-      title: "Universitário",
-
-      description: "Graduação · Engenharia Civil",
-
-      icon: "◇",
-    },
-  ]
+      if (isExpired) {
+        onExpired("Tempo limite de seleção expirado. Por favor, faça login novamente.")
+      } else {
+        setModalError(msg)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -471,30 +505,31 @@ function AccountModal({
         aria-labelledby="account-title"
       >
         <span className="eyebrow">Passo de segurança</span>
-        <h2 id="account-title">
-          {user?.name
-            ? `Olá, ${user.name}! Escolha seu perfil:`
-            : "Com qual conta você quer entrar?"}
-        </h2>
+        <h2 id="account-title">Com qual conta você quer entrar?</h2>
         <p>
           Encontramos mais de um perfil vinculado a{" "}
-          {user?.email ? <strong>{user.email}</strong> : "sua conta"}. Escolha
-          como quer navegar hoje:
+          {email ? <strong>{email}</strong> : "sua conta"}. Escolha como quer navegar hoje:
         </p>
+        {modalError && (
+          <div className="form-alert error" role="alert" style={{ marginBottom: "12px" }}>
+            {modalError}
+          </div>
+        )}
         <div className="account-list">
-          {accounts.map(({ id, title, description, icon }) => (
+          {accountCards.map(({ id, title, description, icon }) => (
             <button
               type="button"
-              className={`account-option ${account === id ? "selected" : ""}`}
-              onClick={() => setAccount(id)}
+              className={`account-option ${selectedType === id ? "selected" : ""}`}
+              onClick={() => setSelectedType(id)}
               key={id}
+              disabled={submitting}
             >
               <i>{icon}</i>
               <span>
                 <strong>{title}</strong>
                 <small>{description}</small>
               </span>
-              <b>{account === id ? "✓" : ""}</b>
+              <b>{selectedType === id ? "✓" : ""}</b>
             </button>
           ))}
         </div>
@@ -503,15 +538,21 @@ function AccountModal({
           é só entrar de novo.
         </div>
         <div className="modal-actions">
-          <button type="button" className="secondary-button" onClick={close}>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={close}
+            disabled={submitting}
+          >
             Voltar ao login
           </button>
           <button
             type="button"
             className="primary-button"
-            onClick={continueFlow}
+            onClick={handleConfirm}
+            disabled={submitting || !selectedType}
           >
-            Entrar com esta conta
+            {submitting ? "Entrando..." : "Entrar com esta conta"}
           </button>
         </div>
       </section>
@@ -528,7 +569,10 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   const [rememberMe, setRememberMe] = useState(false)
 
-  const [accounts, setAccounts] = useState(false)
+  const [selectionChallenge, setSelectionChallenge] = useState<{
+    selectionToken: string
+    accounts: AccountOptionDto[]
+  } | null>(null)
 
   const [formAttempted, setFormAttempted] = useState(false)
 
@@ -624,9 +668,17 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     setErrorMessage(null)
 
     try {
-      await authApi.login(email, password)
+      const result = await authApi.login(email, password)
 
-      setAccounts(true)
+      if (result.requiresAccountSelection) {
+        setSelectionChallenge({
+          selectionToken: result.selectionToken,
+          accounts: result.accounts,
+        })
+      } else {
+        // Se só tiver uma conta: entra direto sem Modal!
+        go("course")
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao efetuar login"
@@ -739,10 +791,20 @@ function Login({ go }: { go: (screen: Screen) => void }) {
           Precisa de ajuda? <strong>Fale com o suporte</strong>
         </button>
       </div>
-      {accounts && (
+      {selectionChallenge && (
         <AccountModal
-          close={() => setAccounts(false)}
-          continueFlow={() => go("course")}
+          email={email}
+          accounts={selectionChallenge.accounts}
+          selectionToken={selectionChallenge.selectionToken}
+          close={() => setSelectionChallenge(null)}
+          onSelectSuccess={() => {
+            setSelectionChallenge(null)
+            go("course")
+          }}
+          onExpired={(msg) => {
+            setSelectionChallenge(null)
+            setErrorMessage(msg)
+          }}
         />
       )}
     </AuthLayout>

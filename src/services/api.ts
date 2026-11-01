@@ -25,6 +25,23 @@ export interface UserTokenPayload {
   iat?: number
 }
 
+export interface AccountOptionDto {
+  tipoPreparacao: string
+  accountId?: string
+}
+
+export type LoginResult =
+  | {
+      requiresAccountSelection: false
+      token: string
+      user: UserTokenPayload | null
+    }
+  | {
+      requiresAccountSelection: true
+      selectionToken: string
+      accounts: AccountOptionDto[]
+    }
+
 export interface LoginResponse {
   message: string
 
@@ -188,11 +205,7 @@ export const authApi = {
    * Realiza login no backend sherlock-backend (POST /api/auth/login).
    */
 
-  login: async (email: string, password: string): Promise<{
-    token: string
-
-    user: UserTokenPayload | null
-  }> => {
+  login: async (email: string, password: string): Promise<LoginResult> => {
     // O backend espera { email, password } e devolve token em data.token (ou header).
 
     const url = `${API_BASE_URL}/auth/login`
@@ -208,6 +221,84 @@ export const authApi = {
         body: JSON.stringify({
           email: email.trim(),
           password: password.trim(),
+        }),
+      })
+    } catch {
+      throw new Error(
+        "Não foi possível conectar ao servidor backend. Verifique se o sherlock-backend está em execução.",
+      )
+    }
+
+    const body = (await response.json().catch(() => null)) as {
+      message?: string | string[]
+      data?: {
+        status?: string
+        token?: string
+        selectionToken?: string
+        accounts?: AccountOptionDto[]
+      }
+    } | null
+
+    if (!response.ok) {
+      const message = Array.isArray(body?.message)
+        ? body?.message.join(". ")
+        : body?.message || `Erro na requisição (${response.status})`
+
+      throw new Error(message)
+    }
+
+    const token =
+      body?.data?.token ??
+      response.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ??
+      null
+
+    // Se só tiver uma conta vinculada: entra direto sem Modal
+    if (token) {
+      tokenStorage.set(token)
+      const user = parseJwt(token)
+      return {
+        requiresAccountSelection: false,
+        token,
+        user,
+      }
+    }
+
+    // Se voltar 2 ou mais contas: backend devolve as contas e um token temporário
+    if (
+      body?.data?.status === "account_selection_required" &&
+      body?.data?.selectionToken
+    ) {
+      return {
+        requiresAccountSelection: true,
+        selectionToken: body.data.selectionToken,
+        accounts: body.data.accounts || [],
+      }
+    }
+
+    throw new Error("Não foi possível autenticar o usuário. Tente novamente.")
+  },
+
+  /**
+   * Conclui o login trocando o token temporário pela sessão da conta escolhida (POST /api/auth/login/selecionar).
+   */
+  selectAccount: async (
+    selectionToken: string,
+    tipoPreparacao: string,
+  ): Promise<{
+    token: string
+    user: UserTokenPayload | null
+  }> => {
+    const url = `${API_BASE_URL}/auth/login/selecionar`
+
+    let response: Response
+
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectionToken,
+          tipoPreparacao,
         }),
       })
     } catch {
@@ -235,15 +326,10 @@ export const authApi = {
       null
 
     if (!token) {
-      // Múltiplas contas: seleção de perfil necessária (sem token nesta etapa).
-
-      throw new Error(
-        "Esta conta exige seleção de perfil antes de continuar. Tente novamente pelo fluxo de seleção.",
-      )
+      throw new Error("Token de autenticação não retornado pelo servidor.")
     }
 
     tokenStorage.set(token)
-
     const user = parseJwt(token)
 
     return { token, user }
