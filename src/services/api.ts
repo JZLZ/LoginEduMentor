@@ -419,6 +419,64 @@ export const authApi = {
    * Desloga o usuário limpando o token armazenado.
    */
 
+  /**
+   * Solicita o envio de e-mail para recuperação de senha (POST /api/auth/recuperar-senha).
+   * O backend verifica a existência da conta associada ao e-mail informado e retorna o link de recuperação gerado.
+   */
+  solicitarRecuperacao: async (
+    email: string,
+  ): Promise<{
+    message: string
+    data?: {
+      token: string
+      resetLink: string
+    }
+  }> => {
+    return await apiFetch<{
+      message: string
+      data?: {
+        token: string
+        resetLink: string
+      }
+    }>("/auth/recuperar-senha", {
+      method: "POST",
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    })
+  },
+
+  /**
+   * Valida se o token de recuperação é válido e não expirou (GET /api/auth/validar-token-recuperacao).
+   */
+  validarTokenRecuperacao: async (
+    token: string,
+  ): Promise<{ message: string; data: { valido: boolean; email: string } }> => {
+    return await apiFetch<{
+      message: string
+      data: { valido: boolean; email: string }
+    }>(
+      `/auth/validar-token-recuperacao?token=${encodeURIComponent(token.trim())}`,
+      { method: "GET" },
+    )
+  },
+
+  /**
+   * Redefine a senha utilizando o token de recuperação (POST /api/auth/redefinir-senha).
+   */
+  redefinirSenha: async (
+    token: string,
+    novaSenha: string,
+    confirmarSenha: string,
+  ): Promise<{ message: string }> => {
+    return await apiFetch<{ message: string }>("/auth/redefinir-senha", {
+      method: "POST",
+      body: JSON.stringify({
+        token: token.trim(),
+        novaSenha,
+        confirmarSenha,
+      }),
+    })
+  },
+
   logout: (): void => {
     tokenStorage.clear()
   },

@@ -1536,30 +1536,208 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
 
 function PasswordScreen({
   reset,
-
   go,
+  initialToken,
 }: {
   reset?: boolean
-
-  go: (screen: Screen) => void
+  go: (screen: Screen, token?: string) => void
+  initialToken?: string
 }) {
   const [sent, setSent] = useState(false)
-
   const [show, setShow] = useState(false)
-
   const [password, setPassword] = useState("")
-
   const [confirmation, setConfirmation] = useState("")
-
   const [email, setEmail] = useState("")
-
   const [formAttempted, setFormAttempted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [recoveryLink, setRecoveryLink] = useState<string | null>(null)
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null)
 
-  const validLength = password.length >= 8 && password.length <= 20
+  // Resolve token from initialToken prop, search query, or hash
+  const [token, setToken] = useState<string>(() => {
+    if (initialToken) return initialToken
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("token")
+      if (p) return p
+      const hash = window.location.hash || ""
+      if (hash.includes("token=")) {
+        const queryPart = hash.includes("?")
+          ? hash.substring(hash.indexOf("?") + 1)
+          : hash.replace(/^#/, "")
+        return new URLSearchParams(queryPart).get("token") || ""
+      }
+    }
+    return ""
+  })
 
-  const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
+  useEffect(() => {
+    if (initialToken) setToken(initialToken)
+  }, [initialToken])
 
-  const same = password.length > 0 && password === confirmation
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null)
+  const [tokenEmail, setTokenEmail] = useState<string | null>(null)
+  const [validatingToken, setValidatingToken] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(false)
+
+  // Validate reset token with backend on mount or when token changes
+  useEffect(() => {
+    if (!reset || !token) return
+    let active = true
+    setValidatingToken(true)
+    setError(null)
+
+    authApi
+      .validarTokenRecuperacao(token)
+      .then((res) => {
+        if (active) {
+          setTokenValid(true)
+          setTokenEmail(res.data?.email || null)
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setTokenValid(false)
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Token de recuperação inválido ou expirado.",
+          )
+        }
+      })
+      .finally(() => {
+        if (active) setValidatingToken(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [reset, token])
+
+  // Regras de negócio padronizadas para criação/redefinição de senha
+  const ruleLength = password.length >= 8 && password.length <= 20
+  const ruleCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
+  const ruleNumber = /\d/.test(password)
+  const ruleSpecial = /[!@#$%&*]/.test(password)
+  const ruleNoSpaces = !/\s/.test(password)
+  const ruleNoSequential =
+    password.length === 0 ||
+    !/(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+      password,
+    )
+  const ruleSame = password.length > 0 && password === confirmation
+
+  const canResetSubmit =
+    ruleLength &&
+    ruleCase &&
+    ruleNumber &&
+    ruleSpecial &&
+    ruleNoSpaces &&
+    ruleNoSequential &&
+    ruleSame
+
+  const handleOpenResetLink = (targetToken?: string) => {
+    const finalToken = targetToken || recoveryToken || token
+    if (finalToken && typeof window !== "undefined") {
+      window.location.hash = `reset?token=${encodeURIComponent(finalToken)}`
+    }
+    go("reset", finalToken || undefined)
+  }
+
+  const handleRecoverySubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setFormAttempted(true)
+    setError(null)
+    setRecoveryLink(null)
+    setRecoveryToken(null)
+
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed) {
+      setError("Informe um e-mail válido.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await authApi.solicitarRecuperacao(trimmed)
+      setSent(true)
+      setSuccessMessage(
+        res.message ||
+          "Se o e-mail informado estiver cadastrado, enviamos as instruções para redefinição de senha.",
+      )
+      if (res.data?.token) {
+        setRecoveryToken(res.data.token)
+        setToken(res.data.token)
+      }
+      if (res.data?.resetLink) {
+        setRecoveryLink(res.data.resetLink)
+      }
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Não foi possível enviar o link de recuperação. Tente novamente."
+      setError(msg)
+      setSent(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setFormAttempted(true)
+    setError(null)
+
+    if (!ruleLength) {
+      setError("A senha deve ter entre 8 e 20 caracteres.")
+      return
+    }
+    if (!ruleCase || !ruleNumber || !ruleSpecial || !ruleNoSpaces) {
+      setError(
+        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
+      )
+      return
+    }
+    if (!ruleNoSequential) {
+      setError("A senha não pode conter números sequenciais (ex.: 123, 321).")
+      return
+    }
+    if (!ruleSame) {
+      setError("As senhas não coincidem.")
+      return
+    }
+
+    if (!token) {
+      setLoading(true)
+      setTimeout(() => {
+        setLoading(false)
+        setResetSuccess(true)
+        setTimeout(() => go("login"), 1500)
+      }, 500)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await authApi.redefinirSenha(token, password, confirmation)
+      setResetSuccess(true)
+      setSuccessMessage(res.message || "Senha redefinida com sucesso.")
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.history.replaceState({}, "", window.location.pathname)
+        }
+        go("login")
+      }, 1500)
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Erro ao redefinir a senha."
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <>
@@ -1576,6 +1754,14 @@ function PasswordScreen({
             setShow={setShow}
             formAttempted={formAttempted}
             setFormAttempted={setFormAttempted}
+            token={token}
+            tokenValid={tokenValid}
+            tokenEmail={tokenEmail}
+            validatingToken={validatingToken}
+            loading={loading}
+            error={error}
+            successMessage={successMessage}
+            onSubmitReset={handleResetSubmit}
           />
         ) : (
           <MobileRecoveryPassword
@@ -1586,6 +1772,18 @@ function PasswordScreen({
             setSent={setSent}
             formAttempted={formAttempted}
             setFormAttempted={setFormAttempted}
+            loading={loading}
+            error={error}
+            successMessage={successMessage}
+            token={token}
+            tokenValid={tokenValid}
+            tokenEmail={tokenEmail}
+            validatingToken={validatingToken}
+            resetLink={recoveryLink}
+            generatedToken={recoveryToken}
+            onOpenResetLink={handleOpenResetLink}
+            onSubmitRecovery={handleRecoverySubmit}
+            onSubmitReset={handleResetSubmit}
           />
         )}
       </div>
@@ -1597,7 +1795,12 @@ function PasswordScreen({
             <button
               className="back-link"
               type="button"
-              onClick={() => go("login")}
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.history.replaceState({}, "", window.location.pathname)
+                }
+                go("login")
+              }}
             >
               ← Voltar{reset ? " ao login" : ""}
             </button>
@@ -1613,12 +1816,17 @@ function PasswordScreen({
               <form
                 className={formAttempted ? "required-check" : ""}
                 onInvalidCapture={() => setFormAttempted(true)}
-                onSubmit={(e) => {
-                  e.preventDefault()
-
-                  setSent(true)
-                }}
+                onSubmit={handleRecoverySubmit}
               >
+                {error && (
+                  <div
+                    className="form-alert error"
+                    role="alert"
+                    style={{ marginBottom: "16px" }}
+                  >
+                    {error}
+                  </div>
+                )}
                 <Field
                   label="E-mail de recuperação"
                   type="email"
@@ -1626,29 +1834,106 @@ function PasswordScreen({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                <button className="primary-button" type="submit">
-                  Enviar link
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Verificando e enviando..." : "Enviar link"}
                 </button>
                 {sent && (
                   <div className="success-state">
                     <strong>✓ Link enviado!</strong>
-                    <span>Confira sua caixa de entrada e o spam.</span>
-                    <button type="button" onClick={() => go("reset")}>
+                    <span>
+                      {successMessage ||
+                        "Se o e-mail informado estiver cadastrado, enviamos as instruções para redefinição de senha. Confira sua caixa de entrada e o spam."}
+                    </span>
+                    <a
+                      href={
+                        recoveryLink ||
+                        (recoveryToken
+                          ? `/#reset?token=${encodeURIComponent(recoveryToken)}`
+                          : "#reset")
+                      }
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleOpenResetLink()
+                      }}
+                      className="cursor-pointer"
+                    >
                       Abrir link recebido
-                    </button>
+                    </a>
                   </div>
                 )}
               </form>
+            ) : validatingToken ? (
+              <div
+                className="form-alert"
+                style={{
+                  background: "#E9E6FF",
+                  color: "#4F3CF0",
+                  marginBottom: "16px",
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                }}
+              >
+                Validando link de recuperação...
+              </div>
+            ) : tokenValid === false ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                <div className="form-alert error" role="alert">
+                  {error || "O link de recuperação é inválido ou já expirou."}
+                </div>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => go("recovery")}
+                >
+                  Solicitar novo link
+                </button>
+              </div>
             ) : (
               <form
                 className={formAttempted ? "required-check" : ""}
                 onInvalidCapture={() => setFormAttempted(true)}
-                onSubmit={(e) => {
-                  e.preventDefault()
-
-                  if (validLength && validMix && same) go("login")
-                }}
+                onSubmit={handleResetSubmit}
               >
+                {tokenEmail && (
+                  <p
+                    style={{
+                      marginBottom: "14px",
+                      fontSize: "14px",
+                      color: "var(--ink)",
+                    }}
+                  >
+                    Redefinindo senha para: <strong>{tokenEmail}</strong>
+                  </p>
+                )}
+                {error && (
+                  <div
+                    className="form-alert error"
+                    role="alert"
+                    style={{ marginBottom: "16px" }}
+                  >
+                    {error}
+                  </div>
+                )}
+                {resetSuccess && (
+                  <div
+                    className="form-alert success"
+                    role="alert"
+                    style={{ marginBottom: "16px" }}
+                  >
+                    {successMessage ||
+                      "Senha redefinida com sucesso! Redirecionando para o login..."}
+                  </div>
+                )}
                 <Field
                   label="Nova senha"
                   type={show ? "text" : "password"}
@@ -1672,20 +1957,35 @@ function PasswordScreen({
                   />
                 </Field>
                 <ul className="password-rules">
-                  <li className={validLength ? "valid" : ""}>
+                  <li className={ruleLength ? "valid" : ""}>
                     Entre 8 e 20 caracteres
                   </li>
-                  <li className={validMix ? "valid" : ""}>Letras e números</li>
-                  <li className={same ? "valid" : ""}>
+                  <li className={ruleCase ? "valid" : ""}>
+                    Letras maiúsculas e minúsculas
+                  </li>
+                  <li className={ruleNumber ? "valid" : ""}>
+                    Pelo menos um número
+                  </li>
+                  <li className={ruleSpecial ? "valid" : ""}>
+                    Caractere especial (!@#$%&*)
+                  </li>
+                  <li
+                    className={
+                      ruleNoSequential && password.length >= 3 ? "valid" : ""
+                    }
+                  >
+                    Sem números sequenciais (ex.: 123)
+                  </li>
+                  <li className={ruleSame ? "valid" : ""}>
                     As duas senhas são iguais
                   </li>
                 </ul>
                 <button
                   className="primary-button"
                   type="submit"
-                  disabled={!validLength || !validMix || !same}
+                  disabled={!canResetSubmit || loading || resetSuccess}
                 >
-                  Redefinir senha
+                  {loading ? "Redefinindo..." : "Redefinir senha"}
                 </button>
               </form>
             )}
@@ -3018,14 +3318,54 @@ function Done({ go }: { go: (screen: Screen) => void }) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>(() => {
-    if (typeof window !== "undefined") {
-      const s = new URLSearchParams(window.location.search).get("screen")
-      if (s) return s as Screen
+  const parseUrlState = useCallback((): { screen: Screen; token: string } => {
+    if (typeof window === "undefined") return { screen: "landing", token: "" }
+
+    const hash = window.location.hash || ""
+    const searchParams = new URLSearchParams(window.location.search)
+
+    // Check token in query param (?token=...) or in hash (#reset?token=... or #token=...)
+    let token = searchParams.get("token") || ""
+    if (!token && hash.includes("token=")) {
+      const queryPart = hash.includes("?")
+        ? hash.substring(hash.indexOf("?") + 1)
+        : hash.replace(/^#/, "")
+      token = new URLSearchParams(queryPart).get("token") || ""
     }
-    return "landing"
-  })
+
+    // Check screen
+    if (hash.startsWith("#reset") || token) {
+      return { screen: "reset", token }
+    }
+    if (hash.startsWith("#recovery") || hash.startsWith("#esqueci-senha")) {
+      return { screen: "recovery", token: "" }
+    }
+
+    const s = searchParams.get("screen")
+    if (s) return { screen: s as Screen, token }
+
+    return { screen: "landing", token }
+  }, [])
+
+  const [initialState] = useState(() => parseUrlState())
+  const [screen, setScreen] = useState<Screen>(initialState.screen)
+  const [resetToken, setResetToken] = useState<string>(initialState.token)
   const [authEpoch, setAuthEpoch] = useState<number>(0)
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const state = parseUrlState()
+      if (state.screen) setScreen(state.screen)
+      if (state.token) setResetToken(state.token)
+    }
+
+    window.addEventListener("hashchange", handleUrlChange)
+    window.addEventListener("popstate", handleUrlChange)
+    return () => {
+      window.removeEventListener("hashchange", handleUrlChange)
+      window.removeEventListener("popstate", handleUrlChange)
+    }
+  }, [parseUrlState])
 
   const handleLogout = useCallback(() => {
     tokenStorage.clear()
@@ -3083,10 +3423,33 @@ export default function App() {
       return <Signup go={setScreen} />
 
     case "recovery":
-      return <PasswordScreen go={setScreen} />
+      return (
+        <PasswordScreen
+          go={(dest, token) => {
+            if (dest === "login" && typeof window !== "undefined") {
+              window.history.replaceState({}, "", window.location.pathname)
+            }
+            if (token) setResetToken(token)
+            setScreen(dest)
+          }}
+          initialToken={resetToken}
+        />
+      )
 
     case "reset":
-      return <PasswordScreen reset go={setScreen} />
+      return (
+        <PasswordScreen
+          reset
+          go={(dest, token) => {
+            if (dest === "login" && typeof window !== "undefined") {
+              window.history.replaceState({}, "", window.location.pathname)
+            }
+            if (token) setResetToken(token)
+            setScreen(dest)
+          }}
+          initialToken={resetToken}
+        />
+      )
 
     case "course":
       return <Course go={setScreen} />

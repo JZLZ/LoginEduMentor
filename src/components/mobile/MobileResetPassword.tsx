@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
+import { authApi } from "../../services/api"
 
 interface MobileResetPasswordProps {
   go: (screen: any) => void
@@ -10,6 +11,13 @@ interface MobileResetPasswordProps {
   setShow?: (show: boolean) => void
   formAttempted?: boolean
   setFormAttempted?: (attempted: boolean) => void
+  token?: string
+  tokenValid?: boolean | null
+  tokenEmail?: string | null
+  validatingToken?: boolean
+  loading?: boolean
+  error?: string | null
+  successMessage?: string | null
   onSubmitReset?: (e: FormEvent<HTMLFormElement>) => void
 }
 
@@ -26,6 +34,13 @@ export default function MobileResetPassword({
   show: propShow,
   setShow: propSetShow,
   setFormAttempted: propSetFormAttempted,
+  token: propToken,
+  tokenValid: propTokenValid,
+  tokenEmail: propTokenEmail,
+  validatingToken: propValidatingToken,
+  loading: propLoading,
+  error: propError,
+  successMessage: propSuccessMessage,
   onSubmitReset,
 }: MobileResetPasswordProps) {
   // Local fallback states if not controlled from parent
@@ -35,8 +50,34 @@ export default function MobileResetPassword({
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [focusedField, setFocusedField] =
     useState<"password" | "confirmation" | null>("password")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [internalLoading, setInternalLoading] = useState(false)
+  const [internalSuccess, setInternalSuccess] = useState(false)
+  const [internalError, setInternalError] = useState<string | null>(null)
+  const [internalTokenValid, setInternalTokenValid] = useState<boolean | null>(
+    null,
+  )
+  const [internalTokenEmail, setInternalTokenEmail] = useState<string | null>(
+    null,
+  )
+  const [internalValidating, setInternalValidating] = useState(false)
+
+  // Resolve token from prop or URL
+  const token =
+    propToken ??
+    (() => {
+      if (typeof window !== "undefined") {
+        const p = new URLSearchParams(window.location.search).get("token")
+        if (p) return p
+        const hash = window.location.hash
+        if (hash.includes("token=")) {
+          const queryPart = hash.includes("?")
+            ? hash.substring(hash.indexOf("?") + 1)
+            : hash
+          return new URLSearchParams(queryPart).get("token") || ""
+        }
+      }
+      return ""
+    })()
 
   const password = propPassword !== undefined ? propPassword : internalPassword
   const setPassword = propSetPassword || setInternalPassword
@@ -54,15 +95,97 @@ export default function MobileResetPassword({
     }
   }
 
-  // Validation rules according to Figma specs
-  const rule1Valid = password.length >= 8
-  const rule2Valid = /[a-zA-Z]/.test(password) && /\d/.test(password)
-  const rule3Valid = password.length > 0 && password === confirmation
-  const canSubmit = rule1Valid && rule2Valid && rule3Valid
+  const loading = propLoading ?? internalLoading
+  const setLoading = setInternalLoading
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const error = propError ?? internalError
+  const setError = setInternalError
+
+  const tokenValid =
+    propTokenValid !== undefined ? propTokenValid : internalTokenValid
+  const tokenEmail = propTokenEmail ?? internalTokenEmail
+  const validatingToken = propValidatingToken ?? internalValidating
+  const success = internalSuccess
+
+  // Auto-validate token on mount if token is provided and parent hasn't validated yet
+  useEffect(() => {
+    if (!token || propTokenValid !== undefined) return
+
+    let active = true
+    setInternalValidating(true)
+    authApi
+      .validarTokenRecuperacao(token)
+      .then((res) => {
+        if (active) {
+          setInternalTokenValid(true)
+          setInternalTokenEmail(res.data?.email || null)
+          setInternalError(null)
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setInternalTokenValid(false)
+          setInternalError(
+            err instanceof Error
+              ? err.message
+              : "Token de recuperação inválido ou expirado.",
+          )
+        }
+      })
+      .finally(() => {
+        if (active) setInternalValidating(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [token, propTokenValid])
+
+  // Regras de negócio padronizadas para criação/redefinição de senha
+  const ruleLength = password.length >= 8 && password.length <= 20
+  const ruleCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
+  const ruleNumber = /\d/.test(password)
+  const ruleSpecial = /[!@#$%&*]/.test(password)
+  const ruleNoSpaces = !/\s/.test(password)
+  const ruleNoSequential =
+    password.length === 0 ||
+    !/(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+      password,
+    )
+  const ruleSame = password.length > 0 && password === confirmation
+
+  const canSubmit =
+    ruleLength &&
+    ruleCase &&
+    ruleNumber &&
+    ruleSpecial &&
+    ruleNoSpaces &&
+    ruleNoSequential &&
+    ruleSame
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     propSetFormAttempted?.(true)
+    setError(null)
+
+    if (!ruleLength) {
+      setError("A senha deve ter entre 8 e 20 caracteres.")
+      return
+    }
+    if (!ruleCase || !ruleNumber || !ruleSpecial || !ruleNoSpaces) {
+      setError(
+        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
+      )
+      return
+    }
+    if (!ruleNoSequential) {
+      setError("A senha não pode conter números sequenciais (ex.: 123, 321).")
+      return
+    }
+    if (!ruleSame) {
+      setError("As senhas não coincidem.")
+      return
+    }
 
     if (!canSubmit) return
 
@@ -71,14 +194,36 @@ export default function MobileResetPassword({
       return
     }
 
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setSuccess(true)
+    if (!token) {
+      // Standalone simulation fallback
+      setLoading(true)
       setTimeout(() => {
+        setLoading(false)
+        setInternalSuccess(true)
+        setTimeout(() => {
+          go("login")
+        }, 1200)
+      }, 600)
+      return
+    }
+
+    setLoading(true)
+    try {
+      await authApi.redefinirSenha(token, password, confirmation)
+      setInternalSuccess(true)
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.history.replaceState({}, "", window.location.pathname)
+        }
         go("login")
-      }, 1200)
-    }, 600)
+      }, 1500)
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Erro ao redefinir a senha."
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -118,8 +263,8 @@ export default function MobileResetPassword({
             <button
               type="button"
               onClick={() => {
-                setPassword("SenhaForte123")
-                setConfirmation("SenhaForte123")
+                setPassword("SenhaForte@2026")
+                setConfirmation("SenhaForte@2026")
               }}
               className="text-[11px] font-bold text-[#4F3CF0] bg-[#E9E6FF] hover:bg-[#DDD8FF] px-2.5 py-1 rounded-full transition-colors active:scale-95 cursor-pointer"
               title="Preencher senha válida para teste"
@@ -139,6 +284,140 @@ export default function MobileResetPassword({
           </div>
 
           {/* Form */}
+          {validatingToken && (
+            <div className="w-full rounded-[14px] bg-[#E9E6FF] p-3.5 text-[13px] text-[#4F3CF0] mb-4 flex items-center gap-2">
+              <svg
+                className="animate-spin h-4 w-4 text-[#4F3CF0]"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+              <span>Validando link de recuperação...</span>
+            </div>
+          )}
+
+          {tokenValid === false && (
+            <div className="w-full rounded-[14px] bg-[#FEE4E2] border border-[#FECDCA] p-4 text-[13px] text-[#B42318] mb-4 flex flex-col gap-3">
+              <div className="flex items-start gap-2">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="shrink-0 mt-0.5"
+                >
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="7"
+                    stroke="#B42318"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M8 4.5V8.5M8 11.5H8.01"
+                    stroke="#B42318"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div>
+                  <p className="font-bold text-[14px]">
+                    Link inválido ou expirado
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#17152E]">
+                    {error ||
+                      "O link de recuperação é inválido ou já expirou. Solicite um novo link."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => go("recovery")}
+                className="w-full h-[44px] rounded-[22px] bg-[#4F3CF0] text-white font-bold text-[14px] cursor-pointer"
+              >
+                Solicitar novo link
+              </button>
+            </div>
+          )}
+
+          {tokenEmail && tokenValid !== false && (
+            <div className="w-full rounded-[12px] bg-[#E9E6FF]/50 border border-[#4F3CF0]/20 p-2.5 text-[13px] text-[#5F5B7D] mb-4">
+              Redefinindo senha para:{" "}
+              <strong className="text-[#17152E]">{tokenEmail}</strong>
+            </div>
+          )}
+
+          {error && tokenValid !== false && (
+            <div
+              role="alert"
+              className="w-full rounded-[14px] bg-[#FEE4E2] border border-[#FECDCA] p-3 text-[13px] text-[#B42318] leading-tight mb-4 flex items-start gap-2 animate-fadeIn"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="shrink-0 mt-0.5"
+              >
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="7"
+                  stroke="#B42318"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M8 4.5V8.5M8 11.5H8.01"
+                  stroke="#B42318"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {internalSuccess && (
+            <div className="w-full rounded-[14px] bg-[#E3F5EC] border border-[#BCE8D1] p-3.5 text-[13px] text-[#137A51] mb-4 flex items-start gap-2 animate-fadeIn">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="shrink-0 mt-0.5"
+              >
+                <path
+                  d="M13.3334 4L6.00008 11.3333L2.66675 8"
+                  stroke="#137A51"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div>
+                <p className="font-bold text-[14px]">
+                  Senha redefinida com sucesso!
+                </p>
+                <p className="mt-0.5 text-[12px] text-[#17152E]">
+                  Redirecionando para o login...
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col">
             {/* Field 1: Nova senha (Figma: clip2_2448_5284, translate 24 174, w=345, h=88) */}
             <div className="flex flex-col mb-4">
@@ -294,12 +573,11 @@ export default function MobileResetPassword({
               </div>
             </div>
 
-            {/* Password Requirements Checklist (Figma clips 4, 5, 6, y=398..470) */}
+            {/* Password Requirements Checklist (Standardized Business Rules) */}
             <div className="flex flex-col gap-2.5 mb-6">
-              {/* Requirement 1: Pelo menos 8 caracteres (Figma: clip4_2448_5284) */}
+              {/* Requirement 1: Entre 8 e 20 caracteres */}
               <div className="flex items-center gap-3">
-                {rule1Valid ? (
-                  /* Green checkmark from Figma: M39 402.5L30.75 410.75L27 407 stroke="#137A51" */
+                {ruleLength ? (
                   <svg
                     width="18"
                     height="18"
@@ -316,7 +594,6 @@ export default function MobileResetPassword({
                     />
                   </svg>
                 ) : (
-                  /* Neutral gray circle: stroke="#8C88AA" */
                   <svg
                     width="18"
                     height="18"
@@ -335,19 +612,18 @@ export default function MobileResetPassword({
                 )}
                 <span
                   className={`text-[13px] transition-colors ${
-                    rule1Valid
+                    ruleLength
                       ? "text-[#17152E] font-medium"
                       : "text-[#5F5B7D] font-normal"
                   }`}
                 >
-                  Pelo menos 8 caracteres
+                  Entre 8 e 20 caracteres
                 </span>
               </div>
 
-              {/* Requirement 2: Letras e números (Figma: clip5_2448_5284) */}
+              {/* Requirement 2: Letras maiúsculas e minúsculas */}
               <div className="flex items-center gap-3">
-                {rule2Valid ? (
-                  /* Green checkmark from Figma: stroke="#137A51" */
+                {ruleCase ? (
                   <svg
                     width="18"
                     height="18"
@@ -364,7 +640,6 @@ export default function MobileResetPassword({
                     />
                   </svg>
                 ) : (
-                  /* Neutral gray circle: stroke="#8C88AA" */
                   <svg
                     width="18"
                     height="18"
@@ -383,19 +658,18 @@ export default function MobileResetPassword({
                 )}
                 <span
                   className={`text-[13px] transition-colors ${
-                    rule2Valid
+                    ruleCase
                       ? "text-[#17152E] font-medium"
                       : "text-[#5F5B7D] font-normal"
                   }`}
                 >
-                  Letras e números
+                  Letras maiúsculas e minúsculas
                 </span>
               </div>
 
-              {/* Requirement 3: As duas senhas são iguais (Figma: clip6_2448_5284) */}
+              {/* Requirement 3: Pelo menos um número */}
               <div className="flex items-center gap-3">
-                {rule3Valid ? (
-                  /* Green checkmark from Figma: stroke="#137A51" */
+                {ruleNumber ? (
                   <svg
                     width="18"
                     height="18"
@@ -412,7 +686,6 @@ export default function MobileResetPassword({
                     />
                   </svg>
                 ) : (
-                  /* Neutral gray circle: stroke="#8C88AA" */
                   <svg
                     width="18"
                     height="18"
@@ -431,7 +704,145 @@ export default function MobileResetPassword({
                 )}
                 <span
                   className={`text-[13px] transition-colors ${
-                    rule3Valid
+                    ruleNumber
+                      ? "text-[#17152E] font-medium"
+                      : "text-[#5F5B7D] font-normal"
+                  }`}
+                >
+                  Pelo menos um número
+                </span>
+              </div>
+
+              {/* Requirement 4: Caractere especial */}
+              <div className="flex items-center gap-3">
+                {ruleSpecial ? (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <path
+                      d="M15 5.5L6.75 13.75L3 10"
+                      stroke="#137A51"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <circle
+                      cx="9"
+                      cy="9"
+                      r="6"
+                      stroke="#8C88AA"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                )}
+                <span
+                  className={`text-[13px] transition-colors ${
+                    ruleSpecial
+                      ? "text-[#17152E] font-medium"
+                      : "text-[#5F5B7D] font-normal"
+                  }`}
+                >
+                  Caractere especial (!@#$%&*)
+                </span>
+              </div>
+
+              {/* Requirement 5: Sem números sequenciais */}
+              <div className="flex items-center gap-3">
+                {ruleNoSequential && password.length >= 3 ? (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <path
+                      d="M15 5.5L6.75 13.75L3 10"
+                      stroke="#137A51"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <circle
+                      cx="9"
+                      cy="9"
+                      r="6"
+                      stroke="#8C88AA"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                )}
+                <span
+                  className={`text-[13px] transition-colors ${
+                    ruleNoSequential && password.length >= 3
+                      ? "text-[#17152E] font-medium"
+                      : "text-[#5F5B7D] font-normal"
+                  }`}
+                >
+                  Sem números sequenciais (ex.: 123)
+                </span>
+              </div>
+
+              {/* Requirement 6: As duas senhas são iguais */}
+              <div className="flex items-center gap-3">
+                {ruleSame ? (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <path
+                      d="M15 5.5L6.75 13.75L3 10"
+                      stroke="#137A51"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <circle
+                      cx="9"
+                      cy="9"
+                      r="6"
+                      stroke="#8C88AA"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                )}
+                <span
+                  className={`text-[13px] transition-colors ${
+                    ruleSame
                       ? "text-[#17152E] font-medium"
                       : "text-[#5F5B7D] font-normal"
                   }`}
@@ -444,11 +855,11 @@ export default function MobileResetPassword({
             {/* CTA Button: Redefinir senha (Figma: x=24, y=492, w=345, h=56, rx=28, fill=#4F3CF0) */}
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={loading || success || tokenValid === false}
               className={`w-full h-[56px] rounded-[28px] font-bold text-[16px] transition-all flex items-center justify-center cursor-pointer shadow-sm ${
-                canSubmit
+                canSubmit && tokenValid !== false
                   ? "bg-[#4F3CF0] hover:bg-[#4332D6] active:scale-[0.99] text-white"
-                  : "bg-[#4F3CF0] text-white opacity-85 hover:opacity-100"
+                  : "bg-[#4F3CF0] text-white opacity-85 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed"
               }`}
             >
               {loading ? (

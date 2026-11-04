@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react"
 import MobileResetPassword from "./MobileResetPassword"
+import { authApi } from "../../services/api"
 
 interface MobileRecoveryPasswordProps {
   reset?: boolean
-  go: (screen: any) => void
+  go: (screen: any, token?: string) => void
   email?: string
   setEmail?: (email: string) => void
   sent?: boolean
@@ -16,6 +17,16 @@ interface MobileRecoveryPasswordProps {
   setShow?: (show: boolean) => void
   formAttempted?: boolean
   setFormAttempted?: (attempted: boolean) => void
+  loading?: boolean
+  error?: string | null
+  successMessage?: string | null
+  token?: string
+  tokenValid?: boolean | null
+  tokenEmail?: string | null
+  validatingToken?: boolean
+  resetLink?: string | null
+  generatedToken?: string | null
+  onOpenResetLink?: (token?: string) => void
   onSubmitRecovery?: (e: FormEvent<HTMLFormElement>) => void
   onSubmitReset?: (e: FormEvent<HTMLFormElement>) => void
 }
@@ -213,6 +224,16 @@ export default function MobileRecoveryPassword({
   setShow: propSetShow,
   formAttempted: propFormAttempted,
   setFormAttempted: propSetFormAttempted,
+  loading: propLoading,
+  error: propError,
+  successMessage: propSuccessMessage,
+  token,
+  tokenValid,
+  tokenEmail,
+  validatingToken,
+  resetLink: propResetLink,
+  generatedToken: propGeneratedToken,
+  onOpenResetLink,
   onSubmitRecovery,
   onSubmitReset,
 }: MobileRecoveryPasswordProps) {
@@ -223,7 +244,16 @@ export default function MobileRecoveryPassword({
   const [localConfirmation, setLocalConfirmation] = useState("")
   const [localShow, setLocalShow] = useState(false)
   const [localAttempted, setLocalAttempted] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [localLoading, setLocalLoading] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [localSuccessMsg, setLocalSuccessMsg] = useState<string | null>(null)
+  const [localResetLink, setLocalResetLink] = useState<string | null>(null)
+  const [localGeneratedToken, setLocalGeneratedToken] = useState<string | null>(
+    null,
+  )
+
+  const activeResetLink = propResetLink ?? localResetLink
+  const activeGeneratedToken = propGeneratedToken ?? localGeneratedToken
 
   const email = propEmail ?? localEmail
   const setEmail = propSetEmail ?? setLocalEmail
@@ -243,23 +273,60 @@ export default function MobileRecoveryPassword({
   const formAttempted = propFormAttempted ?? localAttempted
   const setFormAttempted = propSetFormAttempted ?? setLocalAttempted
 
+  const loading = propLoading ?? localLoading
+  const setLoading = setLocalLoading
+
+  const error = propError ?? localError
+  const setError = setLocalError
+
+  const successMessage = propSuccessMessage ?? localSuccessMsg
+  const setSuccessMessage = setLocalSuccessMsg
+
   // Validation rules for Reset Password mode
   const validLength = password.length >= 8 && password.length <= 20
   const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
   const same = password.length > 0 && password === confirmation
   const canReset = validLength && validMix && same
 
-  const handleRecoverySubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleRecoverySubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormAttempted(true)
+    setError(null)
+
     if (onSubmitRecovery) {
       onSubmitRecovery(e)
-    } else {
-      setLoading(true)
-      setTimeout(() => {
-        setLoading(false)
-        setSent(true)
-      }, 400)
+      return
+    }
+
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed) {
+      setError("Informe um e-mail válido.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await authApi.solicitarRecuperacao(trimmed)
+      setSent(true)
+      setSuccessMessage(
+        res.message ||
+          "Se o e-mail informado estiver cadastrado, enviamos as instruções para redefinição de senha.",
+      )
+      if (res.data?.token) {
+        setLocalGeneratedToken(res.data.token)
+      }
+      if (res.data?.resetLink) {
+        setLocalResetLink(res.data.resetLink)
+      }
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Não foi possível solicitar a recuperação. Tente novamente."
+      setError(msg)
+      setSent(false)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -292,6 +359,13 @@ export default function MobileRecoveryPassword({
         setShow={setShow}
         formAttempted={formAttempted}
         setFormAttempted={setFormAttempted}
+        token={token}
+        tokenValid={tokenValid}
+        tokenEmail={tokenEmail}
+        validatingToken={validatingToken}
+        loading={loading}
+        error={error}
+        successMessage={successMessage}
         onSubmitReset={onSubmitReset}
       />
     )
@@ -323,15 +397,15 @@ export default function MobileRecoveryPassword({
               <span>Voltar{reset ? " ao login" : ""}</span>
             </button>
 
-            {/* Test Simulation Helper Toggle */}
+            {/* Test Helper */}
             {!reset ? (
               <button
                 type="button"
-                onClick={() => setSent(!sent)}
+                onClick={() => setEmail("admin@admin.com")}
                 className="text-[11px] font-bold text-[#4F3CF0] bg-[#E9E6FF] hover:bg-[#DDD8FF] px-2.5 py-1 rounded-full transition-colors active:scale-95 cursor-pointer"
-                title="Alternar estado de envio de link"
+                title="Preencher com e-mail cadastrado (admin@admin.com)"
               >
-                {sent ? "↺ Resetar envio" : "⚡ Simular envio"}
+                ⚡ Preencher
               </button>
             ) : (
               <button
@@ -383,6 +457,38 @@ export default function MobileRecoveryPassword({
                 formAttempted ? "required-check" : ""
               }`}
             >
+              {/* Error Alert Box from Backend Validation */}
+              {error && (
+                <div
+                  role="alert"
+                  className="w-full rounded-[14px] bg-[#FEE4E2] border border-[#FECDCA] p-3 text-[13px] text-[#B42318] leading-tight flex items-start gap-2 animate-fadeIn"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    className="shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="8"
+                      cy="8"
+                      r="7"
+                      stroke="#B42318"
+                      strokeWidth="1.5"
+                    />
+                    <path
+                      d="M8 4.5V8.5M8 11.5H8.01"
+                      stroke="#B42318"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
               {/* Input Field (Figma clip2_2448_5247: w=352, h=55, rx=11.5, border=#8C88AA) */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[14px] font-semibold text-[#17152E]">
@@ -404,7 +510,7 @@ export default function MobileRecoveryPassword({
                 disabled={loading}
                 className="w-full h-[56px] rounded-[28px] bg-[#4F3CF0] hover:bg-[#4332D6] active:scale-[0.99] text-white font-bold text-[16px] shadow-sm transition-all flex items-center justify-center cursor-pointer mt-3 disabled:opacity-60"
               >
-                {loading ? "Enviando link..." : "Enviar link"}
+                {loading ? "Verificando e enviando..." : "Enviar link"}
               </button>
 
               {/* Feedback Success Box (Figma clip3_2448_5247: w=353, h=78, rx=20, fill=#E3F5EC) */}
@@ -427,17 +533,35 @@ export default function MobileRecoveryPassword({
                       Link enviado!
                     </h3>
                     <p className="text-[13px] text-[#17152E] mt-1.5 leading-snug">
-                      Confira sua caixa de entrada e siga as instruções para
-                      criar uma nova senha.
+                      {successMessage ||
+                        "Se o e-mail informado estiver cadastrado, enviamos as instruções para redefinição de senha. Confira sua caixa de entrada e siga as instruções para criar uma nova senha."}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => go("reset")}
+                    <a
+                      href={
+                        activeResetLink ||
+                        (activeGeneratedToken
+                          ? `/#reset?token=${encodeURIComponent(activeGeneratedToken)}`
+                          : "#reset")
+                      }
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (onOpenResetLink) {
+                          onOpenResetLink(activeGeneratedToken || undefined)
+                        } else {
+                          if (
+                            activeGeneratedToken &&
+                            typeof window !== "undefined"
+                          ) {
+                            window.location.hash = `reset?token=${encodeURIComponent(activeGeneratedToken)}`
+                          }
+                          go("reset", activeGeneratedToken || undefined)
+                        }
+                      }}
                       className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#4F3CF0] hover:underline mt-2.5 cursor-pointer"
                     >
                       <span>Abrir link recebido</span>
                       <span aria-hidden="true">→</span>
-                    </button>
+                    </a>
                   </div>
                 </div>
               )}
