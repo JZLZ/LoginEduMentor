@@ -35,7 +35,7 @@ html,
 body,
 #root {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 * {
@@ -73,54 +73,59 @@ button:focus-visible {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background: linear-gradient(to right, var(--ink) 0%, var(--ink) calc(50% - 140px), var(--paper) calc(50% - 140px), var(--paper) 100%);
+  background: var(--paper);
   display: flex;
-  justify-content: center;
+  justify-content: stretch;
   align-items: stretch;
 }
 
 .auth-screen {
   width: 100%;
-  max-width: 1440px;
-  min-height: 900px;
+  min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
   height: 100dvh;
   display: grid;
-  grid-template-columns: 580px 860px;
-  margin: 0 auto;
+  grid-template-columns: clamp(320px, 34vw, 580px) 1fr;
+  margin: 0;
   position: relative;
 }
 
 .brand-panel-wrapper {
-  width: 580px;
+  width: 100%;
   background: var(--ink);
   height: 100%;
-  min-height: 900px;
+  min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
 }
 
 .auth-content {
-  width: 860px;
+  width: 100%;
   min-width: 0;
   height: 100%;
-  min-height: 900px;
-  display: grid;
-  place-items: center;
-  padding: 40px 48px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(24px, 4vh, 48px) clamp(20px, 4vw, 56px);
   overflow-y: auto;
   background: var(--paper);
 }
 
 .auth-content:has(.login-form) {
-  padding-inline: 24px;
+  padding-inline: clamp(16px, 2.5vw, 24px);
 }
 
 .auth-content:has(.signup-form) {
-  padding: 20px 36px;
+  padding: clamp(16px, 2.5vh, 24px) clamp(20px, 3vw, 36px);
 }
 
 .auth-form {
   width: min(440px, 100%);
+  margin-block: auto;
 }
 
 .login-form {
@@ -134,26 +139,31 @@ button:focus-visible {
 .brand-panel {
   position: sticky;
   top: 0;
-  height: 100%;
-  min-height: 900px;
+  height: 100vh;
+  height: 100dvh;
   max-height: 100vh;
   max-height: 100dvh;
   overflow: hidden;
-  padding: 56px;
+  padding: clamp(24px, 4vh, 56px) clamp(24px, 3.5vw, 56px);
   color: white;
   background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 /* Tamanho ajustado do logo no painel de cadastro/login alinhado com o texto abaixo */
 .brand-panel > a,
 .brand-panel > .brand-logo {
-  position: absolute;
-  top: 56px;
-  left: 56px;
-  width: 219px;
-  height: 39px;
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(219px, 100%);
+  height: auto;
+  aspect-ratio: 220 / 36;
   gap: 10px;
   margin-left: 0;
+  flex-shrink: 0;
 }
 
 /* Balão aumentado em 10% (largura 11.53%) e alinhado perfeitamente com a margem do texto */
@@ -297,18 +307,20 @@ button:focus-visible {
 }
 
 .brand-copy {
-  position: absolute;
-  top: 220px;
-  left: 56px;
-  right: 40px;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
   text-align: left;
+  margin-top: clamp(20px, 4vh, 48px);
+  margin-bottom: auto;
 }
 
 .brand-copy h1 {
   max-width: 480px;
   margin: 0;
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 42px;
+  font-size: clamp(24px, 2.6vw, 42px);
   line-height: 1.15;
   letter-spacing: -0.02em;
   font-weight: 800;
@@ -317,18 +329,22 @@ button:focus-visible {
 
 .brand-copy p {
   max-width: 440px;
-  margin: 18px 0 0;
+  margin: clamp(10px, 1.8vh, 18px) 0 0;
   color: var(--border);
-  font-size: 16px;
-  line-height: 24px;
+  font-size: clamp(13px, 1.05vw, 16px);
+  line-height: 1.45;
 }
 
 .brand-stairs {
-  position: absolute;
-  right: 34px;
-  bottom: 50px;
-  width: 490px;
+  position: relative;
+  right: auto;
+  bottom: auto;
+  align-self: flex-end;
+  width: min(490px, 92%);
+  max-height: clamp(130px, 26vh, 260px);
   aspect-ratio: 560 / 310;
+  margin-top: clamp(12px, 2vh, 28px);
+  flex-shrink: 1;
 }
 
 .brand-stairs span {
@@ -1002,9 +1018,9 @@ form {
 .onboarding {
   width: 100%;
   max-width: 1440px;
-  min-height: 900px;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: auto;
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -1107,7 +1123,7 @@ form {
   width: 100%;
   max-width: 1440px;
   flex: 1;
-  min-height: calc(900px - 76px);
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2231,7 +2247,7 @@ form {
    Responsive Breakpoints
    ========================================================================== */
 
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .auth-screen-wrapper {
     background: var(--paper);
   }
@@ -2358,27 +2374,22 @@ form {
   }
 }
 
-@media (max-height: 700px) and (min-width: 901px) {
+@media (max-height: 750px) {
   .brand-panel {
-    padding: 32px;
+    padding: clamp(16px, 2.5vh, 28px) clamp(20px, 3vw, 40px);
   }
 
   .brand-copy {
-    top: clamp(144px, 28.8vh, 204px);
-    top: clamp(144px, 28.8dvh, 204px);
-    left: 32px;
-    right: 32px;
-    transform: translateX(5%);
+    margin-top: clamp(12px, 2.5vh, 24px);
   }
 
   .brand-stairs {
-    right: 16px;
-    bottom: 12px;
-    width: min(504px, calc(100% - 32px), 65dvh);
+    max-height: clamp(110px, 22vh, 180px);
+    margin-top: clamp(8px, 1.5vh, 16px);
   }
 
   .auth-content {
-    padding: 24px;
+    padding: clamp(16px, 3vh, 32px) clamp(16px, 3vw, 40px);
   }
 }
 
@@ -2600,10 +2611,10 @@ html {
 
 @keyframes marqueeTrack {
   0% {
-    transform: translateX(0%);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -2618,11 +2629,8 @@ html {
 .animate-marquee {
   display: flex;
   width: max-content;
+  will-change: transform;
   animation: marqueeTrack 28s linear infinite;
-}
-
-.animate-marquee:hover {
-  animation-play-state: paused;
 }
 
 .hero-grid-pattern {
@@ -2634,11 +2642,12 @@ html {
 
 
 /* ==========================================================================
-   Hero Section (Padronizado 1440x900)
+   Hero Section (Full-Width Desktop & Responsivo)
    ========================================================================== */
 
 .hero-section-wrapper {
   width: 100%;
+  background-color: #17152e;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2646,23 +2655,74 @@ html {
 
 #hero {
   width: 100%;
-  max-width: 1440px;
-  min-height: 900px;
-  height: 900px;
+  min-height: 960px;
+  height: auto;
   position: relative;
   background-color: #17152e;
-  padding-top: 62px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  #hero {
+    min-height: 960px;
+  }
 }
 
 @media (max-width: 1023px) {
   #hero {
     height: auto;
-    min-height: 900px;
+    min-height: 700px;
+  }
+}
+
+@media (max-width: 767px) {
+  #hero {
+    height: auto;
+    min-height: auto;
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
+   Mentorina Section (Full-Width Desktop & Responsivo)
+   ========================================================================== */
+
+#mentorina {
+  width: 100%;
+  min-height: 729px;
+  height: auto;
+  position: relative;
+  background-color: #17152e;
+  background-image: 
+    radial-gradient(circle at 85% 20%, rgba(79, 60, 240, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 10% 85%, rgba(60, 200, 240, 0.12) 0%, transparent 50%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  #mentorina {
+    min-height: 729px;
+  }
+}
+
+@media (max-width: 1023px) {
+  #mentorina {
+    height: auto;
+    min-height: 500px;
+  }
+}
+
+@media (max-width: 767px) {
+  #mentorina {
+    height: auto;
+    min-height: 420px;
   }
 }
