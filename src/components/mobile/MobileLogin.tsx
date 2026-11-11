@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
 
 interface MobileLoginProps {
   email: string
@@ -33,6 +33,17 @@ export default function MobileLogin({
   go,
 }: MobileLoginProps) {
   const [formAttempted, setFormAttempted] = useState(false)
+
+  useEffect(() => {
+    if (!showPassword) return
+    const handleGlobalRelease = () => setShowPassword(false)
+    window.addEventListener("mouseup", handleGlobalRelease)
+    window.addEventListener("touchend", handleGlobalRelease)
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalRelease)
+      window.removeEventListener("touchend", handleGlobalRelease)
+    }
+  }, [showPassword, setShowPassword])
 
   return (
     <div className="min-h-screen bg-[#F7F6FC] flex flex-col items-center justify-start text-[#17152E] font-sans antialiased selection:bg-[#4F3CF0] selection:text-white">
@@ -229,9 +240,28 @@ export default function MobileLogin({
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-[#5F5B7D] hover:text-[#17152E] p-1 focus:outline-none transition-colors cursor-pointer"
-                  aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setShowPassword(true)
+                  }}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                  onTouchStart={() => setShowPassword(true)}
+                  onTouchEnd={() => setShowPassword(false)}
+                  onTouchCancel={() => setShowPassword(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault()
+                      setShowPassword(true)
+                    }
+                  }}
+                  onKeyUp={() => setShowPassword(false)}
+                  onBlur={() => setShowPassword(false)}
+                  onClick={(e) => e.preventDefault()}
+                  className={`absolute right-3 p-1 focus:outline-none transition-colors cursor-pointer select-none ${
+                    showPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                  }`}
+                  aria-label="Pressione e segure para visualizar a senha"
                 >
                   {/* Eye Icon from Figma SVG */}
                   <svg
@@ -243,7 +273,7 @@ export default function MobileLogin({
                   >
                     <path
                       d="M1 8C1 8 4.5 1 11 1C17.5 1 21 8 21 8C21 8 17.5 15 11 15C4.5 15 1 8 1 8Z"
-                      stroke="#5F5B7D"
+                      stroke="currentColor"
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -252,22 +282,11 @@ export default function MobileLogin({
                       cx="11"
                       cy="8"
                       r="3"
-                      stroke="#5F5B7D"
+                      stroke="currentColor"
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    {showPassword && (
-                      <line
-                        x1="2"
-                        y1="14"
-                        x2="20"
-                        y2="2"
-                        stroke="#4F3CF0"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    )}
                   </svg>
                 </button>
               </div>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
 
 interface MobileSignupProps {
   fullName: string
@@ -95,6 +95,20 @@ export default function MobileSignup({
   onOpenTerms,
 }: MobileSignupProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  useEffect(() => {
+    if (!showPassword && !showConfirmPassword) return
+    const handleGlobalRelease = () => {
+      setShowPassword(false)
+      setShowConfirmPassword(false)
+    }
+    window.addEventListener("mouseup", handleGlobalRelease)
+    window.addEventListener("touchend", handleGlobalRelease)
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalRelease)
+      window.removeEventListener("touchend", handleGlobalRelease)
+    }
+  }, [showPassword, showConfirmPassword, setShowPassword])
 
   const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
     if (setEducation && !education) {
@@ -376,9 +390,28 @@ export default function MobileSignup({
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 text-[#5F5B7D] hover:text-[#17152E] p-1 cursor-pointer"
-                    aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setShowPassword(true)
+                    }}
+                    onMouseUp={() => setShowPassword(false)}
+                    onMouseLeave={() => setShowPassword(false)}
+                    onTouchStart={() => setShowPassword(true)}
+                    onTouchEnd={() => setShowPassword(false)}
+                    onTouchCancel={() => setShowPassword(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault()
+                        setShowPassword(true)
+                      }
+                    }}
+                    onKeyUp={() => setShowPassword(false)}
+                    onBlur={() => setShowPassword(false)}
+                    onClick={(e) => e.preventDefault()}
+                    className={`absolute right-2 p-1 cursor-pointer select-none transition-colors ${
+                      showPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                    }`}
+                    aria-label="Pressione e segure para visualizar a senha"
                   >
                     <svg
                       width="17"
@@ -392,16 +425,6 @@ export default function MobileSignup({
                     >
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
-                      {showPassword && (
-                        <line
-                          x1="2"
-                          y1="22"
-                          x2="22"
-                          y2="2"
-                          stroke="#4F3CF0"
-                          strokeWidth="2"
-                        />
-                      )}
                     </svg>
                   </button>
                 </div>
@@ -425,13 +448,28 @@ export default function MobileSignup({
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2 text-[#5F5B7D] hover:text-[#17152E] p-1 cursor-pointer"
-                    aria-label={
-                      showConfirmPassword
-                        ? "Ocultar confirmação de senha"
-                        : "Exibir confirmação de senha"
-                    }
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setShowConfirmPassword(true)
+                    }}
+                    onMouseUp={() => setShowConfirmPassword(false)}
+                    onMouseLeave={() => setShowConfirmPassword(false)}
+                    onTouchStart={() => setShowConfirmPassword(true)}
+                    onTouchEnd={() => setShowConfirmPassword(false)}
+                    onTouchCancel={() => setShowConfirmPassword(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault()
+                        setShowConfirmPassword(true)
+                      }
+                    }}
+                    onKeyUp={() => setShowConfirmPassword(false)}
+                    onBlur={() => setShowConfirmPassword(false)}
+                    onClick={(e) => e.preventDefault()}
+                    className={`absolute right-2 p-1 cursor-pointer select-none transition-colors ${
+                      showConfirmPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                    }`}
+                    aria-label="Pressione e segure para visualizar a confirmação da senha"
                   >
                     <svg
                       width="17"
@@ -445,16 +483,6 @@ export default function MobileSignup({
                     >
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
-                      {showConfirmPassword && (
-                        <line
-                          x1="2"
-                          y1="22"
-                          x2="22"
-                          y2="2"
-                          stroke="#4F3CF0"
-                          strokeWidth="2"
-                        />
-                      )}
                     </svg>
                   </button>
                 </div>

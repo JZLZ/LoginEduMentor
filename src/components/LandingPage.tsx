@@ -5,7 +5,7 @@ import MobileLandingPage from "./MobileLandingPage"
 import { tokenStorage } from "../services/api"
 
 interface LandingPageProps {
-  onNavigate: (screen: "login" | "signup" | "course") => void
+  onNavigate: (screen: "login" | "signup" | "course" | "dashboard") => void
   isLoggedIn?: boolean
   onLogout?: () => void
 }
@@ -386,7 +386,7 @@ export default function LandingPage({
               <>
                 <button
                   type="button"
-                  onClick={() => onNavigate("course")}
+                  onClick={() => onNavigate("dashboard")}
                   className="h-[38px] px-5 bg-[#C6F432] hover:bg-[#b5e028] text-[#17152E] font-bold text-sm rounded-full shadow-[0_3px_12px_rgba(198,244,50,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap flex items-center justify-center select-none"
                 >
                   Minha trilha
@@ -481,7 +481,7 @@ export default function LandingPage({
                     type="button"
                     onClick={() => {
                       setMobileMenuOpen(false)
-                      onNavigate("course")
+                      onNavigate("dashboard")
                     }}
                     className="w-full h-[42px] bg-[#C6F432] hover:bg-[#b5e028] text-[#17152E] font-bold text-sm rounded-full shadow-[0_3px_12px_rgba(198,244,50,0.3)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center select-none"
                   >

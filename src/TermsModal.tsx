@@ -85,6 +85,7 @@ export interface TermsModalProps {
   onClose: () => void
   isMinor?: boolean
   onAccept?: () => void
+  backdropClassName?: string
 }
 
 export function TermsModal({
@@ -92,6 +93,7 @@ export function TermsModal({
   onClose,
   isMinor = false,
   onAccept,
+  backdropClassName = "bg-[#17152E]/55",
 }: TermsModalProps) {
   useEffect(() => {
     if (!isOpen) return
@@ -110,7 +112,7 @@ export function TermsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 transition-opacity backdrop-blur-xs"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity animate-in fade-in duration-200 ${backdropClassName}`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
