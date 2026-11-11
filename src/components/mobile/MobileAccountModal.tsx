@@ -46,7 +46,7 @@ export const MobileAccountModal: FC<MobileAccountModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#17152E]/60 backdrop-blur-xs transition-opacity"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#17152E]/55 animate-in fade-in duration-200 transition-opacity"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) {

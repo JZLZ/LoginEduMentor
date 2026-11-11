@@ -66,6 +66,30 @@ button:focus-visible {
 }
 
 /* ==========================================================================
+   Oculta os botões nativos de revelar senha e limpar texto dos navegadores
+   (Microsoft Edge ::-ms-reveal, Webkit auto-fill/credentials, etc.)
+   garantindo que apenas o ícone customizado da aplicação seja exibido.
+   ========================================================================== */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-contacts-auto-fill-button {
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+
+/* ==========================================================================
    Layout - Auth (Padronizado 1440x900)
    ========================================================================== */
 
@@ -507,7 +531,7 @@ form {
 
 .input-shell input[type="password"]::-ms-reveal,
 .input-shell input[type="password"]::-ms-clear {
-  display: none;
+  display: none !important;
 }
 
 .input-shell :is(input, select):focus {
@@ -1601,10 +1625,10 @@ form {
    ========================================================================== */
 
 .subject-grid {
-  width: min(756px, 100%);
+  width: min(836px, 100%);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
   margin: 0 auto;
 }
 
@@ -1682,7 +1706,7 @@ form {
 }
 
 .language-choice {
-  width: min(756px, 100%);
+  width: min(836px, 100%);
   margin: 0 auto;
 }
 
@@ -2059,7 +2083,7 @@ form {
 }
 
 .info-strip {
-  width: min(756px, 100%);
+  width: min(836px, 100%);
   margin: 0 auto;
   padding: 16px;
   background: var(--surface);

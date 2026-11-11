@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
 import MobileResetPassword from "./MobileResetPassword"
 import { authApi } from "../../services/api"
 
@@ -243,6 +243,7 @@ export default function MobileRecoveryPassword({
   const [localPassword, setLocalPassword] = useState("")
   const [localConfirmation, setLocalConfirmation] = useState("")
   const [localShow, setLocalShow] = useState(false)
+  const [localShowConfirm, setLocalShowConfirm] = useState(false)
   const [localAttempted, setLocalAttempted] = useState(false)
   const [localLoading, setLocalLoading] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -251,6 +252,29 @@ export default function MobileRecoveryPassword({
   const [localGeneratedToken, setLocalGeneratedToken] = useState<string | null>(
     null,
   )
+
+  const isShowPassword = propShow !== undefined ? propShow : localShow
+  const setPasswordVisibility = (val: boolean) => {
+    if (propSetShow) {
+      propSetShow(val)
+    } else {
+      setLocalShow(val)
+    }
+  }
+
+  useEffect(() => {
+    if (!isShowPassword && !localShowConfirm) return
+    const handleGlobalRelease = () => {
+      setPasswordVisibility(false)
+      setLocalShowConfirm(false)
+    }
+    window.addEventListener("mouseup", handleGlobalRelease)
+    window.addEventListener("touchend", handleGlobalRelease)
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalRelease)
+      window.removeEventListener("touchend", handleGlobalRelease)
+    }
+  }, [isShowPassword, localShowConfirm, propSetShow])
 
   const activeResetLink = propResetLink ?? localResetLink
   const activeGeneratedToken = propGeneratedToken ?? localGeneratedToken
@@ -582,7 +606,7 @@ export default function MobileRecoveryPassword({
                 </label>
                 <div className="relative w-full">
                   <input
-                    type={show ? "text" : "password"}
+                    type={isShowPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -591,35 +615,40 @@ export default function MobileRecoveryPassword({
                   />
                   <button
                     type="button"
-                    onClick={() => setShow(!show)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8C88AA] hover:text-[#17152E] transition-colors p-1"
-                    aria-label={show ? "Ocultar senha" : "Exibir senha"}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setPasswordVisibility(true)
+                    }}
+                    onMouseUp={() => setPasswordVisibility(false)}
+                    onMouseLeave={() => setPasswordVisibility(false)}
+                    onTouchStart={() => setPasswordVisibility(true)}
+                    onTouchEnd={() => setPasswordVisibility(false)}
+                    onTouchCancel={() => setPasswordVisibility(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault()
+                        setPasswordVisibility(true)
+                      }
+                    }}
+                    onKeyUp={() => setPasswordVisibility(false)}
+                    onBlur={() => setPasswordVisibility(false)}
+                    onClick={(e) => e.preventDefault()}
+                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1 cursor-pointer select-none ${
+                      isShowPassword ? "text-[#4F3CF0]" : "text-[#8C88AA] hover:text-[#17152E]"
+                    }`}
+                    aria-label="Pressione e segure para visualizar a nova senha"
                   >
-                    {show ? (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -631,7 +660,7 @@ export default function MobileRecoveryPassword({
                 </label>
                 <div className="relative w-full">
                   <input
-                    type={show ? "text" : "password"}
+                    type={localShowConfirm ? "text" : "password"}
                     required
                     value={confirmation}
                     onChange={(e) => setConfirmation(e.target.value)}
@@ -640,35 +669,40 @@ export default function MobileRecoveryPassword({
                   />
                   <button
                     type="button"
-                    onClick={() => setShow(!show)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8C88AA] hover:text-[#17152E] transition-colors p-1"
-                    aria-label={show ? "Ocultar senha" : "Exibir senha"}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      setLocalShowConfirm(true)
+                    }}
+                    onMouseUp={() => setLocalShowConfirm(false)}
+                    onMouseLeave={() => setLocalShowConfirm(false)}
+                    onTouchStart={() => setLocalShowConfirm(true)}
+                    onTouchEnd={() => setLocalShowConfirm(false)}
+                    onTouchCancel={() => setLocalShowConfirm(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault()
+                        setLocalShowConfirm(true)
+                      }
+                    }}
+                    onKeyUp={() => setLocalShowConfirm(false)}
+                    onBlur={() => setLocalShowConfirm(false)}
+                    onClick={(e) => e.preventDefault()}
+                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1 cursor-pointer select-none ${
+                      localShowConfirm ? "text-[#4F3CF0]" : "text-[#8C88AA] hover:text-[#17152E]"
+                    }`}
+                    aria-label="Pressione e segure para visualizar a confirmação da nova senha"
                   >
-                    {show ? (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                   </button>
                 </div>
               </div>

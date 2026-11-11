@@ -1,5 +1,52 @@
 import { useState, useEffect, type FormEvent } from "react"
 import { authApi } from "../../services/api"
+import {
+  validatePassword,
+  evaluatePasswordRules,
+  recordPreviousPassword,
+  getStoredPreviousPassword,
+} from "../../utils/passwordValidation"
+
+function RequirementItem({ valid, label }: { valid: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      {valid ? (
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          fill="none"
+          className="shrink-0"
+        >
+          <path
+            d="M15 5.5L6.75 13.75L3 10"
+            stroke="#137A51"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          fill="none"
+          className="shrink-0"
+        >
+          <circle cx="9" cy="9" r="6" stroke="#8C88AA" strokeWidth="2" />
+        </svg>
+      )}
+      <span
+        className={`text-[13px] transition-colors ${
+          valid ? "text-[#17152E] font-medium" : "text-[#5F5B7D] font-normal"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  )
+}
 
 interface MobileResetPasswordProps {
   go: (screen: any) => void
@@ -87,13 +134,27 @@ export default function MobileResetPassword({
   const setConfirmation = propSetConfirmation || setInternalConfirmation
 
   const isShowPassword = propShow !== undefined ? propShow : showPassword
-  const toggleShowPassword = () => {
+  const setPasswordVisibility = (val: boolean) => {
     if (propSetShow) {
-      propSetShow(!propShow)
+      propSetShow(val)
     } else {
-      setShowPassword(!showPassword)
+      setShowPassword(val)
     }
   }
+
+  useEffect(() => {
+    if (!isShowPassword && !showConfirmation) return
+    const handleGlobalRelease = () => {
+      setPasswordVisibility(false)
+      setShowConfirmation(false)
+    }
+    window.addEventListener("mouseup", handleGlobalRelease)
+    window.addEventListener("touchend", handleGlobalRelease)
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalRelease)
+      window.removeEventListener("touchend", handleGlobalRelease)
+    }
+  }, [isShowPassword, showConfirmation, propSetShow])
 
   const loading = propLoading ?? internalLoading
   const setLoading = setInternalLoading
@@ -141,53 +202,70 @@ export default function MobileResetPassword({
     }
   }, [token, propTokenValid])
 
-  // Regras de negócio padronizadas para criação/redefinição de senha
-  const ruleLength = password.length >= 8 && password.length <= 20
-  const ruleCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
-  const ruleNumber = /\d/.test(password)
-  const ruleSpecial = /[!@#$%&*]/.test(password)
-  const ruleNoSpaces = !/\s/.test(password)
-  const ruleNoSequential =
-    password.length === 0 ||
-    !/(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
-      password,
-    )
-  const ruleSame = password.length > 0 && password === confirmation
+  // Resolução de dados do usuário para aplicação das regras de negócio de senha
+  const targetEmail =
+    tokenEmail ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("sherlock_user_email") || undefined
+      : undefined)
 
-  const canSubmit =
-    ruleLength &&
-    ruleCase &&
-    ruleNumber &&
-    ruleSpecial &&
-    ruleNoSpaces &&
-    ruleNoSequential &&
-    ruleSame
+  let resolvedName =
+    typeof window !== "undefined"
+      ? localStorage.getItem("sherlock_user_fullname") ||
+        localStorage.getItem("sherlock_user_name") ||
+        undefined
+      : undefined
+
+  if (!resolvedName && targetEmail && typeof window !== "undefined") {
+    try {
+      const rawMap = localStorage.getItem("sherlock_user_names_by_email")
+      if (rawMap) {
+        const map = JSON.parse(rawMap)
+        if (map[targetEmail.toLowerCase()]) {
+          resolvedName = map[targetEmail.toLowerCase()]
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const prevPass = getStoredPreviousPassword(targetEmail)
+  const hasPreviousPassword = !!prevPass
+
+  const rulesContext = {
+    userName: resolvedName,
+    email: targetEmail,
+    previousPassword: prevPass,
+    confirmation,
+  }
+
+  const {
+    ruleLength,
+    ruleCase,
+    ruleNumber,
+    ruleSpecial,
+    ruleNoSpaces,
+    ruleNoSequentialNumbers,
+    ruleNoSequentialLetters,
+    ruleNoRepeated,
+    ruleNoName,
+    ruleNoEmail,
+    ruleNotPrevious,
+    ruleSame,
+    isValid: canSubmit,
+  } = evaluatePasswordRules(password, rulesContext)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     propSetFormAttempted?.(true)
     setError(null)
 
-    if (!ruleLength) {
-      setError("A senha deve ter entre 8 e 20 caracteres.")
+    const validation = validatePassword(password, rulesContext)
+    if (!validation.valid) {
+      setError(validation.error || "Senha inválida.")
       return
     }
-    if (!ruleCase || !ruleNumber || !ruleSpecial || !ruleNoSpaces) {
-      setError(
-        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
-      )
-      return
-    }
-    if (!ruleNoSequential) {
-      setError("A senha não pode conter números sequenciais (ex.: 123, 321).")
-      return
-    }
-    if (!ruleSame) {
-      setError("As senhas não coincidem.")
-      return
-    }
-
-    if (!canSubmit) return
 
     if (onSubmitReset) {
       onSubmitReset(e)
@@ -197,6 +275,7 @@ export default function MobileResetPassword({
     if (!token) {
       // Standalone simulation fallback
       setLoading(true)
+      recordPreviousPassword(password)
       setTimeout(() => {
         setLoading(false)
         setInternalSuccess(true)
@@ -210,6 +289,7 @@ export default function MobileResetPassword({
     setLoading(true)
     try {
       await authApi.redefinirSenha(token, password, confirmation)
+      recordPreviousPassword(password)
       setInternalSuccess(true)
       setTimeout(() => {
         if (typeof window !== "undefined") {
@@ -441,55 +521,45 @@ export default function MobileResetPassword({
                 />
                 <button
                   type="button"
-                  onClick={toggleShowPassword}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#5F5B7D] hover:text-[#17152E] transition-colors p-1.5 cursor-pointer"
-                  aria-label={isShowPassword ? "Ocultar senha" : "Exibir senha"}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setPasswordVisibility(true)
+                  }}
+                  onMouseUp={() => setPasswordVisibility(false)}
+                  onMouseLeave={() => setPasswordVisibility(false)}
+                  onTouchStart={() => setPasswordVisibility(true)}
+                  onTouchEnd={() => setPasswordVisibility(false)}
+                  onTouchCancel={() => setPasswordVisibility(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault()
+                      setPasswordVisibility(true)
+                    }
+                  }}
+                  onKeyUp={() => setPasswordVisibility(false)}
+                  onBlur={() => setPasswordVisibility(false)}
+                  onClick={(e) => e.preventDefault()}
+                  className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1.5 cursor-pointer select-none ${
+                    isShowPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                  }`}
+                  aria-label="Pressione e segure para visualizar a nova senha"
                 >
-                  {/* Figma Eye Icon */}
-                  {isShowPassword ? (
-                    <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                      <path
-                        d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle
-                        cx="10"
-                        cy="7"
-                        r="3"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                      />
-                      <line
-                        x1="2"
-                        y1="1"
-                        x2="18"
-                        y2="13"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : (
-                    <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                      <path
-                        d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle
-                        cx="10"
-                        cy="7"
-                        r="3"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  )}
+                  <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                    <path
+                      d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="10"
+                      cy="7"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -516,340 +586,105 @@ export default function MobileResetPassword({
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmation(!showConfirmation)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#5F5B7D] hover:text-[#17152E] transition-colors p-1.5 cursor-pointer"
-                  aria-label={
-                    showConfirmation
-                      ? "Ocultar confirmação de senha"
-                      : "Exibir confirmação de senha"
-                  }
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setShowConfirmation(true)
+                  }}
+                  onMouseUp={() => setShowConfirmation(false)}
+                  onMouseLeave={() => setShowConfirmation(false)}
+                  onTouchStart={() => setShowConfirmation(true)}
+                  onTouchEnd={() => setShowConfirmation(false)}
+                  onTouchCancel={() => setShowConfirmation(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault()
+                      setShowConfirmation(true)
+                    }
+                  }}
+                  onKeyUp={() => setShowConfirmation(false)}
+                  onBlur={() => setShowConfirmation(false)}
+                  onClick={(e) => e.preventDefault()}
+                  className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1.5 cursor-pointer select-none ${
+                    showConfirmation ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                  }`}
+                  aria-label="Pressione e segure para visualizar a confirmação da nova senha"
                 >
-                  {/* Figma Eye Icon */}
-                  {showConfirmation ? (
-                    <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                      <path
-                        d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle
-                        cx="10"
-                        cy="7"
-                        r="3"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                      />
-                      <line
-                        x1="2"
-                        y1="1"
-                        x2="18"
-                        y2="13"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : (
-                    <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                      <path
-                        d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle
-                        cx="10"
-                        cy="7"
-                        r="3"
-                        stroke="#5F5B7D"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  )}
+                  <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                    <path
+                      d="M0 7C0 7 3 0 10 0C17 0 20 7 20 7C20 7 17 14 10 14C3 14 0 7 0 7Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="10"
+                      cy="7"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
 
             {/* Password Requirements Checklist (Standardized Business Rules) */}
             <div className="flex flex-col gap-2.5 mb-6">
-              {/* Requirement 1: Entre 8 e 20 caracteres */}
-              <div className="flex items-center gap-3">
-                {ruleLength ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleLength
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  Entre 8 e 20 caracteres
-                </span>
-              </div>
-
-              {/* Requirement 2: Letras maiúsculas e minúsculas */}
-              <div className="flex items-center gap-3">
-                {ruleCase ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleCase
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  Letras maiúsculas e minúsculas
-                </span>
-              </div>
-
-              {/* Requirement 3: Pelo menos um número */}
-              <div className="flex items-center gap-3">
-                {ruleNumber ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleNumber
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  Pelo menos um número
-                </span>
-              </div>
-
-              {/* Requirement 4: Caractere especial */}
-              <div className="flex items-center gap-3">
-                {ruleSpecial ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleSpecial
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  Caractere especial (!@#$%&*)
-                </span>
-              </div>
-
-              {/* Requirement 5: Sem números sequenciais */}
-              <div className="flex items-center gap-3">
-                {ruleNoSequential && password.length >= 3 ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleNoSequential && password.length >= 3
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  Sem números sequenciais (ex.: 123)
-                </span>
-              </div>
-
-              {/* Requirement 6: As duas senhas são iguais */}
-              <div className="flex items-center gap-3">
-                {ruleSame ? (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <path
-                      d="M15 5.5L6.75 13.75L3 10"
-                      stroke="#137A51"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    className="shrink-0"
-                  >
-                    <circle
-                      cx="9"
-                      cy="9"
-                      r="6"
-                      stroke="#8C88AA"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-[13px] transition-colors ${
-                    ruleSame
-                      ? "text-[#17152E] font-medium"
-                      : "text-[#5F5B7D] font-normal"
-                  }`}
-                >
-                  As duas senhas são iguais
-                </span>
-              </div>
+              <RequirementItem
+                valid={ruleLength}
+                label="Entre 8 e 20 caracteres"
+              />
+              <RequirementItem
+                valid={ruleCase}
+                label="Letras maiúsculas e minúsculas"
+              />
+              <RequirementItem
+                valid={ruleNumber}
+                label="Pelo menos um número"
+              />
+              <RequirementItem
+                valid={ruleSpecial}
+                label="Caractere especial (!@#$%&*)"
+              />
+              <RequirementItem
+                valid={ruleNoSpaces}
+                label="Sem espaços"
+              />
+              <RequirementItem
+                valid={ruleNoSequentialNumbers}
+                label="Sem números sequenciais (ex.: 123)"
+              />
+              <RequirementItem
+                valid={ruleNoSequentialLetters}
+                label="Sem sequência alfabética (ex.: abc)"
+              />
+              <RequirementItem
+                valid={ruleNoRepeated}
+                label="Sem caracteres repetidos (ex.: aa, 11)"
+              />
+              {resolvedName && (
+                <RequirementItem
+                  valid={ruleNoName}
+                  label="Sem o seu nome ou partes dele"
+                />
+              )}
+              {targetEmail && (
+                <RequirementItem
+                  valid={ruleNoEmail}
+                  label="Sem partes do seu e-mail"
+                />
+              )}
+              {hasPreviousPassword && (
+                <RequirementItem
+                  valid={ruleNotPrevious}
+                  label="Diferente da senha anterior"
+                />
+              )}
+              <RequirementItem
+                valid={ruleSame}
+                label="As duas senhas são iguais"
+              />
             </div>
 
             {/* CTA Button: Redefinir senha (Figma: x=24, y=492, w=345, h=56, rx=28, fill=#4F3CF0) */}

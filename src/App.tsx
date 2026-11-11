@@ -30,8 +30,15 @@ import MobileAccountModal from "./components/mobile/MobileAccountModal"
 import MobileSignup from "./components/mobile/MobileSignup"
 import MobileRecoveryPassword from "./components/mobile/MobileRecoveryPassword"
 import MobileResetPassword from "./components/mobile/MobileResetPassword"
+import Dashboard from "./components/Dashboard"
+import {
+  validatePassword,
+  evaluatePasswordRules,
+  recordPreviousPassword,
+  getStoredPreviousPassword,
+} from "./utils/passwordValidation"
 
-type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "generating" | "result06" | "goal" | "done"
+type Screen = "landing" | "login" | "signup" | "recovery" | "reset" | "course" | "start" | "quiz" | "subjects" | "language" | "langquiz" | "restarted" | "generating" | "result06" | "goal" | "done" | "dashboard"
 
 /**
  * Componente do Logo completo da marca EduMentor AI.
@@ -380,25 +387,64 @@ function CpfField({
 
 function PasswordVisibilityButton({
   visible,
-
+  onHoldChange,
   toggle,
+  className = "",
+  ariaLabel = "Pressione e segure para visualizar a senha",
 }: {
   visible: boolean
-
-  toggle: () => void
+  onHoldChange?: (visible: boolean) => void
+  toggle?: () => void
+  className?: string
+  ariaLabel?: string
 }) {
+  const setVis = (val: boolean) => {
+    if (onHoldChange) {
+      onHoldChange(val)
+    } else if (toggle) {
+      if (val !== visible) toggle()
+    }
+  }
+
+  useEffect(() => {
+    if (!visible) return
+    const handleGlobalRelease = () => setVis(false)
+    window.addEventListener("mouseup", handleGlobalRelease)
+    window.addEventListener("touchend", handleGlobalRelease)
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalRelease)
+      window.removeEventListener("touchend", handleGlobalRelease)
+    }
+  }, [visible])
+
   return (
     <button
-      className="input-action"
+      className={`input-action select-none ${visible ? "active" : ""} ${className}`}
       type="button"
-      onClick={toggle}
-      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        setVis(true)
+      }}
+      onMouseUp={() => setVis(false)}
+      onMouseLeave={() => setVis(false)}
+      onTouchStart={() => setVis(true)}
+      onTouchEnd={() => setVis(false)}
+      onTouchCancel={() => setVis(false)}
+      onKeyDown={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault()
+          setVis(true)
+        }
+      }}
+      onKeyUp={() => setVis(false)}
+      onBlur={() => setVis(false)}
+      onClick={(e) => e.preventDefault()}
+      aria-label={ariaLabel}
       aria-pressed={visible}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6Z" />
         <circle cx="12" cy="12" r="2.5" />
-        {visible && <path d="m4 4 16 16" />}
       </svg>
     </button>
   )
@@ -710,14 +756,55 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     try {
       const result = await authApi.login(email, password)
 
+      // Salva dados do usuário logado para exibição personalizada no Dashboard
+      try {
+        const cleanEmail = email.trim().toLowerCase()
+        localStorage.setItem("sherlock_user_email", cleanEmail)
+
+        let nameToUse = ""
+        const user = tokenStorage.getUser() as any
+        if (user && (user.name || user.nome || user.fullName || user.nomeCompleto)) {
+          nameToUse = (user.name || user.nome || user.fullName || user.nomeCompleto).split(" ")[0]
+        }
+
+        if (!nameToUse) {
+          const savedMap = localStorage.getItem("sherlock_user_names_by_email")
+          if (savedMap) {
+            const map = JSON.parse(savedMap)
+            if (map[cleanEmail]) {
+              nameToUse = map[cleanEmail]
+            }
+          }
+        }
+
+        if (!nameToUse && cleanEmail === "admin@admin.com") {
+          nameToUse = "Admin"
+        }
+
+        if (!nameToUse) {
+          const emailPrefix = cleanEmail.split("@")[0].split(/[._-]/)[0]
+          if (emailPrefix) {
+            nameToUse = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
+          }
+        }
+
+        if (nameToUse) {
+          localStorage.setItem("sherlock_user_name", nameToUse)
+        }
+      } catch {
+        // ignore
+      }
+
+      recordPreviousPassword(password)
+
       if (result.requiresAccountSelection) {
         setSelectionChallenge({
           selectionToken: result.selectionToken,
           accounts: result.accounts,
         })
       } else {
-        // Se só tiver uma conta: entra direto sem Modal!
-        go("course")
+        // Se só tiver uma conta: entra direto para o Dashboard!
+        go("dashboard")
       }
     } catch (err: unknown) {
       const message =
@@ -812,7 +899,8 @@ function Login({ go }: { go: (screen: Screen) => void }) {
               >
                 <PasswordVisibilityButton
                   visible={showPassword}
-                  toggle={() => setShowPassword(!showPassword)}
+                  onHoldChange={setShowPassword}
+                  ariaLabel="Pressione e segure para visualizar a senha"
                 />
               </Field>
               <button
@@ -973,6 +1061,7 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
   const [confirmPassword, setConfirmPassword] = useState("")
 
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const [accepted, setAccepted] = useState(false)
 
@@ -1062,35 +1151,14 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
     }
 
     const effConfirm = confirmPassword || password
-    if (password !== effConfirm) {
-      setErrorMessage("As duas senhas informadas não são iguais.")
-
-      return
-    }
-
-    // Regras alinhadas ao backend (CadastroDto): 8–20 caracteres.
-    if (password.length < 8 || password.length > 20) {
-      setErrorMessage("A senha deve ter entre 8 e 20 caracteres.")
-      return
-    }
-
-    // Maiúscula, minúscula, número e especial (!@#$%&*), sem espaços.
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])\S+$/
-    if (!passwordRegex.test(password)) {
-      setErrorMessage(
-        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
-      )
-
-      return
-    }
-
-    // Sem números sequenciais (ex.: 123, 321) — regra do backend.
-    if (
-      /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
-        password,
-      )
-    ) {
-      setErrorMessage("A senha não pode conter números sequenciais.")
+    const validation = validatePassword(password, {
+      userName: fullName,
+      email,
+      confirmation: effConfirm,
+      isSignup: true,
+    })
+    if (!validation.valid) {
+      setErrorMessage(validation.error || "Senha inválida.")
       return
     }
 
@@ -1147,8 +1215,26 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
           : {}),
       })
 
+      // Salva dados cadastrais do novo usuário para exibição no Dashboard e sincronização
+      try {
+        const cleanEmail = email.trim().toLowerCase()
+        const trimmedFullName = fullName.trim().replace(/\s+/g, " ")
+        const firstName = trimmedFullName.split(" ")[0]
+        localStorage.setItem("sherlock_user_name", firstName)
+        localStorage.setItem("sherlock_user_fullname", trimmedFullName)
+        localStorage.setItem("sherlock_user_email", cleanEmail)
+
+        const rawMap = localStorage.getItem("sherlock_user_names_by_email") || "{}"
+        const map = JSON.parse(rawMap)
+        map[cleanEmail] = firstName
+        localStorage.setItem("sherlock_user_names_by_email", JSON.stringify(map))
+      } catch {
+        // ignore
+      }
+
       // Login automático: o cadastro criou a conta, então o login funciona.
       await authApi.login(email, password)
+      recordPreviousPassword(password)
 
       go("course")
     } catch (err: unknown) {
@@ -1384,19 +1470,21 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                 >
                   <PasswordVisibilityButton
                     visible={showPassword}
-                    toggle={() => setShowPassword(!showPassword)}
+                    onHoldChange={setShowPassword}
+                    ariaLabel="Pressione e segure para visualizar a senha"
                   />
                 </Field>
                 <Field
                   label="Confirmar senha"
-                  type={showPassword ? "text" : "password"}
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 >
                   <PasswordVisibilityButton
-                    visible={showPassword}
-                    toggle={() => setShowPassword(!showPassword)}
+                    visible={showConfirmPassword}
+                    onHoldChange={setShowConfirmPassword}
+                    ariaLabel="Pressione e segure para visualizar a confirmação da senha"
                   />
                 </Field>
               </div>
@@ -1404,8 +1492,9 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                 className="field-help"
                 style={{ marginTop: "-6px", marginBottom: "8px" }}
               >
-                Mínimo 8 e no máximo 20 caracteres, com letra maiúscula,
-                minúscula, número e símbolo (@#$%).
+                Mínimo 8 e máximo 20 caracteres, maiúscula, minúscula, número e
+                símbolo (@#$%). Sem espaços, sequências, repetições, seu nome ou
+                e-mail.
               </small>
               <label className="field">
                 <span>Escolaridade</span>
@@ -1545,6 +1634,7 @@ function PasswordScreen({
 }) {
   const [sent, setSent] = useState(false)
   const [show, setShow] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
   const [password, setPassword] = useState("")
   const [confirmation, setConfirmation] = useState("")
   const [email, setEmail] = useState("")
@@ -1615,27 +1705,60 @@ function PasswordScreen({
     }
   }, [reset, token])
 
-  // Regras de negócio padronizadas para criação/redefinição de senha
-  const ruleLength = password.length >= 8 && password.length <= 20
-  const ruleCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
-  const ruleNumber = /\d/.test(password)
-  const ruleSpecial = /[!@#$%&*]/.test(password)
-  const ruleNoSpaces = !/\s/.test(password)
-  const ruleNoSequential =
-    password.length === 0 ||
-    !/(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
-      password,
-    )
-  const ruleSame = password.length > 0 && password === confirmation
+  // Resolução de dados do usuário para aplicação das regras de segurança de senha
+  const targetEmail =
+    tokenEmail ||
+    email ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("sherlock_user_email") || undefined
+      : undefined)
 
-  const canResetSubmit =
-    ruleLength &&
-    ruleCase &&
-    ruleNumber &&
-    ruleSpecial &&
-    ruleNoSpaces &&
-    ruleNoSequential &&
-    ruleSame
+  let resolvedName =
+    typeof window !== "undefined"
+      ? localStorage.getItem("sherlock_user_fullname") ||
+        localStorage.getItem("sherlock_user_name") ||
+        undefined
+      : undefined
+
+  if (!resolvedName && targetEmail && typeof window !== "undefined") {
+    try {
+      const rawMap = localStorage.getItem("sherlock_user_names_by_email")
+      if (rawMap) {
+        const map = JSON.parse(rawMap)
+        if (map[targetEmail.toLowerCase()]) {
+          resolvedName = map[targetEmail.toLowerCase()]
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const prevPass = getStoredPreviousPassword(targetEmail)
+  const hasPreviousPassword = !!prevPass
+
+  const rulesContext = {
+    userName: resolvedName,
+    email: targetEmail,
+    previousPassword: prevPass,
+    confirmation,
+  }
+
+  const {
+    ruleLength,
+    ruleCase,
+    ruleNumber,
+    ruleSpecial,
+    ruleNoSpaces,
+    ruleNoSequentialNumbers,
+    ruleNoSequentialLetters,
+    ruleNoRepeated,
+    ruleNoName,
+    ruleNoEmail,
+    ruleNotPrevious,
+    ruleSame,
+    isValid: canResetSubmit,
+  } = evaluatePasswordRules(password, rulesContext)
 
   const handleOpenResetLink = (targetToken?: string) => {
     const finalToken = targetToken || recoveryToken || token
@@ -1690,27 +1813,15 @@ function PasswordScreen({
     setFormAttempted(true)
     setError(null)
 
-    if (!ruleLength) {
-      setError("A senha deve ter entre 8 e 20 caracteres.")
-      return
-    }
-    if (!ruleCase || !ruleNumber || !ruleSpecial || !ruleNoSpaces) {
-      setError(
-        "A senha deve conter maiúscula, minúscula, número e caractere especial (!@#$%&*), sem espaços.",
-      )
-      return
-    }
-    if (!ruleNoSequential) {
-      setError("A senha não pode conter números sequenciais (ex.: 123, 321).")
-      return
-    }
-    if (!ruleSame) {
-      setError("As senhas não coincidem.")
+    const validation = validatePassword(password, rulesContext)
+    if (!validation.valid) {
+      setError(validation.error || "Senha inválida.")
       return
     }
 
     if (!token) {
       setLoading(true)
+      recordPreviousPassword(password)
       setTimeout(() => {
         setLoading(false)
         setResetSuccess(true)
@@ -1722,6 +1833,7 @@ function PasswordScreen({
     setLoading(true)
     try {
       const res = await authApi.redefinirSenha(token, password, confirmation)
+      recordPreviousPassword(password)
       setResetSuccess(true)
       setSuccessMessage(res.message || "Senha redefinida com sucesso.")
       setTimeout(() => {
@@ -1942,18 +2054,20 @@ function PasswordScreen({
                 >
                   <PasswordVisibilityButton
                     visible={show}
-                    toggle={() => setShow(!show)}
+                    onHoldChange={setShow}
+                    ariaLabel="Pressione e segure para visualizar a nova senha"
                   />
                 </Field>
                 <Field
                   label="Confirmar nova senha"
-                  type={show ? "text" : "password"}
+                  type={showConfirmation ? "text" : "password"}
                   value={confirmation}
                   onChange={(e) => setConfirmation(e.target.value)}
                 >
                   <PasswordVisibilityButton
-                    visible={show}
-                    toggle={() => setShow(!show)}
+                    visible={showConfirmation}
+                    onHoldChange={setShowConfirmation}
+                    ariaLabel="Pressione e segure para visualizar a confirmação da nova senha"
                   />
                 </Field>
                 <ul className="password-rules">
@@ -1969,13 +2083,33 @@ function PasswordScreen({
                   <li className={ruleSpecial ? "valid" : ""}>
                     Caractere especial (!@#$%&*)
                   </li>
-                  <li
-                    className={
-                      ruleNoSequential && password.length >= 3 ? "valid" : ""
-                    }
-                  >
+                  <li className={ruleNoSpaces ? "valid" : ""}>
+                    Sem espaços
+                  </li>
+                  <li className={ruleNoSequentialNumbers ? "valid" : ""}>
                     Sem números sequenciais (ex.: 123)
                   </li>
+                  <li className={ruleNoSequentialLetters ? "valid" : ""}>
+                    Sem sequência alfabética (ex.: abc)
+                  </li>
+                  <li className={ruleNoRepeated ? "valid" : ""}>
+                    Sem caracteres repetidos (ex.: aa, 11)
+                  </li>
+                  {resolvedName && (
+                    <li className={ruleNoName ? "valid" : ""}>
+                      Sem o seu nome ou partes dele
+                    </li>
+                  )}
+                  {targetEmail && (
+                    <li className={ruleNoEmail ? "valid" : ""}>
+                      Sem partes do seu e-mail
+                    </li>
+                  )}
+                  {hasPreviousPassword && (
+                    <li className={ruleNotPrevious ? "valid" : ""}>
+                      Diferente da senha anterior
+                    </li>
+                  )}
                   <li className={ruleSame ? "valid" : ""}>
                     As duas senhas são iguais
                   </li>
@@ -2118,6 +2252,12 @@ function Course({ go }: { go: (screen: Screen) => void }) {
     setOpen(false)
     setErrorMessage(null)
     try {
+      localStorage.setItem("sherlock_target_course_name", option.name)
+      localStorage.setItem("sherlock_target_course_id", option.id)
+    } catch {
+      // ignore
+    }
+    try {
       const areas = await coursesApi.getWeightAreas(option.id)
       setWeightAreas(areas)
     } catch {
@@ -2147,6 +2287,12 @@ function Course({ go }: { go: (screen: Screen) => void }) {
     setSaving(true)
     setErrorMessage(null)
     try {
+      try {
+        localStorage.setItem("sherlock_target_course_name", selected.name)
+        localStorage.setItem("sherlock_target_course_id", selected.id)
+      } catch {
+        // ignore
+      }
       await onboardingApi.setTargetCourse(selected.id)
       go("start")
     } catch (err: unknown) {
@@ -2258,6 +2404,11 @@ function StartChoice({ go }: { go: (screen: Screen) => void }) {
     setSaving(mode)
     setErrorMessage(null)
     try {
+      try {
+        localStorage.setItem("sherlock_start_mode", mode)
+      } catch {
+        // ignore
+      }
       await onboardingApi.setStartMode(mode)
       go(mode === "nivelamento" ? "quiz" : "subjects")
     } catch (err: unknown) {
@@ -2523,6 +2674,27 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Pré-seleciona a língua estrangeira caso já tenha sido registrada
+  useEffect(() => {
+    let active = true
+    try {
+      const stored = localStorage.getItem("sherlock_foreign_lang")
+      if (stored === "Espanhol") setLanguage("espanhol")
+      else if (stored === "Inglês") setLanguage("ingles")
+    } catch {
+      // ignore
+    }
+    onboardingApi
+      .getMe()
+      .then((data) => {
+        if (active && data.foreignLanguage) setLanguage(data.foreignLanguage)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
+
   function toggle(subject: string) {
     setSelected((items) =>
       items.includes(subject)
@@ -2534,17 +2706,24 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
   // RN04: habilita só com >=1 matéria e 1 língua.
   const canContinue = selected.length > 0 && language !== null
 
-  // RN05: registra as escolhas e segue para a próxima etapa (língua estrangeira).
+  // Registra as escolhas e segue para a Meta semanal
   async function handleContinue() {
     if (!canContinue || !language || saving) return
     setSaving(true)
     setErrorMessage(null)
     try {
+      try {
+        localStorage.setItem("sherlock_start_mode", "materias")
+        localStorage.setItem("sherlock_selected_subjects", JSON.stringify(selected))
+        localStorage.setItem("sherlock_foreign_lang", language === "ingles" ? "Inglês" : "Espanhol")
+      } catch {
+        // ignore
+      }
       await onboardingApi.setSubjects({
         subjects: selected,
         foreignLanguage: language,
       })
-      go("language")
+      go("goal")
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error ? err.message : "Erro ao registrar as matérias.",
@@ -2584,25 +2763,48 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
           )
         })}
       </div>
-      <div className="language-choice">
+      <div className="language-choice language-choice--wide w-full max-w-[836px] mx-auto">
         <span className="language-choice-label">Língua estrangeira</span>
-        <div className="language-options">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full" role="radiogroup" aria-label="Língua estrangeira">
           {([
             { id: "ingles", label: "Inglês" },
             { id: "espanhol", label: "Espanhol" },
-          ] as const).map((opt) => (
-            <button
-              type="button"
-              className={language === opt.id ? "selected" : ""}
-              aria-pressed={language === opt.id}
-              onClick={() => setLanguage(opt.id)}
-              key={opt.id}
-            >
-              <i>{language === opt.id ? "✓" : ""}</i>
-              <span>{opt.label}</span>
-              <small>5 questões na prova de Linguagens</small>
-            </button>
-          ))}
+          ] as const).map((opt) => {
+            const isSelected = language === opt.id
+            return (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => setLanguage(opt.id)}
+                key={opt.id}
+                className={`
+                  w-full h-[58px] min-h-[58px] rounded-[11px] px-[18px] flex items-center gap-3.5 transition-all cursor-pointer text-left
+                  ${
+                    isSelected
+                      ? "bg-[#E9E6FF] border-2 border-[#4F3CF0]"
+                      : "bg-white hover:bg-[#FAF9FD] border-[1.5px] border-[#8C88AA]"
+                  }
+                `}
+              >
+                {/* Radio Circle */}
+                <span
+                  className={`
+                    w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0
+                    ${isSelected ? "border-2 border-[#4F3CF0]" : "border-[1.5px] border-[#8C88AA]"}
+                  `}
+                  aria-hidden="true"
+                >
+                  {isSelected && <span className="w-3 h-3 rounded-full bg-[#4F3CF0] block" />}
+                </span>
+
+                {/* Label */}
+                <span className="text-[#17152E] font-medium text-base tracking-tight select-none">
+                  {opt.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
       <div className="info-strip">
@@ -2996,8 +3198,15 @@ function GeneratingTrack({ go }: { go: (screen: Screen) => void }) {
     const timers = GENERATING_STEPS.map((_, i) =>
       setTimeout(() => setStep(i + 1), perStep * (i + 1)),
     )
+    let isMaterias = false
+    try {
+      isMaterias = localStorage.getItem("sherlock_start_mode") === "materias"
+    } catch {
+      isMaterias = false
+    }
+
     const done = setTimeout(
-      () => go("result06"),
+      () => go(isMaterias ? "dashboard" : "result06"),
       perStep * (GENERATING_STEPS.length + 1),
     )
     return () => {
@@ -3209,7 +3418,17 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
         assessmentSessionId = undefined
       }
       await onboardingApi.complete(assessmentSessionId)
-      go("done")
+      let isMaterias = false
+      try {
+        isMaterias = localStorage.getItem("sherlock_start_mode") === "materias"
+      } catch {
+        isMaterias = false
+      }
+      if (isMaterias) {
+        go("generating")
+      } else {
+        go("done")
+      }
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error ? err.message : "Erro ao concluir o onboarding.",
@@ -3220,7 +3439,18 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
   }
 
   return (
-    <OnboardingLayout step={3} back={() => go("subjects")}>
+    <OnboardingLayout
+      step={3}
+      back={() => {
+        let isMaterias = false
+        try {
+          isMaterias = localStorage.getItem("sherlock_start_mode") === "materias"
+        } catch {
+          isMaterias = false
+        }
+        go(isMaterias ? "subjects" : "result06")
+      }}
+    >
       <div className="goal-choice">
         <div className="goal-mascot" aria-hidden="true">
           <Mascot pose="comemorando" size={130} />
@@ -3299,18 +3529,16 @@ function Done({ go }: { go: (screen: Screen) => void }) {
           className="primary-button narrow"
           type="button"
           onClick={() => {
-            // Onboarding concluído: limpa a sessão de nivelamento residual.
+            // Onboarding concluído: limpa a sessão de nivelamento residual e segue para o Dashboard.
             try {
               localStorage.removeItem("sherlock_assessment_session")
             } catch {
               // ignore
             }
-            authApi.logout()
-
-            go("login")
+            go("dashboard")
           }}
         >
-          Ir para o início
+          Ir para o painel
         </button>
       </div>
     </OnboardingLayout>
@@ -3339,6 +3567,9 @@ export default function App() {
     }
     if (hash.startsWith("#recovery") || hash.startsWith("#esqueci-senha")) {
       return { screen: "recovery", token: "" }
+    }
+    if (hash.startsWith("#dashboard") || hash.startsWith("#painel")) {
+      return { screen: "dashboard", token: "" }
     }
 
     const s = searchParams.get("screen")
@@ -3371,6 +3602,9 @@ export default function App() {
     tokenStorage.clear()
     try {
       localStorage.removeItem("sherlock_assessment_session")
+      localStorage.removeItem("sherlock_user_name")
+      localStorage.removeItem("sherlock_user_fullname")
+      localStorage.removeItem("sherlock_user_email")
     } catch {
       // ignore
     }
@@ -3477,5 +3711,33 @@ export default function App() {
 
     case "done":
       return <Done go={setScreen} />
+
+    case "dashboard": {
+      const storedName =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sherlock_user_name") || undefined
+          : undefined
+      const storedEmail =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sherlock_user_email") || undefined
+          : undefined
+      const storedMode =
+        typeof window !== "undefined"
+          ? (localStorage.getItem("sherlock_start_mode") as "nivelamento" | "materias" | null) || undefined
+          : undefined
+      const storedCourse =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sherlock_target_course_name") || undefined
+          : undefined
+      return (
+        <Dashboard
+          go={setScreen}
+          userName={storedName}
+          userEmail={storedEmail}
+          startMode={storedMode}
+          targetCourse={storedCourse}
+        />
+      )
+    }
   }
 }
