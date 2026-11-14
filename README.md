@@ -38,7 +38,6 @@ O **EduMentor AI (Sherlock Frontend)** é a interface web da plataforma adaptati
 - **Cadastro Completo:** Registro de novos usuários (`POST /api/user/register`) com validação de nome, sobrenome, e-mail (domínio `.com` ou `.com.br`) e regras de senha segura.
 - **Suporte a Menores de 18 Anos:** Cálculo dinâmico de idade com base na data de nascimento e exibição de campos obrigatórios do responsável legal (nome e CPF com validação matemática dos dígitos verificadores).
 - **Termos de Uso e Política de Privacidade:** Modal completo com validação de termos de uso e consentimento específico nos moldes do **Artigo 14 da LGPD** (para menores) e termos gerais de adesão (para maiores).
-- **Preenchimento Rápido com 1 Clique:** Botões para preencher dados válidos de teste tanto no Login (Admin Seed) quanto no Cadastro.
 
 ### 🧭 Onboarding Adaptativo (3 Etapas)
 1. **Etapa 1 (Curso-Alvo):** Seleção de graduação e universidade almejada com pesos dinâmicos por área de conhecimento no ENEM.
@@ -182,14 +181,14 @@ Acesse a aplicação no navegador em **`http://localhost:8443`** (ou a porta inf
 
 ---
 
-## 🧪 Credenciais e Atalhos de Teste
+## 🧪 Credenciais de Teste
 
-Para agilizar o desenvolvimento e validação, o sistema conta com atalhos de preenchimento automático:
+Para agilizar o desenvolvimento e validação dos fluxos, utilize as seguintes credenciais padrão:
 
-| Cenário | Onde Encontrar | Dados Utilizados |
+| Perfil | E-mail | Senha |
 |---|---|---|
-| **Administrador (Seed)** | Tela de Login → Botão `⚡ Preencher dados de teste (Admin)` | `admin@admin.com` / `Admin@123` |
-| **Aluno de Teste** | Tela de Cadastro → Botão `⚡ Simular preenchimento` | `julia.andrade[ID]@email.com` / `EduMentor2026@` |
+| **Administrador (Seed)** | `admin@admin.com` | `Admin@123` |
+| **Aluno de Teste** | `julia.andrade@email.com` | `EduMentor2026@` |
 
 ---
 

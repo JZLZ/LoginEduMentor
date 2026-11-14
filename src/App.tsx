@@ -765,26 +765,6 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     }
   }
 
-  function fillAdminData() {
-    setEmail("admin@admin.com")
-
-    setPassword("Admin@123")
-
-    setErrorMessage(null)
-
-    if (rememberMe) {
-      try {
-        localStorage.setItem(
-          "sherlock_remembered_login",
-
-          JSON.stringify({ email: "admin@admin.com", password: "Admin@123" }),
-        )
-      } catch {
-        // ignore
-      }
-    }
-  }
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -944,7 +924,6 @@ function Login({ go }: { go: (screen: Screen) => void }) {
           loading={loading}
           errorMessage={errorMessage}
           onSubmit={submit}
-          onFillAdmin={fillAdminData}
           go={go}
           onOpenTerms={() => setShowTermsModal(true)}
           isLocked={isLocked}
@@ -961,34 +940,6 @@ function Login({ go }: { go: (screen: Screen) => void }) {
               <h2>Que bom te ver de novo!</h2>
               <p>Entre para iniciar sua trilha até o ENEM.</p>
             </header>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "8px",
-                marginBottom: "12px",
-              }}
-            >
-              <button
-                type="button"
-                className="text-button"
-                style={{
-                  color: "var(--indigo)",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  padding: "4px 10px",
-                  background: "var(--lavender)",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                  maxWidth: "100%",
-                  whiteSpace: "normal",
-                  textAlign: "right",
-                }}
-                onClick={fillAdminData}
-              >
-                ⚡ Preencher dados de teste (Admin)
-              </button>
-            </div>
             <form
               className={formAttempted ? "required-check" : ""}
               onInvalidCapture={() => setFormAttempted(true)}
@@ -1236,30 +1187,6 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
 
   const minor = age !== null && age >= 13 && age < 18
 
-  function fillTestData() {
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-
-    setFullName("Júlia Andrade")
-
-    setBirthDate("15/06/2004")
-
-    setPhone("(11) 90000-0000")
-
-    setEducation("medio-completo")
-
-    setEmail(`julia.andrade${randomSuffix}@email.com`)
-
-    setRecoveryEmail(`nome${randomSuffix}@email.com`)
-
-    setPassword("EduMentor2026@")
-
-    setConfirmPassword("EduMentor2026@")
-
-    setAccepted(true)
-
-    setErrorMessage(null)
-  }
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -1442,7 +1369,6 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
           minor={minor}
           isUnder13={isUnder13}
           onSubmit={submit}
-          onFillTestData={fillTestData}
           go={go}
           onOpenTerms={() => setShowTermsModal(true)}
         />
@@ -1463,44 +1389,6 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
               <h2>Bora criar sua conta?</h2>
               <p>Leva menos de 2 minutos.</p>
             </header>
-            <div
-              style={{
-                display: "flex",
-
-                justifyContent: "flex-end",
-
-                marginBottom: "12px",
-              }}
-            >
-              <button
-                type="button"
-                className="text-button"
-                style={{
-                  color: "var(--indigo)",
-
-                  fontSize: "12px",
-
-                  fontWeight: 700,
-
-                  padding: "4px 10px",
-
-                  background: "var(--lavender)",
-
-                  borderRadius: "999px",
-
-                  cursor: "pointer",
-
-                  maxWidth: "100%",
-
-                  whiteSpace: "normal",
-
-                  textAlign: "right",
-                }}
-                onClick={fillTestData}
-              >
-                ⚡ Simular preenchimento com dados válidos
-              </button>
-            </div>
             <form
               className={formAttempted ? "required-check" : ""}
               onInvalidCapture={() => {

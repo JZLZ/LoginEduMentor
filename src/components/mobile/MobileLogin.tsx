@@ -23,8 +23,6 @@ interface MobileLoginProps {
 
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
 
-  onFillAdmin: () => void
-
   go: (screen: any) => void
 
   onOpenTerms?: () => void
@@ -56,8 +54,6 @@ export default function MobileLogin({
   errorMessage,
 
   onSubmit,
-
-  onFillAdmin,
 
   go,
 
@@ -156,18 +152,6 @@ export default function MobileLogin({
                 </defs>
               </svg>
             </button>
-
-            {/* Quick Fill Admin Button */}
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={onFillAdmin}
-                className="text-[11px] font-bold text-[#4F3CF0] bg-[#E9E6FF] hover:bg-[#DDD8FF] px-2.5 py-1 rounded-full transition-colors active:scale-95 cursor-pointer"
-                title="Preencher com admin@admin.com / Admin@123"
-              >
-                ⚡ Admin
-              </button>
-            </div>
           </div>
 
           {/* Segmented Control Pill Switcher */}

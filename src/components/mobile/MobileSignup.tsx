@@ -59,8 +59,6 @@ interface MobileSignupProps {
 
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
 
-  onFillTestData: () => void
-
   go: (screen: any) => void
 
   onOpenTerms: () => void
@@ -160,8 +158,6 @@ export default function MobileSignup({
   isUnder13 = false,
 
   onSubmit,
-
-  onFillTestData,
 
   go,
 
@@ -317,17 +313,6 @@ export default function MobileSignup({
                 </clipPath>
               </defs>
             </svg>
-          </div>
-
-          {/* Quick Test Data Button */}
-          <div className="flex justify-end mt-2">
-            <button
-              type="button"
-              onClick={onFillTestData}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E9E6FF] text-[#4F3CF0] text-[11.5px] sm:text-[12px] font-bold hover:bg-[#DCD7FE] active:scale-95 transition-all cursor-pointer"
-            >
-              <span>⚡</span> Preencher dados de teste
-            </button>
           </div>
 
           {/* Error Message Alert */}
