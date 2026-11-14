@@ -49,8 +49,18 @@ export function hasAlphabeticalSequence(password: string): boolean {
     const c3 = clean.charCodeAt(i + 2)
 
     // Apenas letras minúsculas a-z (97 a 122)
-    if (c1 >= 97 && c1 <= 122 && c2 >= 97 && c2 <= 122 && c3 >= 97 && c3 <= 122) {
-      if ((c2 === c1 + 1 && c3 === c2 + 1) || (c2 === c1 - 1 && c3 === c2 - 1)) {
+    if (
+      c1 >= 97 &&
+      c1 <= 122 &&
+      c2 >= 97 &&
+      c2 <= 122 &&
+      c3 >= 97 &&
+      c3 <= 122
+    ) {
+      if (
+        (c2 === c1 + 1 && c3 === c2 + 1) ||
+        (c2 === c1 - 1 && c3 === c2 - 1)
+      ) {
         return true
       }
     }
@@ -63,7 +73,9 @@ export function hasAlphabeticalSequence(password: string): boolean {
  * Regra: Não pode conter sequência numérica previsível (ex.: 123, 321).
  */
 export function hasSequentialNumbers(password: string): boolean {
-  return /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(password)
+  return /(012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210)/.test(
+    password,
+  )
 }
 
 /**
@@ -81,7 +93,7 @@ export function hasRepeatedChars(password: string): boolean {
 }
 
 /**
- * Regra: Não pode conter o nome do usuário ou partes dele (palavras com 3 ou mais caracteres).
+ * Regra: Não pode conter o nome do usuário ou partes dele (palavras com 3 ou mais caracteres ou fatias de 3+ caracteres).
  */
 export function containsUserName(password: string, userName?: string): boolean {
   if (!userName || !password) return false
@@ -100,6 +112,13 @@ export function containsUserName(password: string, userName?: string): boolean {
     if (cleanPass.includes(token)) {
       return true
     }
+    // Qualquer fatia contígua de 3 ou mais caracteres do token
+    for (let i = 0; i <= token.length - 3; i++) {
+      const sub = token.substring(i, i + 3)
+      if (cleanPass.includes(sub)) {
+        return true
+      }
+    }
   }
 
   return false
@@ -107,7 +126,7 @@ export function containsUserName(password: string, userName?: string): boolean {
 
 /**
  * Regra: Não pode conter informação ou partes do e-mail.
- * Extrai a parte local do e-mail (antes do @) e fragmentos com 3 ou mais caracteres.
+ * Extrai a parte local do e-mail (antes do @) e rejeita qualquer substring com 3 ou mais caracteres.
  */
 export function containsEmailInfo(password: string, email?: string): boolean {
   if (!email || !password) return false
@@ -115,15 +134,38 @@ export function containsEmailInfo(password: string, email?: string): boolean {
   const cleanEmail = normalizeText(email)
 
   const localPart = cleanEmail.split("@")[0] || ""
-  if (localPart.length >= 3 && cleanPass.includes(localPart)) {
+  if (!localPart || localPart.length < 3) return false
+
+  // 1. Parte local inteira
+  if (cleanPass.includes(localPart)) {
     return true
   }
 
-  // Divide por separadores usuais em e-mails (. _ - + e números)
-  const tokens = localPart.split(/[._\-+\d]+/).filter((t) => t.length >= 3)
+  // 2. Tokens separados por delimitadores usuais (. _ - + etc.)
+  const tokens = localPart.split(/[^a-z0-9]+/).filter((t) => t.length >= 3)
   for (const token of tokens) {
     if (cleanPass.includes(token)) {
       return true
+    }
+    for (let i = 0; i <= token.length - 3; i++) {
+      const sub = token.substring(i, i + 3)
+      if (cleanPass.includes(sub)) {
+        return true
+      }
+    }
+  }
+
+  // 3. Qualquer fatia contígua de 3 caracteres da versão alfanumérica limpa
+  const cleanLocal = localPart.replace(/[^a-z0-9]/g, "")
+  if (cleanLocal.length >= 3) {
+    if (cleanPass.includes(cleanLocal)) {
+      return true
+    }
+    for (let i = 0; i <= cleanLocal.length - 3; i++) {
+      const sub = cleanLocal.substring(i, i + 3)
+      if (cleanPass.includes(sub)) {
+        return true
+      }
     }
   }
 
@@ -133,7 +175,10 @@ export function containsEmailInfo(password: string, email?: string): boolean {
 /**
  * Regra: Nova senha não pode ser idêntica à senha anterior.
  */
-export function isIdenticalToPrevious(password: string, previousPassword?: string | null): boolean {
+export function isIdenticalToPrevious(
+  password: string,
+  previousPassword?: string | null,
+): boolean {
   if (!password || !previousPassword) return false
   return password === previousPassword
 }
@@ -154,7 +199,11 @@ export function getStoredPreviousPassword(email?: string): string | null {
     if (remembered) {
       const parsed = JSON.parse(remembered)
       if (parsed.password) {
-        if (!email || !parsed.email || parsed.email.toLowerCase() === email.toLowerCase()) {
+        if (
+          !email ||
+          !parsed.email ||
+          parsed.email.toLowerCase() === email.toLowerCase()
+        ) {
           return parsed.password
         }
       }
@@ -191,7 +240,7 @@ export interface PasswordValidationContext {
  */
 export function validatePassword(
   password: string,
-  context?: PasswordValidationContext
+  context?: PasswordValidationContext,
 ): { valid: boolean; error: string | null } {
   if (!password) {
     return { valid: false, error: "A senha é obrigatória." }
@@ -225,7 +274,8 @@ export function validatePassword(
   if (hasSequentialNumbers(password)) {
     return {
       valid: false,
-      error: "A senha não pode conter sequência numérica previsível (ex.: 123, 321).",
+      error:
+        "A senha não pode conter sequência numérica previsível (ex.: 123, 321).",
     }
   }
 
@@ -233,7 +283,8 @@ export function validatePassword(
   if (hasAlphabeticalSequence(password)) {
     return {
       valid: false,
-      error: "A senha não pode conter sequência alfabética previsível (ex.: abc, cba).",
+      error:
+        "A senha não pode conter sequência alfabética previsível (ex.: abc, cba).",
     }
   }
 
@@ -274,7 +325,10 @@ export function validatePassword(
   }
 
   // 10. Confirmação de senha (se fornecida)
-  if (context?.confirmation !== undefined && password !== context.confirmation) {
+  if (
+    context?.confirmation !== undefined &&
+    password !== context.confirmation
+  ) {
     return {
       valid: false,
       error: "As duas senhas informadas não são iguais.",
@@ -289,7 +343,7 @@ export function validatePassword(
  */
 export function evaluatePasswordRules(
   password: string,
-  context?: PasswordValidationContext
+  context?: PasswordValidationContext,
 ) {
   const ruleLength = password.length >= 8 && password.length <= 20
   const ruleCase = /[a-z]/.test(password) && /[A-Z]/.test(password)

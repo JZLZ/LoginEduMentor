@@ -68,7 +68,7 @@ O **EduMentor AI (Sherlock Frontend)** é a interface web da plataforma adaptati
 
 ```
 sherlock-frontend/
-├── .env                       # Variáveis de ambiente (VITE_API_URL)
+├── .env                       # URLs das APIs e configuração do mock da Mentorina
 ├── .env.example               # Modelo de configuração de ambiente
 ├── .mise.toml                 # Toolchain (Node.js 22, Yarn 1.22.22)
 ├── AGENTS.md                  # Especificações técnicas do ambiente
@@ -147,6 +147,9 @@ Conteúdo padrão do arquivo `.env`:
 ```env
 # URL base da API do sherlock-backend (NestJS)
 VITE_API_URL=http://localhost:21165/api
+
+# URL da API da Mentorina (FastAPI)
+VITE_MENTORINA_API_URL=http://localhost:8000
 ```
 
 ### 4. Iniciar o Backend (`sherlock-backend`)
@@ -160,7 +163,12 @@ yarn start:dev
 ```
 
 - API NestJS: `http://localhost:21165/api`
+- API Mentorina: `http://localhost:8000/api/v1`
 - Documentação Swagger: `http://localhost:21165/api-docs`
+
+O build Docker do frontend recebe `VITE_MENTORINA_API_URL` como argumento de
+build; em produção configure-o com a URL pública da API e permita a origem do
+frontend em `CORS_ORIGINS` no serviço Mentorina.
 
 ### 5. Iniciar o Frontend em Modo de Desenvolvimento
 

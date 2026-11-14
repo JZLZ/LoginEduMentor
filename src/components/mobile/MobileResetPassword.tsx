@@ -1,5 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react"
+
 import { authApi } from "../../services/api"
+
 import {
   validatePassword,
   evaluatePasswordRules,
@@ -50,21 +52,37 @@ function RequirementItem({ valid, label }: { valid: boolean; label: string }) {
 
 interface MobileResetPasswordProps {
   go: (screen: any) => void
+
   password?: string
+
   setPassword?: (password: string) => void
+
   confirmation?: string
+
   setConfirmation?: (confirmation: string) => void
+
   show?: boolean
+
   setShow?: (show: boolean) => void
+
   formAttempted?: boolean
+
   setFormAttempted?: (attempted: boolean) => void
+
   token?: string
+
   tokenValid?: boolean | null
+
   tokenEmail?: string | null
+
   validatingToken?: boolean
+
   loading?: boolean
+
   error?: string | null
+
   successMessage?: string | null
+
   onSubmitReset?: (e: FormEvent<HTMLFormElement>) => void
 }
 
@@ -72,68 +90,104 @@ interface MobileResetPasswordProps {
  * Mobile Version of "Crie uma nova senha" (Reset Password Screen)
  * Pixel-accurate implementation matching Figma SVG artboard (393 x 580 px).
  */
+
 export default function MobileResetPassword({
   go,
+
   password: propPassword,
+
   setPassword: propSetPassword,
+
   confirmation: propConfirmation,
+
   setConfirmation: propSetConfirmation,
+
   show: propShow,
+
   setShow: propSetShow,
+
   setFormAttempted: propSetFormAttempted,
+
   token: propToken,
+
   tokenValid: propTokenValid,
+
   tokenEmail: propTokenEmail,
+
   validatingToken: propValidatingToken,
+
   loading: propLoading,
+
   error: propError,
+
   successMessage: propSuccessMessage,
+
   onSubmitReset,
 }: MobileResetPasswordProps) {
   // Local fallback states if not controlled from parent
+
   const [internalPassword, setInternalPassword] = useState("")
+
   const [internalConfirmation, setInternalConfirmation] = useState("")
+
   const [showPassword, setShowPassword] = useState(false)
+
   const [showConfirmation, setShowConfirmation] = useState(false)
+
   const [focusedField, setFocusedField] =
     useState<"password" | "confirmation" | null>("password")
+
   const [internalLoading, setInternalLoading] = useState(false)
+
   const [internalSuccess, setInternalSuccess] = useState(false)
+
   const [internalError, setInternalError] = useState<string | null>(null)
+
   const [internalTokenValid, setInternalTokenValid] = useState<boolean | null>(
     null,
   )
+
   const [internalTokenEmail, setInternalTokenEmail] = useState<string | null>(
     null,
   )
+
   const [internalValidating, setInternalValidating] = useState(false)
 
   // Resolve token from prop or URL
+
   const token =
     propToken ??
     (() => {
       if (typeof window !== "undefined") {
         const p = new URLSearchParams(window.location.search).get("token")
+
         if (p) return p
+
         const hash = window.location.hash
+
         if (hash.includes("token=")) {
           const queryPart = hash.includes("?")
             ? hash.substring(hash.indexOf("?") + 1)
-            : hash
+            : hash.replace(/^#\/?/, "")
+
           return new URLSearchParams(queryPart).get("token") || ""
         }
       }
+
       return ""
     })()
 
   const password = propPassword !== undefined ? propPassword : internalPassword
+
   const setPassword = propSetPassword || setInternalPassword
 
   const confirmation =
     propConfirmation !== undefined ? propConfirmation : internalConfirmation
+
   const setConfirmation = propSetConfirmation || setInternalConfirmation
 
   const isShowPassword = propShow !== undefined ? propShow : showPassword
+
   const setPasswordVisibility = (val: boolean) => {
     if (propSetShow) {
       propSetShow(val)
@@ -144,48 +198,68 @@ export default function MobileResetPassword({
 
   useEffect(() => {
     if (!isShowPassword && !showConfirmation) return
+
     const handleGlobalRelease = () => {
       setPasswordVisibility(false)
+
       setShowConfirmation(false)
     }
+
     window.addEventListener("mouseup", handleGlobalRelease)
+
     window.addEventListener("touchend", handleGlobalRelease)
+
     return () => {
       window.removeEventListener("mouseup", handleGlobalRelease)
+
       window.removeEventListener("touchend", handleGlobalRelease)
     }
   }, [isShowPassword, showConfirmation, propSetShow])
 
   const loading = propLoading ?? internalLoading
+
   const setLoading = setInternalLoading
 
   const error = propError ?? internalError
+
   const setError = setInternalError
 
   const tokenValid =
     propTokenValid !== undefined ? propTokenValid : internalTokenValid
+
   const tokenEmail = propTokenEmail ?? internalTokenEmail
+
   const validatingToken = propValidatingToken ?? internalValidating
+
   const success = internalSuccess
 
   // Auto-validate token on mount if token is provided and parent hasn't validated yet
+
   useEffect(() => {
     if (!token || propTokenValid !== undefined) return
 
     let active = true
+
     setInternalValidating(true)
+
     authApi
+
       .validarTokenRecuperacao(token)
+
       .then((res) => {
         if (active) {
           setInternalTokenValid(true)
+
           setInternalTokenEmail(res.data?.email || null)
+
           setInternalError(null)
         }
       })
+
       .catch((err: unknown) => {
         if (active) {
           setInternalTokenValid(false)
+
           setInternalError(
             err instanceof Error
               ? err.message
@@ -193,6 +267,7 @@ export default function MobileResetPassword({
           )
         }
       })
+
       .finally(() => {
         if (active) setInternalValidating(false)
       })
@@ -203,6 +278,7 @@ export default function MobileResetPassword({
   }, [token, propTokenValid])
 
   // Resolução de dados do usuário para aplicação das regras de negócio de senha
+
   const targetEmail =
     tokenEmail ||
     (typeof window !== "undefined"
@@ -219,8 +295,10 @@ export default function MobileResetPassword({
   if (!resolvedName && targetEmail && typeof window !== "undefined") {
     try {
       const rawMap = localStorage.getItem("sherlock_user_names_by_email")
+
       if (rawMap) {
         const map = JSON.parse(rawMap)
+
         if (map[targetEmail.toLowerCase()]) {
           resolvedName = map[targetEmail.toLowerCase()]
         }
@@ -231,75 +309,110 @@ export default function MobileResetPassword({
   }
 
   const prevPass = getStoredPreviousPassword(targetEmail)
+
   const hasPreviousPassword = !!prevPass
 
   const rulesContext = {
     userName: resolvedName,
+
     email: targetEmail,
+
     previousPassword: prevPass,
+
     confirmation,
   }
 
   const {
     ruleLength,
+
     ruleCase,
+
     ruleNumber,
+
     ruleSpecial,
+
     ruleNoSpaces,
+
     ruleNoSequentialNumbers,
+
     ruleNoSequentialLetters,
+
     ruleNoRepeated,
+
     ruleNoName,
+
     ruleNoEmail,
+
     ruleNotPrevious,
+
     ruleSame,
+
     isValid: canSubmit,
+
+    validationError,
   } = evaluatePasswordRules(password, rulesContext)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     propSetFormAttempted?.(true)
+
     setError(null)
 
     const validation = validatePassword(password, rulesContext)
+
     if (!validation.valid) {
       setError(validation.error || "Senha inválida.")
+
       return
     }
 
     if (onSubmitReset) {
       onSubmitReset(e)
+
       return
     }
 
     if (!token) {
       // Standalone simulation fallback
+
       setLoading(true)
+
       recordPreviousPassword(password)
+
       setTimeout(() => {
         setLoading(false)
+
         setInternalSuccess(true)
+
         setTimeout(() => {
           go("login")
         }, 1200)
       }, 600)
+
       return
     }
 
     setLoading(true)
+
     try {
       await authApi.redefinirSenha(token, password, confirmation)
+
       recordPreviousPassword(password)
+
       setInternalSuccess(true)
+
       setTimeout(() => {
         if (typeof window !== "undefined") {
           window.history.replaceState({}, "", window.location.pathname)
         }
+
         go("login")
       }, 1500)
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Erro ao redefinir a senha."
+
       setError(msg)
     } finally {
       setLoading(false)
@@ -344,6 +457,7 @@ export default function MobileResetPassword({
               type="button"
               onClick={() => {
                 setPassword("SenhaForte@2026")
+
                 setConfirmation("SenhaForte@2026")
               }}
               className="text-[11px] font-bold text-[#4F3CF0] bg-[#E9E6FF] hover:bg-[#DDD8FF] px-2.5 py-1 rounded-full transition-colors active:scale-95 cursor-pointer"
@@ -523,6 +637,7 @@ export default function MobileResetPassword({
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault()
+
                     setPasswordVisibility(true)
                   }}
                   onMouseUp={() => setPasswordVisibility(false)}
@@ -533,6 +648,7 @@ export default function MobileResetPassword({
                   onKeyDown={(e) => {
                     if (e.key === " " || e.key === "Enter") {
                       e.preventDefault()
+
                       setPasswordVisibility(true)
                     }
                   }}
@@ -540,7 +656,9 @@ export default function MobileResetPassword({
                   onBlur={() => setPasswordVisibility(false)}
                   onClick={(e) => e.preventDefault()}
                   className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1.5 cursor-pointer select-none ${
-                    isShowPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                    isShowPassword
+                      ? "text-[#4F3CF0]"
+                      : "text-[#5F5B7D] hover:text-[#17152E]"
                   }`}
                   aria-label="Pressione e segure para visualizar a nova senha"
                 >
@@ -588,6 +706,7 @@ export default function MobileResetPassword({
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault()
+
                     setShowConfirmation(true)
                   }}
                   onMouseUp={() => setShowConfirmation(false)}
@@ -598,6 +717,7 @@ export default function MobileResetPassword({
                   onKeyDown={(e) => {
                     if (e.key === " " || e.key === "Enter") {
                       e.preventDefault()
+
                       setShowConfirmation(true)
                     }
                   }}
@@ -605,7 +725,9 @@ export default function MobileResetPassword({
                   onBlur={() => setShowConfirmation(false)}
                   onClick={(e) => e.preventDefault()}
                   className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1.5 cursor-pointer select-none ${
-                    showConfirmation ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                    showConfirmation
+                      ? "text-[#4F3CF0]"
+                      : "text-[#5F5B7D] hover:text-[#17152E]"
                   }`}
                   aria-label="Pressione e segure para visualizar a confirmação da nova senha"
                 >
@@ -629,7 +751,7 @@ export default function MobileResetPassword({
               </div>
             </div>
 
-            {/* Password Requirements Checklist (Standardized Business Rules) */}
+            {/* Password Requirements Checklist (4 Main Business Rules) */}
             <div className="flex flex-col gap-2.5 mb-6">
               <RequirementItem
                 valid={ruleLength}
@@ -647,44 +769,11 @@ export default function MobileResetPassword({
                 valid={ruleSpecial}
                 label="Caractere especial (!@#$%&*)"
               />
-              <RequirementItem
-                valid={ruleNoSpaces}
-                label="Sem espaços"
-              />
-              <RequirementItem
-                valid={ruleNoSequentialNumbers}
-                label="Sem números sequenciais (ex.: 123)"
-              />
-              <RequirementItem
-                valid={ruleNoSequentialLetters}
-                label="Sem sequência alfabética (ex.: abc)"
-              />
-              <RequirementItem
-                valid={ruleNoRepeated}
-                label="Sem caracteres repetidos (ex.: aa, 11)"
-              />
-              {resolvedName && (
-                <RequirementItem
-                  valid={ruleNoName}
-                  label="Sem o seu nome ou partes dele"
-                />
+              {validationError && !canSubmit && password.length >= 8 && (
+                <div className="text-[12px] text-[#D93025] font-medium mt-1">
+                  {validationError}
+                </div>
               )}
-              {targetEmail && (
-                <RequirementItem
-                  valid={ruleNoEmail}
-                  label="Sem partes do seu e-mail"
-                />
-              )}
-              {hasPreviousPassword && (
-                <RequirementItem
-                  valid={ruleNotPrevious}
-                  label="Diferente da senha anterior"
-                />
-              )}
-              <RequirementItem
-                valid={ruleSame}
-                label="As duas senhas são iguais"
-              />
             </div>
 
             {/* CTA Button: Redefinir senha (Figma: x=24, y=492, w=345, h=56, rx=28, fill=#4F3CF0) */}
