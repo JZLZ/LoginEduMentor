@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { tokenStorage } from "../../services/api"
 
 interface MobileHeaderProps {
-  onNavigate: (screen: "login" | "signup" | "course") => void
+  onNavigate: (screen: "login" | "signup" | "course" | "dashboard") => void
   isLoggedIn?: boolean
   onLogout?: () => void
   scrollToMentorina?: (e?: React.MouseEvent) => void
@@ -94,7 +94,9 @@ export default function MobileHeader({
     }
   }
 
-  const handleNavigate = (screen: "login" | "signup" | "course") => {
+  const handleNavigate = (
+    screen: "login" | "signup" | "course" | "dashboard",
+  ) => {
     setMenuOpen(false)
     onNavigate(screen)
   }
@@ -215,7 +217,7 @@ export default function MobileHeader({
             {localLoggedIn && (
               <button
                 type="button"
-                onClick={() => handleNavigate("course")}
+                onClick={() => handleNavigate("dashboard")}
                 className="px-3 sm:w-[105px] h-[34px] sm:h-[35px] rounded-full bg-[#C6F432] hover:bg-[#b8e42e] text-[#17152E] font-bold text-[12px] sm:text-[13px] flex items-center justify-center shadow-[0_2px_8px_rgba(198,244,50,0.25)] active:scale-95 transition-all cursor-pointer select-none shrink-0"
               >
                 Minha trilha
@@ -383,7 +385,7 @@ export default function MobileHeader({
                 <>
                   <button
                     type="button"
-                    onClick={() => handleNavigate("course")}
+                    onClick={() => handleNavigate("dashboard")}
                     className="w-full h-[54px] rounded-full bg-[#C6F432] text-[#17152E] font-bold text-[16px] flex items-center justify-center shadow-[0_4px_16px_rgba(198,244,50,0.3)] active:scale-[0.98] transition-all cursor-pointer"
                   >
                     Minha trilha
