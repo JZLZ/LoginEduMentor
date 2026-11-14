@@ -1104,7 +1104,7 @@ function Login({ go }: { go: (screen: Screen) => void }) {
           close={() => setSelectionChallenge(null)}
           onSelectSuccess={() => {
             setSelectionChallenge(null)
-            go("course")
+            go("dashboard")
           }}
           onExpired={(msg) => {
             setSelectionChallenge(null)

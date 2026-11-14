@@ -1,8 +1,9 @@
 interface MobileCtaProps {
-  onNavigate: (screen: "login" | "signup") => void
+  onNavigate: (screen: "login" | "signup" | "course" | "dashboard") => void
+  isLoggedIn?: boolean
 }
 
-export default function MobileCta({ onNavigate }: MobileCtaProps) {
+export default function MobileCta({ onNavigate, isLoggedIn }: MobileCtaProps) {
   return (
     <section className="w-full bg-[#F7F6FC] py-6 px-4 flex justify-center items-center overflow-hidden">
       <div className="relative w-full max-w-[393px] mx-auto">
@@ -846,8 +847,12 @@ export default function MobileCta({ onNavigate }: MobileCtaProps) {
         {/* Interactive clickable overlay over the CTA button (y=7360, x=44, w=305, h=54) */}
         <button
           type="button"
-          onClick={() => onNavigate("signup")}
-          aria-label="Criar conta gratuita agora"
+          onClick={() => onNavigate(isLoggedIn ? "dashboard" : "signup")}
+          aria-label={
+            isLoggedIn
+              ? "Ir para o meu dashboard"
+              : "Criar conta gratuita agora"
+          }
           className="absolute left-[11.2%] top-[69.3%] w-[77.6%] h-[10.2%] rounded-full cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] bg-transparent focus:outline-none focus:ring-2 focus:ring-[#C6F432]"
         />
       </div>
