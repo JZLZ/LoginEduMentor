@@ -95,12 +95,6 @@ function resolveMentorinaApiUrl(): string {
     return configured
   }
 
-  // Em ambiente local de desenvolvimento
-  if (import.meta.env.DEV) {
-    return "http://localhost:8000"
-  }
-
-  // Em produção/homologação quando VITE_MENTORINA_API_URL não for injetada no build:
   // Deriva dinamicamente da URL da API do backend unificado (/api/mentorina) ou do origin do navegador
   const backendApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "")
   if (backendApiUrl) {
