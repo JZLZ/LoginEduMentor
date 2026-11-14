@@ -59,7 +59,7 @@ jobs:
           push: true
           build-args: |
             VITE_API_URL=https://api-hml-sherlock.rayribeirost.dev/api
-            VITE_MENTORINA_API_URL=https://api-hml-sherlock.rayribeirost.dev/mentorina
+            VITE_MENTORINA_API_URL=https://api-hml-sherlock.rayribeirost.dev/api/mentorina
           tags: ghcr.io/qacoders-academy/sherlock-frontend:${{ github.event.workflow_run.head_sha }}
 
   deploy-homelab:
