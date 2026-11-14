@@ -613,7 +613,9 @@ export default function LandingPage({
               <div className="my-[33px] w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => onNavigate("signup")}
+                  onClick={() =>
+                    onNavigate(localLoggedIn ? "dashboard" : "signup")
+                  }
                   className="w-[242px] h-[61px] bg-[#C6F432] hover:bg-[#b5e028] text-[#17152E] font-bold text-[15px] rounded-full flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(198,244,50,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <span>Criar minha conta</span>
@@ -4796,12 +4798,12 @@ export default function LandingPage({
               role="button"
               tabIndex={0}
               aria-label="Criar minha conta"
-              onClick={() => onNavigate("signup")}
+              onClick={() => onNavigate(localLoggedIn ? "dashboard" : "signup")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault()
 
-                  onNavigate("signup")
+                  onNavigate(localLoggedIn ? "dashboard" : "signup")
                 }
               }}
               className="group cursor-pointer transition-all duration-200 hover:opacity-95 active:scale-[0.98] outline-none select-none"

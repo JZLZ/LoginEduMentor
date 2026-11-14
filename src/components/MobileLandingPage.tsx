@@ -11,7 +11,7 @@ import MobileCta from "./mobile/MobileCta"
 import MobileFooter from "./mobile/MobileFooter"
 
 interface MobileLandingPageProps {
-  onNavigate: (screen: "login" | "signup" | "course") => void
+  onNavigate: (screen: "login" | "signup" | "course" | "dashboard") => void
   isLoggedIn?: boolean
   onLogout?: () => void
   activeFaq: number | null
@@ -47,7 +47,7 @@ export default function MobileLandingPage({
         onLogout={onLogout}
         scrollToMentorina={scrollToMentorina}
       />
-      <MobileHero onNavigate={onNavigate} />
+      <MobileHero onNavigate={onNavigate} isLoggedIn={isLoggedIn} />
       <MobileRibbon />
       <MobileProblema />
       <MobileComoFunciona />
@@ -61,7 +61,7 @@ export default function MobileLandingPage({
       />
       <MobileAparelhos />
       <MobileFaq activeFaq={activeFaq} setActiveFaq={setActiveFaq} />
-      <MobileCta onNavigate={onNavigate} />
+      <MobileCta onNavigate={onNavigate} isLoggedIn={isLoggedIn} />
       <MobileFooter setShowTermsModal={setShowTermsModal} />
     </div>
   )

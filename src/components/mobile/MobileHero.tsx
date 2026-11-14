@@ -1,10 +1,11 @@
 import MobileHeroGraphic from "./MobileHeroGraphic"
 
 interface MobileHeroProps {
-  onNavigate: (screen: "login" | "signup") => void
+  onNavigate: (screen: "login" | "signup" | "course" | "dashboard") => void
+  isLoggedIn?: boolean
 }
 
-export default function MobileHero({ onNavigate }: MobileHeroProps) {
+export default function MobileHero({ onNavigate, isLoggedIn }: MobileHeroProps) {
   return (
     <section
       id="hero"
@@ -100,7 +101,7 @@ export default function MobileHero({ onNavigate }: MobileHeroProps) {
           {/* Primary CTA Button */}
           <button
             type="button"
-            onClick={() => onNavigate("signup")}
+            onClick={() => onNavigate(isLoggedIn ? "dashboard" : "signup")}
             className="w-full max-w-[353px] block cursor-pointer transition-transform duration-200 active:scale-[0.98]"
           >
             <svg
