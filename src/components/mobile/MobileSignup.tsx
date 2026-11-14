@@ -2,51 +2,89 @@ import { useState, useEffect, type FormEvent } from "react"
 
 interface MobileSignupProps {
   fullName: string
+
   setFullName: (name: string) => void
+
   birthDate: string
+
   setBirthDate: (date: string) => void
+
   phone: string
+
   setPhone: (phone: string) => void
+
   email: string
+
   setEmail: (email: string) => void
+
   password: string
+
   setPassword: (password: string) => void
+
   confirmPassword?: string
+
   setConfirmPassword?: (password: string) => void
+
   education?: string
+
   setEducation?: (edu: string) => void
+
   recoveryEmail?: string
+
   setRecoveryEmail?: (recovery: string) => void
+
   guardianName?: string
+
   setGuardianName?: (name: string) => void
+
   guardianCpf?: string
+
   setGuardianCpf?: (cpf: string) => void
+
   showPassword: boolean
+
   setShowPassword: (show: boolean) => void
+
   accepted: boolean
+
   setAccepted: (accepted: boolean) => void
+
   loading: boolean
+
   errorMessage: string | null
+
   minor?: boolean
+
   isUnder13?: boolean
+
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
+
   onFillTestData: () => void
+
   go: (screen: any) => void
+
   onOpenTerms: () => void
 }
 
 function formatBirthDate(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8)
+
   return digits
+
     .replace(/^(\d{2})(\d)/, "$1/$2")
+
     .replace(/^(\d{2}\/\d{2})(\d)/, "$1/$2")
 }
 
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   if (digits.length <= 2) return digits ? `(${digits}` : ""
+
   const areaCode = digits.slice(0, 2)
+
   const subscriber = digits.slice(2)
+
   return `(${areaCode}) ${subscriber.slice(0, 5)}${
     subscriber.length > 5 ? `-${subscriber.slice(5)}` : ""
   }`
@@ -54,58 +92,99 @@ function formatPhone(value: string) {
 
 function formatCpf(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11)
+
   return digits
+
     .replace(/^(\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2")
+
     .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1-$2")
 }
 
 export default function MobileSignup({
   fullName,
+
   setFullName,
+
   birthDate,
+
   setBirthDate,
+
   phone,
+
   setPhone,
+
   email,
+
   setEmail,
+
   password,
+
   setPassword,
+
   confirmPassword,
+
   setConfirmPassword,
+
   education = "",
+
   setEducation,
+
   recoveryEmail,
+
   setRecoveryEmail,
+
   guardianName = "",
+
   setGuardianName,
+
   guardianCpf = "",
+
   setGuardianCpf,
+
   showPassword,
+
   setShowPassword,
+
   accepted,
+
   setAccepted,
+
   loading,
+
   errorMessage,
+
   minor = false,
+
   isUnder13 = false,
+
   onSubmit,
+
   onFillTestData,
+
   go,
+
   onOpenTerms,
 }: MobileSignupProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (!showPassword && !showConfirmPassword) return
+
     const handleGlobalRelease = () => {
       setShowPassword(false)
+
       setShowConfirmPassword(false)
     }
+
     window.addEventListener("mouseup", handleGlobalRelease)
+
     window.addEventListener("touchend", handleGlobalRelease)
+
     return () => {
       window.removeEventListener("mouseup", handleGlobalRelease)
+
       window.removeEventListener("touchend", handleGlobalRelease)
     }
   }, [showPassword, showConfirmPassword, setShowPassword])
@@ -114,6 +193,7 @@ export default function MobileSignup({
     if (setEducation && !education) {
       setEducation("medio-completo")
     }
+
     onSubmit(e)
   }
 
@@ -392,6 +472,7 @@ export default function MobileSignup({
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
+
                       setShowPassword(true)
                     }}
                     onMouseUp={() => setShowPassword(false)}
@@ -402,6 +483,7 @@ export default function MobileSignup({
                     onKeyDown={(e) => {
                       if (e.key === " " || e.key === "Enter") {
                         e.preventDefault()
+
                         setShowPassword(true)
                       }
                     }}
@@ -409,7 +491,9 @@ export default function MobileSignup({
                     onBlur={() => setShowPassword(false)}
                     onClick={(e) => e.preventDefault()}
                     className={`absolute right-2 p-1 cursor-pointer select-none transition-colors ${
-                      showPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                      showPassword
+                        ? "text-[#4F3CF0]"
+                        : "text-[#5F5B7D] hover:text-[#17152E]"
                     }`}
                     aria-label="Pressione e segure para visualizar a senha"
                   >
@@ -450,6 +534,7 @@ export default function MobileSignup({
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
+
                       setShowConfirmPassword(true)
                     }}
                     onMouseUp={() => setShowConfirmPassword(false)}
@@ -460,6 +545,7 @@ export default function MobileSignup({
                     onKeyDown={(e) => {
                       if (e.key === " " || e.key === "Enter") {
                         e.preventDefault()
+
                         setShowConfirmPassword(true)
                       }
                     }}
@@ -467,7 +553,9 @@ export default function MobileSignup({
                     onBlur={() => setShowConfirmPassword(false)}
                     onClick={(e) => e.preventDefault()}
                     className={`absolute right-2 p-1 cursor-pointer select-none transition-colors ${
-                      showConfirmPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                      showConfirmPassword
+                        ? "text-[#4F3CF0]"
+                        : "text-[#5F5B7D] hover:text-[#17152E]"
                     }`}
                     aria-label="Pressione e segure para visualizar a confirmação da senha"
                   >
@@ -488,6 +576,11 @@ export default function MobileSignup({
                 </div>
               </div>
             </div>
+
+            <p className="text-[12px] text-[#5F5B7D] mt-1 mb-2">
+              Mínimo 8 e máximo 20 caracteres, com letras maiúsculas e
+              minúsculas, número e caractere especial (!@#$%&*).
+            </p>
 
             {/* Field: Escolaridade */}
             <div>
@@ -653,6 +746,7 @@ export default function MobileSignup({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
+
                       onOpenTerms()
                     }}
                     className="text-[#4F3CF0] font-semibold underline hover:text-[#4332D6]"

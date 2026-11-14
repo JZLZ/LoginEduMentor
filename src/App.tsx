@@ -419,7 +419,9 @@ function PasswordVisibilityButton({
 
   return (
     <button
-      className={`input-action select-none ${visible ? "active" : ""} ${className}`}
+      className={`input-action select-none ${
+        visible ? "active" : ""
+      } ${className}`}
       type="button"
       onMouseDown={(e) => {
         e.preventDefault()
@@ -666,6 +668,61 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
   const [showTermsModal, setShowTermsModal] = useState(false)
 
+  const [isLocked, setIsLocked] = useState(false)
+  const [lockCountdown, setLockCountdown] = useState(0)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+
+  // Recupera bloqueio ativo persistente em caso de recarregamento da página (QA Best Practice)
+  useEffect(() => {
+    try {
+      const storedLockUntil = localStorage.getItem(
+        "sherlock_login_lockout_until",
+      )
+      if (storedLockUntil) {
+        const remaining = Math.ceil(
+          (parseInt(storedLockUntil, 10) - Date.now()) / 1000,
+        )
+        if (remaining > 0) {
+          setIsLocked(true)
+          setLockCountdown(remaining)
+          setErrorMessage(
+            "Muitas tentativas de login incorretas. Por segurança, sua conta foi temporariamente bloqueada por 1 minuto.",
+          )
+        } else {
+          localStorage.removeItem("sherlock_login_lockout_until")
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  // Efeito de contagem regressiva em tempo real durante o bloqueio
+  useEffect(() => {
+    if (!isLocked || lockCountdown <= 0) return
+
+    const timer = setInterval(() => {
+      setLockCountdown((prev) => {
+        if (prev <= 1) {
+          setIsLocked(false)
+          setFailedAttempts(0)
+          try {
+            localStorage.removeItem("sherlock_login_lockout_until")
+          } catch {
+            // ignore
+          }
+          setErrorMessage(
+            "O período de bloqueio terminou. Você já pode tentar entrar novamente.",
+          )
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isLocked, lockCountdown])
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sherlock_remembered_login")
@@ -731,6 +788,10 @@ function Login({ go }: { go: (screen: Screen) => void }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (isLocked) {
+      return
+    }
+
     if (rememberMe) {
       try {
         localStorage.setItem(
@@ -756,6 +817,16 @@ function Login({ go }: { go: (screen: Screen) => void }) {
     try {
       const result = await authApi.login(email, password)
 
+      // Reset lockout and failed attempts on success
+      setFailedAttempts(0)
+      setIsLocked(false)
+      setLockCountdown(0)
+      try {
+        localStorage.removeItem("sherlock_login_lockout_until")
+      } catch {
+        // ignore
+      }
+
       // Salva dados do usuário logado para exibição personalizada no Dashboard
       try {
         const cleanEmail = email.trim().toLowerCase()
@@ -763,8 +834,16 @@ function Login({ go }: { go: (screen: Screen) => void }) {
 
         let nameToUse = ""
         const user = tokenStorage.getUser() as any
-        if (user && (user.name || user.nome || user.fullName || user.nomeCompleto)) {
-          nameToUse = (user.name || user.nome || user.fullName || user.nomeCompleto).split(" ")[0]
+        if (
+          user &&
+          (user.name || user.nome || user.fullName || user.nomeCompleto)
+        ) {
+          nameToUse = (
+            user.name ||
+            user.nome ||
+            user.fullName ||
+            user.nomeCompleto
+          ).split(" ")[0]
         }
 
         if (!nameToUse) {
@@ -784,7 +863,8 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         if (!nameToUse) {
           const emailPrefix = cleanEmail.split("@")[0].split(/[._-]/)[0]
           if (emailPrefix) {
-            nameToUse = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
+            nameToUse =
+              emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
           }
         }
 
@@ -807,10 +887,42 @@ function Login({ go }: { go: (screen: Screen) => void }) {
         go("dashboard")
       }
     } catch (err: unknown) {
-      const message =
+      const isStatus429 = (err as any)?.status === 429
+      const rawMessage =
         err instanceof Error ? err.message : "Erro ao efetuar login"
+      const isTooManyRequests =
+        isStatus429 ||
+        /too many requests|muitas tentativas|429/i.test(rawMessage)
 
-      setErrorMessage(message)
+      const nextAttempts = failedAttempts + 1
+      setFailedAttempts(nextAttempts)
+
+      // Regra de QA: 5 tentativas incorretas ou HTTP 429 acionam bloqueio temporário de 60s
+      if (isTooManyRequests || nextAttempts >= 5) {
+        setIsLocked(true)
+        setLockCountdown(60)
+        setPassword("") // Limpa o campo de senha por segurança (NIST SP 800-63B / OWASP)
+        try {
+          localStorage.setItem(
+            "sherlock_login_lockout_until",
+            (Date.now() + 60000).toString(),
+          )
+        } catch {
+          // ignore
+        }
+        setErrorMessage(
+          "Muitas tentativas de login incorretas. Por segurança, sua conta foi temporariamente bloqueada por 1 minuto.",
+        )
+      } else if (nextAttempts >= 3) {
+        const remaining = 5 - nextAttempts
+        setErrorMessage(
+          `Credenciais incorretas (${nextAttempts}ª tentativa). Atenção: mais ${remaining} tentativa${
+            remaining > 1 ? "s" : ""
+          } e seu acesso será bloqueado temporariamente por 1 minuto.`,
+        )
+      } else {
+        setErrorMessage(rawMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -835,6 +947,8 @@ function Login({ go }: { go: (screen: Screen) => void }) {
           onFillAdmin={fillAdminData}
           go={go}
           onOpenTerms={() => setShowTermsModal(true)}
+          isLocked={isLocked}
+          lockCountdown={lockCountdown}
         />
       </div>
 
@@ -882,7 +996,46 @@ function Login({ go }: { go: (screen: Screen) => void }) {
             >
               {errorMessage && (
                 <div className="form-alert error" role="alert">
-                  {errorMessage}
+                  <div>{errorMessage}</div>
+                  {isLocked && (
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        paddingTop: "8px",
+                        borderTop: "1px solid rgba(180, 35, 24, 0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "12px",
+                          color: "#b42318",
+                        }}
+                      >
+                        ⏱️ Desbloqueio em {lockCountdown}s
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => go("recovery")}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#912018",
+                          textDecoration: "underline",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          padding: 0,
+                        }}
+                      >
+                        Recuperar senha agora
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               <Field
@@ -921,9 +1074,13 @@ function Login({ go }: { go: (screen: Screen) => void }) {
               <button
                 className="primary-button"
                 type="submit"
-                disabled={loading}
+                disabled={loading || isLocked}
               >
-                {loading ? "Entrando..." : "Entrar"}
+                {loading
+                  ? "Entrando..."
+                  : isLocked
+                    ? `Aguarde ${lockCountdown}s para tentar novamente`
+                    : "Entrar"}
               </button>
             </form>
             <p className="auth-switch">
@@ -1224,10 +1381,14 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
         localStorage.setItem("sherlock_user_fullname", trimmedFullName)
         localStorage.setItem("sherlock_user_email", cleanEmail)
 
-        const rawMap = localStorage.getItem("sherlock_user_names_by_email") || "{}"
+        const rawMap =
+          localStorage.getItem("sherlock_user_names_by_email") || "{}"
         const map = JSON.parse(rawMap)
         map[cleanEmail] = firstName
-        localStorage.setItem("sherlock_user_names_by_email", JSON.stringify(map))
+        localStorage.setItem(
+          "sherlock_user_names_by_email",
+          JSON.stringify(map),
+        )
       } catch {
         // ignore
       }
@@ -1492,9 +1653,8 @@ function Signup({ go }: { go: (screen: Screen) => void }) {
                 className="field-help"
                 style={{ marginTop: "-6px", marginBottom: "8px" }}
               >
-                Mínimo 8 e máximo 20 caracteres, maiúscula, minúscula, número e
-                símbolo (@#$%). Sem espaços, sequências, repetições, seu nome ou
-                e-mail.
+                Mínimo 8 e máximo 20 caracteres, com letras maiúsculas e
+                minúsculas, número e caractere especial (!@#$%&*).
               </small>
               <label className="field">
                 <span>Escolaridade</span>
@@ -1655,7 +1815,7 @@ function PasswordScreen({
       if (hash.includes("token=")) {
         const queryPart = hash.includes("?")
           ? hash.substring(hash.indexOf("?") + 1)
-          : hash.replace(/^#/, "")
+          : hash.replace(/^#\/?/, "")
         return new URLSearchParams(queryPart).get("token") || ""
       }
     }
@@ -1758,12 +1918,13 @@ function PasswordScreen({
     ruleNotPrevious,
     ruleSame,
     isValid: canResetSubmit,
+    validationError,
   } = evaluatePasswordRules(password, rulesContext)
 
   const handleOpenResetLink = (targetToken?: string) => {
     const finalToken = targetToken || recoveryToken || token
     if (finalToken && typeof window !== "undefined") {
-      window.location.hash = `reset?token=${encodeURIComponent(finalToken)}`
+      window.location.hash = `#reset?token=${encodeURIComponent(finalToken)}`
     }
     go("reset", finalToken || undefined)
   }
@@ -1978,45 +2139,57 @@ function PasswordScreen({
                   </div>
                 )}
               </form>
-            ) : validatingToken ? (
-              <div
-                className="form-alert"
-                style={{
-                  background: "#E9E6FF",
-                  color: "#4F3CF0",
-                  marginBottom: "16px",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                }}
-              >
-                Validando link de recuperação...
-              </div>
-            ) : tokenValid === false ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                }}
-              >
-                <div className="form-alert error" role="alert">
-                  {error || "O link de recuperação é inválido ou já expirou."}
-                </div>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => go("recovery")}
-                >
-                  Solicitar novo link
-                </button>
-              </div>
             ) : (
               <form
                 className={formAttempted ? "required-check" : ""}
                 onInvalidCapture={() => setFormAttempted(true)}
                 onSubmit={handleResetSubmit}
               >
-                {tokenEmail && (
+                {validatingToken && (
+                  <div
+                    className="form-alert"
+                    style={{
+                      background: "#E9E6FF",
+                      color: "#4F3CF0",
+                      marginBottom: "16px",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span>Validando link de recuperação...</span>
+                  </div>
+                )}
+                {tokenValid === false && (
+                  <div
+                    className="form-alert error"
+                    role="alert"
+                    style={{ marginBottom: "16px" }}
+                  >
+                    <p style={{ margin: "0 0 8px 0" }}>
+                      {error ||
+                        "O link de recuperação é inválido ou já expirou."}
+                    </p>
+                    <button
+                      type="button"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        color: "#B42318",
+                        textDecoration: "underline",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => go("recovery")}
+                    >
+                      Solicitar novo link
+                    </button>
+                  </div>
+                )}
+                {tokenEmail && tokenValid !== false && (
                   <p
                     style={{
                       marginBottom: "14px",
@@ -2027,7 +2200,7 @@ function PasswordScreen({
                     Redefinindo senha para: <strong>{tokenEmail}</strong>
                   </p>
                 )}
-                {error && (
+                {error && tokenValid !== false && (
                   <div
                     className="form-alert error"
                     role="alert"
@@ -2083,37 +2256,20 @@ function PasswordScreen({
                   <li className={ruleSpecial ? "valid" : ""}>
                     Caractere especial (!@#$%&*)
                   </li>
-                  <li className={ruleNoSpaces ? "valid" : ""}>
-                    Sem espaços
-                  </li>
-                  <li className={ruleNoSequentialNumbers ? "valid" : ""}>
-                    Sem números sequenciais (ex.: 123)
-                  </li>
-                  <li className={ruleNoSequentialLetters ? "valid" : ""}>
-                    Sem sequência alfabética (ex.: abc)
-                  </li>
-                  <li className={ruleNoRepeated ? "valid" : ""}>
-                    Sem caracteres repetidos (ex.: aa, 11)
-                  </li>
-                  {resolvedName && (
-                    <li className={ruleNoName ? "valid" : ""}>
-                      Sem o seu nome ou partes dele
-                    </li>
-                  )}
-                  {targetEmail && (
-                    <li className={ruleNoEmail ? "valid" : ""}>
-                      Sem partes do seu e-mail
-                    </li>
-                  )}
-                  {hasPreviousPassword && (
-                    <li className={ruleNotPrevious ? "valid" : ""}>
-                      Diferente da senha anterior
-                    </li>
-                  )}
-                  <li className={ruleSame ? "valid" : ""}>
-                    As duas senhas são iguais
-                  </li>
                 </ul>
+                {validationError && password.length >= 8 && !canResetSubmit && (
+                  <p
+                    className="form-alert error"
+                    style={{
+                      marginTop: "10px",
+                      marginBottom: "12px",
+                      fontSize: "13px",
+                    }}
+                    role="alert"
+                  >
+                    {validationError}
+                  </p>
+                )}
                 <button
                   className="primary-button"
                   type="submit"
@@ -2714,8 +2870,14 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
     try {
       try {
         localStorage.setItem("sherlock_start_mode", "materias")
-        localStorage.setItem("sherlock_selected_subjects", JSON.stringify(selected))
-        localStorage.setItem("sherlock_foreign_lang", language === "ingles" ? "Inglês" : "Espanhol")
+        localStorage.setItem(
+          "sherlock_selected_subjects",
+          JSON.stringify(selected),
+        )
+        localStorage.setItem(
+          "sherlock_foreign_lang",
+          language === "ingles" ? "Inglês" : "Espanhol",
+        )
       } catch {
         // ignore
       }
@@ -2765,7 +2927,11 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
       </div>
       <div className="language-choice language-choice--wide w-full max-w-[836px] mx-auto">
         <span className="language-choice-label">Língua estrangeira</span>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full" role="radiogroup" aria-label="Língua estrangeira">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full"
+          role="radiogroup"
+          aria-label="Língua estrangeira"
+        >
           {([
             { id: "ingles", label: "Inglês" },
             { id: "espanhol", label: "Espanhol" },
@@ -2791,11 +2957,17 @@ function Subjects({ go }: { go: (screen: Screen) => void }) {
                 <span
                   className={`
                     w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0
-                    ${isSelected ? "border-2 border-[#4F3CF0]" : "border-[1.5px] border-[#8C88AA]"}
+                    ${
+                      isSelected
+                        ? "border-2 border-[#4F3CF0]"
+                        : "border-[1.5px] border-[#8C88AA]"
+                    }
                   `}
                   aria-hidden="true"
                 >
-                  {isSelected && <span className="w-3 h-3 rounded-full bg-[#4F3CF0] block" />}
+                  {isSelected && (
+                    <span className="w-3 h-3 rounded-full bg-[#4F3CF0] block" />
+                  )}
                 </span>
 
                 {/* Label */}
@@ -3444,7 +3616,8 @@ function Goal({ go }: { go: (screen: Screen) => void }) {
       back={() => {
         let isMaterias = false
         try {
-          isMaterias = localStorage.getItem("sherlock_start_mode") === "materias"
+          isMaterias =
+            localStorage.getItem("sherlock_start_mode") === "materias"
         } catch {
           isMaterias = false
         }
@@ -3550,6 +3723,7 @@ export default function App() {
     if (typeof window === "undefined") return { screen: "landing", token: "" }
 
     const hash = window.location.hash || ""
+    const pathname = window.location.pathname || ""
     const searchParams = new URLSearchParams(window.location.search)
 
     // Check token in query param (?token=...) or in hash (#reset?token=... or #token=...)
@@ -3557,18 +3731,46 @@ export default function App() {
     if (!token && hash.includes("token=")) {
       const queryPart = hash.includes("?")
         ? hash.substring(hash.indexOf("?") + 1)
-        : hash.replace(/^#/, "")
+        : hash.replace(/^#\/?/, "")
       token = new URLSearchParams(queryPart).get("token") || ""
     }
 
+    const cleanHash = hash.replace(/^#\/?/, "").toLowerCase()
+    const cleanPath = pathname.replace(/^\//, "").toLowerCase()
+
     // Check screen
-    if (hash.startsWith("#reset") || token) {
+    const isReset =
+      Boolean(token) ||
+      cleanHash.startsWith("reset") ||
+      cleanHash.startsWith("redefinir") ||
+      cleanPath.startsWith("reset") ||
+      cleanPath.startsWith("redefinir") ||
+      searchParams.get("screen") === "reset"
+
+    if (isReset) {
       return { screen: "reset", token }
     }
-    if (hash.startsWith("#recovery") || hash.startsWith("#esqueci-senha")) {
+
+    const isRecovery =
+      cleanHash.startsWith("recovery") ||
+      cleanHash.startsWith("recuperar") ||
+      cleanHash.startsWith("esqueci-senha") ||
+      cleanPath.startsWith("recovery") ||
+      cleanPath.startsWith("recuperar") ||
+      cleanPath.startsWith("esqueci-senha") ||
+      searchParams.get("screen") === "recovery"
+
+    if (isRecovery) {
       return { screen: "recovery", token: "" }
     }
-    if (hash.startsWith("#dashboard") || hash.startsWith("#painel")) {
+
+    if (
+      cleanHash.startsWith("dashboard") ||
+      cleanHash.startsWith("painel") ||
+      cleanPath.startsWith("dashboard") ||
+      cleanPath.startsWith("painel") ||
+      searchParams.get("screen") === "dashboard"
+    ) {
       return { screen: "dashboard", token: "" }
     }
 
@@ -3659,6 +3861,7 @@ export default function App() {
     case "recovery":
       return (
         <PasswordScreen
+          key={`screen-recovery-${resetToken || "none"}`}
           go={(dest, token) => {
             if (dest === "login" && typeof window !== "undefined") {
               window.history.replaceState({}, "", window.location.pathname)
@@ -3673,6 +3876,7 @@ export default function App() {
     case "reset":
       return (
         <PasswordScreen
+          key={`screen-reset-${resetToken || "none"}`}
           reset
           go={(dest, token) => {
             if (dest === "login" && typeof window !== "undefined") {
@@ -3723,7 +3927,9 @@ export default function App() {
           : undefined
       const storedMode =
         typeof window !== "undefined"
-          ? (localStorage.getItem("sherlock_start_mode") as "nivelamento" | "materias" | null) || undefined
+          ? localStorage.getItem(
+              "sherlock_start_mode",
+            ) as "nivelamento" | "materias" | null || undefined
           : undefined
       const storedCourse =
         typeof window !== "undefined"
@@ -3732,6 +3938,7 @@ export default function App() {
       return (
         <Dashboard
           go={setScreen}
+          onSessionExpired={handleLogout}
           userName={storedName}
           userEmail={storedEmail}
           startMode={storedMode}

@@ -27,20 +27,23 @@ export interface UserTokenPayload {
 
 export interface AccountOptionDto {
   tipoPreparacao: string
+
   accountId?: string
 }
 
-export type LoginResult =
-  | {
-      requiresAccountSelection: false
-      token: string
-      user: UserTokenPayload | null
-    }
-  | {
-      requiresAccountSelection: true
-      selectionToken: string
-      accounts: AccountOptionDto[]
-    }
+export type LoginResult = {
+  requiresAccountSelection: false
+
+  token: string
+
+  user: UserTokenPayload | null
+} | {
+  requiresAccountSelection: true
+
+  selectionToken: string
+
+  accounts: AccountOptionDto[]
+}
 
 export interface LoginResponse {
   message: string
@@ -220,6 +223,7 @@ export const authApi = {
 
         body: JSON.stringify({
           email: email.trim(),
+
           password: password.trim(),
         }),
       })
@@ -231,20 +235,33 @@ export const authApi = {
 
     const body = (await response.json().catch(() => null)) as {
       message?: string | string[]
+
       data?: {
         status?: string
+
         token?: string
+
         selectionToken?: string
+
         accounts?: AccountOptionDto[]
       }
     } | null
 
     if (!response.ok) {
-      const message = Array.isArray(body?.message)
+      let message = Array.isArray(body?.message)
         ? body?.message.join(". ")
         : body?.message || `Erro na requisição (${response.status})`
 
-      throw new Error(message)
+      if (response.status === 429) {
+        message =
+          "Muitas tentativas de login incorretas. Por segurança, o acesso foi temporariamente bloqueado por 1 minuto."
+      }
+
+      const err = new Error(message) as Error & { status?: number }
+
+      err.status = response.status
+
+      throw err
     }
 
     const token =
@@ -253,24 +270,32 @@ export const authApi = {
       null
 
     // Se só tiver uma conta vinculada: entra direto sem Modal
+
     if (token) {
       tokenStorage.set(token)
+
       const user = parseJwt(token)
+
       return {
         requiresAccountSelection: false,
+
         token,
+
         user,
       }
     }
 
     // Se voltar 2 ou mais contas: backend devolve as contas e um token temporário
+
     if (
       body?.data?.status === "account_selection_required" &&
       body?.data?.selectionToken
     ) {
       return {
         requiresAccountSelection: true,
+
         selectionToken: body.data.selectionToken,
+
         accounts: body.data.accounts || [],
       }
     }
@@ -281,11 +306,14 @@ export const authApi = {
   /**
    * Conclui o login trocando o token temporário pela sessão da conta escolhida (POST /api/auth/login/selecionar).
    */
+
   selectAccount: async (
     selectionToken: string,
+
     tipoPreparacao: string,
   ): Promise<{
     token: string
+
     user: UserTokenPayload | null
   }> => {
     const url = `${API_BASE_URL}/auth/login/selecionar`
@@ -295,9 +323,12 @@ export const authApi = {
     try {
       response = await fetch(url, {
         method: "POST",
+
         headers: { "Content-Type": "application/json" },
+
         body: JSON.stringify({
           selectionToken,
+
           tipoPreparacao,
         }),
       })
@@ -309,15 +340,25 @@ export const authApi = {
 
     const body = (await response.json().catch(() => null)) as {
       message?: string | string[]
+
       data?: { status?: string; token?: string }
     } | null
 
     if (!response.ok) {
-      const message = Array.isArray(body?.message)
+      let message = Array.isArray(body?.message)
         ? body?.message.join(". ")
         : body?.message || `Erro na requisição (${response.status})`
 
-      throw new Error(message)
+      if (response.status === 429) {
+        message =
+          "Muitas tentativas de login incorretas. Por segurança, o acesso foi temporariamente bloqueado por 1 minuto."
+      }
+
+      const err = new Error(message) as Error & { status?: number }
+
+      err.status = response.status
+
+      throw err
     }
 
     const token =
@@ -330,6 +371,7 @@ export const authApi = {
     }
 
     tokenStorage.set(token)
+
     const user = parseJwt(token)
 
     return { token, user }
@@ -423,23 +465,27 @@ export const authApi = {
    * Solicita o envio de e-mail para recuperação de senha (POST /api/auth/recuperar-senha).
    * O backend verifica a existência da conta associada ao e-mail informado e retorna o link de recuperação gerado.
    */
-  solicitarRecuperacao: async (
-    email: string,
-  ): Promise<{
+
+  solicitarRecuperacao: async (email: string): Promise<{
     message: string
+
     data?: {
       token: string
+
       resetLink: string
     }
   }> => {
     return await apiFetch<{
       message: string
+
       data?: {
         token: string
+
         resetLink: string
       }
     }>("/auth/recuperar-senha", {
       method: "POST",
+
       body: JSON.stringify({ email: email.trim().toLowerCase() }),
     })
   },
@@ -447,14 +493,18 @@ export const authApi = {
   /**
    * Valida se o token de recuperação é válido e não expirou (GET /api/auth/validar-token-recuperacao).
    */
-  validarTokenRecuperacao: async (
-    token: string,
-  ): Promise<{ message: string; data: { valido: boolean; email: string } }> => {
+
+  validarTokenRecuperacao: async (token: string): Promise<{
+    message: string
+    data: { valido: boolean; email: string }
+  }> => {
     return await apiFetch<{
       message: string
+
       data: { valido: boolean; email: string }
     }>(
       `/auth/validar-token-recuperacao?token=${encodeURIComponent(token.trim())}`,
+
       { method: "GET" },
     )
   },
@@ -462,16 +512,22 @@ export const authApi = {
   /**
    * Redefine a senha utilizando o token de recuperação (POST /api/auth/redefinir-senha).
    */
+
   redefinirSenha: async (
     token: string,
+
     novaSenha: string,
+
     confirmarSenha: string,
   ): Promise<{ message: string }> => {
     return await apiFetch<{ message: string }>("/auth/redefinir-senha", {
       method: "POST",
+
       body: JSON.stringify({
         token: token.trim(),
+
         novaSenha,
+
         confirmarSenha,
       }),
     })
@@ -572,54 +628,73 @@ export const coursesApi = {
 
 export interface QuizQuestion {
   id: string
+
   area: string
+
   statement: string
+
   options: { letter: string; text: string }[]
 }
 
 interface StartAssessmentResponse {
   message: string
+
   data: {
     sessionId: string
+
     total: number
+
     index: number
+
     question: QuizQuestion
   }
 }
 
 interface AnswerResponse {
   message: string
+
   data: {
     index: number
+
     total: number
+
     finished: boolean
+
     question: QuizQuestion | null
   }
 }
 
 export interface AssessmentResult {
   total: number
+
   correct: number
+
   wrong: number
+
   level: "Iniciante" | "Intermediário" | "Avançado"
 }
 
 interface ResultResponse {
   message: string
+
   data: AssessmentResult
 }
 
 /**
  * Cliente de nivelamento (assessment) — sessão de questões.
  */
+
 export const assessmentApi = {
   /** Inicia uma sessão de nivelamento e retorna a 1ª questão. */
+
   start: async (
     type: "geral" | "lingua",
+
     language?: "ingles" | "espanhol",
   ): Promise<StartAssessmentResponse["data"]> => {
     const res = await apiFetch<StartAssessmentResponse>("/assessment/start", {
       method: "POST",
+
       body: JSON.stringify(language ? { type, language } : { type }),
     })
 
@@ -627,43 +702,57 @@ export const assessmentApi = {
   },
 
   /** Registra a resposta da questão atual e retorna a próxima ou o fim. */
+
   answer: async (
     sessionId: string,
+
     letter: string,
+
     elapsedMs: number,
   ): Promise<AnswerResponse["data"]> => {
     const res = await apiFetch<AnswerResponse>(
       `/assessment/${sessionId}/answer`,
+
       {
         method: "POST",
+
         body: JSON.stringify({ letter, elapsedMs }),
       },
     )
+
     return res.data
   },
 
   /** Finaliza a sessão (calcula pontuação/nível). */
+
   finish: async (sessionId: string): Promise<AssessmentResult> => {
     const res = await apiFetch<ResultResponse>(
       `/assessment/${sessionId}/finish`,
+
       { method: "POST" },
     )
+
     return res.data
   },
 
   /** Resultado da sessão. */
+
   result: async (sessionId: string): Promise<AssessmentResult> => {
     const res = await apiFetch<ResultResponse>(
       `/assessment/${sessionId}/result`,
+
       { method: "GET" },
     )
+
     return res.data
   },
 
   /** Descarta a sessão (interrupção do nivelamento de língua — RN10). */
+
   discard: async (sessionId: string): Promise<void> => {
     await apiFetch<{ message: string; data: { status: string } }>(
       `/assessment/${sessionId}/discard`,
+
       { method: "POST" },
     )
   },
@@ -672,6 +761,7 @@ export const assessmentApi = {
 /**
  * Cliente de onboarding — persistência incremental do fluxo.
  */
+
 export const onboardingApi = {
   /** Registra o curso-alvo escolhido na Tela 01. */
 
@@ -692,62 +782,80 @@ export const onboardingApi = {
   },
 
   /** Registra o modo de início escolhido na Tela 02 (Como começar). */
-  setStartMode: async (
-    mode: "nivelamento" | "materias",
-  ): Promise<{ startMode: "nivelamento" | "materias" | null }> => {
+
+  setStartMode: async (mode: "nivelamento" | "materias"): Promise<{
+    startMode: "nivelamento" | "materias" | null
+  }> => {
     const res = await apiFetch<{
       message: string
+
       data: { startMode: "nivelamento" | "materias" | null }
     }>("/onboarding/start-mode", {
       method: "PUT",
+
       body: JSON.stringify({ mode }),
     })
+
     return res.data
   },
 
   /** Registra as matérias (ordem = prioridade) e a língua (Tela 03c). */
+
   setSubjects: async (payload: {
     subjects: string[]
+
     foreignLanguage: "ingles" | "espanhol"
   }): Promise<{
     subjects: string[]
+
     foreignLanguage: "ingles" | "espanhol" | null
   }> => {
     const res = await apiFetch<{
       message: string
+
       data: { subjects: string[]; foreignLanguage: "ingles" | "espanhol" | null }
     }>("/onboarding/subjects", {
       method: "PUT",
+
       body: JSON.stringify(payload),
     })
+
     return res.data
   },
 
   /** Registra apenas a língua estrangeira (Tela 03d). */
-  setForeignLanguage: async (
-    foreignLanguage: "ingles" | "espanhol",
-  ): Promise<{ foreignLanguage: "ingles" | "espanhol" | null }> => {
+
+  setForeignLanguage: async (foreignLanguage: "ingles" | "espanhol"): Promise<{
+    foreignLanguage: "ingles" | "espanhol" | null
+  }> => {
     const res = await apiFetch<{
       message: string
+
       data: { foreignLanguage: "ingles" | "espanhol" | null }
     }>("/onboarding/foreign-language", {
       method: "PUT",
+
       body: JSON.stringify({ foreignLanguage }),
     })
+
     return res.data
   },
 
   /** Registra a meta semanal de estudo em dias (3, 5 ou 7). */
-  setWeeklyGoal: async (
-    days: 3 | 5 | 7,
-  ): Promise<{ weeklyGoalDays: 3 | 5 | 7 | null }> => {
+
+  setWeeklyGoal: async (days: 3 | 5 | 7): Promise<{
+    weeklyGoalDays: 3 | 5 | 7 | null
+  }> => {
     const res = await apiFetch<{
       message: string
+
       data: { weeklyGoalDays: 3 | 5 | 7 | null }
     }>("/onboarding/weekly-goal", {
       method: "PUT",
+
       body: JSON.stringify({ days }),
     })
+
     return res.data
   },
 
@@ -755,51 +863,72 @@ export const onboardingApi = {
    * Conclui o onboarding (Tela final). Opcionalmente informa o id da sessão
    * de nivelamento para o backend derivar e gravar o nível apurado.
    */
-  complete: async (
-    assessmentSessionId?: string,
-  ): Promise<{
+
+  complete: async (assessmentSessionId?: string): Promise<{
     completed: boolean
+
     assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
   }> => {
     const res = await apiFetch<{
       message: string
+
       data: {
         completed: boolean
+
         assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
       }
     }>("/onboarding/complete", {
       method: "POST",
+
       body: JSON.stringify(
         assessmentSessionId ? { assessmentSessionId } : {},
       ),
     })
+
     return res.data
   },
 
   /** Retorna o perfil de onboarding (para pré-seleção). */
+
   getMe: async (): Promise<{
     targetCourseId: string | null
+
     targetCourseName: string | null
+
     startMode: "nivelamento" | "materias" | null
+
     subjects: string[]
+
     foreignLanguage: "ingles" | "espanhol" | null
+
     weeklyGoalDays: 3 | 5 | 7 | null
+
     assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+
     completed: boolean
   }> => {
     const res = await apiFetch<{
       message: string
+
       data: {
         targetCourseId: string | null
+
         targetCourseName: string | null
+
         startMode: "nivelamento" | "materias" | null
+
         subjects: string[]
+
         foreignLanguage: "ingles" | "espanhol" | null
+
         weeklyGoalDays: 3 | 5 | 7 | null
+
         assessmentLevel: "Iniciante" | "Intermediário" | "Avançado" | null
+
         completed: boolean
       }
     }>("/onboarding/me", { method: "GET" })
+
     return res.data
   },
 }

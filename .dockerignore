@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.git
+.gitignore
+.env
+.env.local
+.cache
+.vite
+.mentorina_venv
+.pytest_cache
+*.log
+README.md

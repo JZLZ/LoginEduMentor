@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo } from "react"
 import { authApi, onboardingApi, tokenStorage } from "../services/api"
-import { MODULES_DATA, type SubmoduleItem, type SubmoduleQuestion } from "../data/modulesData"
+import {
+  MODULES_DATA,
+  type SubmoduleItem,
+  type SubmoduleQuestion,
+} from "../data/modulesData"
 import TermsModal from "../TermsModal"
 import MentorinaChat from "./MentorinaChat"
 import enemDevApi, { type EnemQuestion } from "../services/enemDevApi"
@@ -12,6 +16,7 @@ import {
 
 interface DashboardProps {
   go: (screen: any) => void
+  onSessionExpired: () => void
   userName?: string
   userEmail?: string
   startMode?: "nivelamento" | "materias"
@@ -51,7 +56,8 @@ export interface EssayHistoryItem {
 const DEFAULT_ESSAY_HISTORY: EssayHistoryItem[] = [
   {
     id: "redacao-1",
-    theme: "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
+    theme:
+      "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
     date: "28 de Outubro de 2026",
     score: 760,
     status: "Corrigida",
@@ -65,11 +71,16 @@ const DEFAULT_ESSAY_HISTORY: EssayHistoryItem[] = [
       c5: 140,
     },
     feedback: {
-      c1Feedback: "Excelente domínio da norma padrão. Foram identificados apenas dois desvios pontuais de concordância e pontuação entre orações subordinadas no D1.",
-      c2Feedback: "Compreensão perfeita da proposta temática. Repertório legitimado com citação de Darcy Ribeiro ('O Povo Brasileiro') e da Constituição Federal de 1988 com total produtividade.",
-      c3Feedback: "Projeto de texto muito bem articulado, com tese clara, argumentos consistentes e encadeamento progressivo dos pontos de vista.",
-      c4Feedback: "Estrutura coesiva diversificada interparágrafos. Atenção no interior do D2 para evitar repetição próxima de operadores argumentativos adversativos.",
-      c5Feedback: "Proposta de intervenção completa e exemplar, contemplando agente (Ministério dos Povos Indígenas), ação, meio/modo, efeito e detalhamento específico.",
+      c1Feedback:
+        "Excelente domínio da norma padrão. Foram identificados apenas dois desvios pontuais de concordância e pontuação entre orações subordinadas no D1.",
+      c2Feedback:
+        "Compreensão perfeita da proposta temática. Repertório legitimado com citação de Darcy Ribeiro ('O Povo Brasileiro') e da Constituição Federal de 1988 com total produtividade.",
+      c3Feedback:
+        "Projeto de texto muito bem articulado, com tese clara, argumentos consistentes e encadeamento progressivo dos pontos de vista.",
+      c4Feedback:
+        "Estrutura coesiva diversificada interparágrafos. Atenção no interior do D2 para evitar repetição próxima de operadores argumentativos adversativos.",
+      c5Feedback:
+        "Proposta de intervenção completa e exemplar, contemplando agente (Ministério dos Povos Indígenas), ação, meio/modo, efeito e detalhamento específico.",
       strengths: [
         "Tese clara e bem defendida.",
         "Bom uso de dados (CNPq) para sustentar o argumento.",
@@ -78,7 +89,8 @@ const DEFAULT_ESSAY_HISTORY: EssayHistoryItem[] = [
         "C3: os argumentos do D2 ficaram meio soltos no final do parágrafo.",
         "C5: a proposta pode ter um detalhamento da ação para ficar 100%.",
       ],
-      generalComment: "Excelente trabalho! Sua redação demonstra maturidade argumentativa e domínio dos critérios do ENEM. Ajustando os detalhes de pontuação e coesão, a nota 1000 está ao seu alcance!",
+      generalComment:
+        "Excelente trabalho! Sua redação demonstra maturidade argumentativa e domínio dos critérios do ENEM. Ajustando os detalhes de pontuação e coesão, a nota 1000 está ao seu alcance!",
     },
     text: `Historicamente, a formação social e cultural brasileira foi enriquecida pelas práticas, saberes e tradições dos povos originários e comunidades tradicionais. Não obstante, na contemporaneidade, esses grupos enfrentam constantes desafios para terem sua identidade reconhecida e seus direitos territoriais assegurados. Nesse contexto, destacam-se a invisibilidade social promovida pelo descaso estatal e a pressão exercida pelo avanço predatório de atividades econômicas sobre territórios tradicionais. Desse modo, torna-se imperativo desarticular esse cenário para garantir a cidadania plena dessas populações.
 
@@ -90,7 +102,8 @@ Portanto, medidas urgentes são necessárias para reverter esse quadro. Para tan
   },
   {
     id: "redacao-2",
-    theme: "Invisibilidade e registro civil: garantia de acesso à cidadania no Brasil",
+    theme:
+      "Invisibilidade e registro civil: garantia de acesso à cidadania no Brasil",
     date: "14 de Outubro de 2026",
     score: 680,
     status: "Corrigida",
@@ -104,11 +117,16 @@ Portanto, medidas urgentes são necessárias para reverter esse quadro. Para tan
       c5: 140,
     },
     feedback: {
-      c1Feedback: "Bom domínio da linguagem culta formal, com poucos desvios gramaticais de concordância.",
-      c2Feedback: "Tema abordado de maneira ampla e consistente. Sugere-se aprofundar a relação entre o documento e os direitos fundamentais.",
-      c3Feedback: "Argumentação consistente e coerente ao longo de todo o texto com projeto de texto claro.",
-      c4Feedback: "Excelente uso de conectivos inter e intraparágrafos sem repetições viciosas.",
-      c5Feedback: "Proposta de intervenção muito bem estruturada com todos os 5 elementos exigidos no ENEM.",
+      c1Feedback:
+        "Bom domínio da linguagem culta formal, com poucos desvios gramaticais de concordância.",
+      c2Feedback:
+        "Tema abordado de maneira ampla e consistente. Sugere-se aprofundar a relação entre o documento e os direitos fundamentais.",
+      c3Feedback:
+        "Argumentação consistente e coerente ao longo de todo o texto com projeto de texto claro.",
+      c4Feedback:
+        "Excelente uso de conectivos inter e intraparágrafos sem repetições viciosas.",
+      c5Feedback:
+        "Proposta de intervenção muito bem estruturada com todos os 5 elementos exigidos no ENEM.",
       strengths: [
         "Excelente repertório conectivo e coesão textual",
         "Proposta de intervenção completa e viável com Defensoria Pública",
@@ -117,7 +135,8 @@ Portanto, medidas urgentes são necessárias para reverter esse quadro. Para tan
         "Aprofundar os dados e repertório sociológico no primeiro desenvolvimento",
         "Evitar generalizações sobre a atuação dos cartórios locais",
       ],
-      generalComment: "Ótima redação! O texto é muito fluído e agradável de ler. Aprofundar o repertório sociológico no D1 elevará ainda mais a sua nota.",
+      generalComment:
+        "Ótima redação! O texto é muito fluído e agradável de ler. Aprofundar o repertório sociológico no D1 elevará ainda mais a sua nota.",
     },
     text: `Na clássica obra "Cidadãos de Papel", o jornalista Gilberto Dimenstein denuncia a existência de direitos assegurados pela legislação brasileira que não se concretizam no cotidiano da população. Analogamente a essa crítica, a ausência de registro civil no Brasil priva milhares de indivíduos do acesso a prerrogativas fundamentais, configurando uma grave barreira à cidadania plena. Dessa forma, a negligência burocrática e a desigualdade socioespacial sustentam esse quadro excludente, demandando transformações imediatas.
 
@@ -147,7 +166,12 @@ function getInitialUserName(): string {
 
     const user = tokenStorage.getUser() as any
     if (user) {
-      const name = user.name || user.nome || user.fullName || user.nomeCompleto || user.given_name
+      const name =
+        user.name ||
+        user.nome ||
+        user.fullName ||
+        user.nomeCompleto ||
+        user.given_name
       if (name && typeof name === "string" && name.trim()) {
         return name.trim().split(" ")[0]
       }
@@ -204,7 +228,9 @@ function getInitialUserFullName(fallbackFirstName: string): string {
   return fallbackFirstName
 }
 
-function getInitialStartMode(propMode?: "nivelamento" | "materias"): "nivelamento" | "materias" {
+function getInitialStartMode(
+  propMode?: "nivelamento" | "materias",
+): "nivelamento" | "materias" {
   try {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search)
@@ -226,7 +252,11 @@ function getInitialPrioritySubjects(): [string, string] {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
         const sub1 = parsed[0] || "Matemática"
-        const sub2 = parsed[1] || (sub1.toLowerCase().includes("matemática") ? "Natureza" : "Matemática")
+        const sub2 =
+          parsed[1] ||
+          (sub1.toLowerCase().includes("matemática")
+            ? "Natureza"
+            : "Matemática")
         return [sub1, sub2]
       }
     }
@@ -316,122 +346,196 @@ interface ExamSimuladoQuestion {
   correct: string
 }
 
-const SIMULADO_90_QUESTIONS: ExamSimuladoQuestion[] = Array.from({ length: 90 }, (_, i) => {
-  if (i === 7) {
-    // Questão 08 do Simulado (ENEM 2023 - Questão 141 - Tintas conforme SVG oficial)
-    return {
-      index: 8,
-      year: 2023,
-      discipline: "Matemática",
-      badge: "QUESTÃO 08 · ENEM 2023",
-      context:
-        "Uma loja de tintas vende galões cilíndricos com capacidade de 3,6 litros e latas menores com capacidade de 900 mililitros. Um cliente calculou que necessita de exatamente 16,2 litros de tinta para pintar toda a sua residência.\n\nPara minimizar o custo e não haver sobra de tinta, quantas embalagens de cada tipo ele deve adquirir se o galão custa R$ 80,00 e a lata pequena custa R$ 25,00?",
-      intro: "A melhor combinação de compra é:",
-      alternatives: [
-        { letter: "A", text: "5 galões de 3,6 L." },
-        { letter: "B", text: "18 latas de 900 mL." },
-        { letter: "C", text: "4 galões de 3,6 L e 2 latas de 900 mL." },
-        { letter: "D", text: "3 galões de 3,6 L e 6 latas de 900 mL." },
-        { letter: "E", text: "2 galões de 3,6 L e 10 latas de 900 mL." },
-      ],
-      correct: "C",
+const SIMULADO_90_QUESTIONS: ExamSimuladoQuestion[] = Array.from(
+  { length: 90 },
+  (_, i) => {
+    if (i === 7) {
+      // Questão 08 do Simulado (ENEM 2023 - Questão 141 - Tintas conforme SVG oficial)
+      return {
+        index: 8,
+        year: 2023,
+        discipline: "Matemática",
+        badge: "QUESTÃO 08 · ENEM 2023",
+        context:
+          "Uma loja de tintas vende galões cilíndricos com capacidade de 3,6 litros e latas menores com capacidade de 900 mililitros. Um cliente calculou que necessita de exatamente 16,2 litros de tinta para pintar toda a sua residência.\n\nPara minimizar o custo e não haver sobra de tinta, quantas embalagens de cada tipo ele deve adquirir se o galão custa R$ 80,00 e a lata pequena custa R$ 25,00?",
+        intro: "A melhor combinação de compra é:",
+        alternatives: [
+          { letter: "A", text: "5 galões de 3,6 L." },
+          { letter: "B", text: "18 latas de 900 mL." },
+          { letter: "C", text: "4 galões de 3,6 L e 2 latas de 900 mL." },
+          { letter: "D", text: "3 galões de 3,6 L e 6 latas de 900 mL." },
+          { letter: "E", text: "2 galões de 3,6 L e 10 latas de 900 mL." },
+        ],
+        correct: "C",
+      }
     }
-  }
 
-  const questionPool = [
-    {
-      discipline: "Matemática",
-      context:
-        "Um arquiteto está projetando uma praça circular e necessita calcular a área destinada ao gramado central. O diâmetro total da praça mede 40 metros, e haverá uma pista de caminhada perimetral de 2 metros de largura contornando todo o gramado.\n\nConsiderando a aproximação de π = 3,14, qual será a área total destinada exclusivamente ao gramado?",
-      intro: "A área do gramado central da praça mede, aproximadamente:",
-      alternatives: [
-        { letter: "A", text: "1.017,36 m²." },
-        { letter: "B", text: "1.256,00 m²." },
-        { letter: "C", text: "961,62 m²." },
-        { letter: "D", text: "1.133,54 m²." },
-        { letter: "E", text: "854,20 m²." },
-      ],
-      correct: "A",
-    },
-    {
-      discipline: "Ciências da Natureza",
-      context:
-        "Os biocombustíveis são fontes de energia renovável obtidas a partir de biomassa orgânica. O etanol de cana-de-açúcar é considerado um biocombustível de alta eficiência energética quando comparado a combustíveis fósseis derivados do petróleo.\n\nSob o ponto de vista do ciclo global do carbono, a principal vantagem ambiental do uso do etanol em substituição à gasolina decorre do fato de que:",
-      intro: "Assinale a alternativa que apresenta a justificativa ambiental correta:",
-      alternatives: [
-        { letter: "A", text: "sua queima não produz dióxido de carbono nem vapor de água na atmosfera." },
-        { letter: "B", text: "o dióxido de carbono liberado na queima foi previamente absorvido pela cana na fotossíntese." },
-        { letter: "C", text: "sua combustão é exclusivamente incompleta, gerando menor calor para o efeito estufa." },
-        { letter: "D", text: "ele elimina a formação de material particulado em qualquer motor veicular." },
-        { letter: "E", text: "sua produção independe do consumo de água doce nos processos de moagem." },
-      ],
-      correct: "B",
-    },
-    {
-      discipline: "Ciências Humanas",
-      context:
-        "No contexto da Revolução Industrial iniciada na Inglaterra no século XVIII, a introdução das máquinas a vapor e o regime fabril alteraram profundamente a percepção do tempo pelos trabalhadores.\n\nAnteriormente guiado pelos ciclos naturais do dia e das estações agrícolas, o ritmo de vida passou a ser rigorosamente cronometrado pelo apito da fábrica e pelos relógios mecânicos.",
-      intro: "A mudança social descrita no texto expressa:",
-      alternatives: [
-        { letter: "A", text: "a valorização das tradições camponesas no ambiente urbano." },
-        { letter: "B", text: "o aumento do tempo livre destinado ao lazer da classe operária." },
-        { letter: "C", text: "a manutenção do controle autônomo dos artesãos sobre sua produção." },
-        { letter: "D", text: "a subordinação da força de trabalho à disciplina fabril e à produtividade." },
-        { letter: "E", text: "o declínio dos conflitos sindicais diante da modernização tecnológica." },
-      ],
-      correct: "D",
-    },
-    {
-      discipline: "Linguagens",
-      context:
-        "A linguagem da internet, conhecida popularmente como 'internetês', caracteriza-se pelo uso de abreviações, emojis, memes e ausência frequente de pontuações formais em mensagens instantâneas.\n\nLinguistas contemporâneos têm demonstrado que esse fenômeno não representa a degradação da língua portuguesa, mas sim uma variação estilística adaptada à rapidez e dinamicidade dos canais digitais.",
-      intro: "De acordo com a perspectiva linguística expressa no texto:",
-      alternatives: [
-        { letter: "A", text: "a língua se adapta funcionalmente às necessidades comunicativas de seus usuários." },
-        { letter: "B", text: "o uso da norma padrão torna-se obsoleto e dispensável em todas as situações sociais." },
-        { letter: "C", text: "a gramática tradicional deve ser reformada para adotar exclusivamente o internetês." },
-        { letter: "D", text: "a comunicação digital empobrece o vocabulário e a capacidade interpretativa." },
-        { letter: "E", text: "as abreviações decorrem unicamente de limitações técnicas dos teclados de smartphones." },
-      ],
-      correct: "A",
-    },
-  ]
+    const questionPool = [
+      {
+        discipline: "Matemática",
+        context:
+          "Um arquiteto está projetando uma praça circular e necessita calcular a área destinada ao gramado central. O diâmetro total da praça mede 40 metros, e haverá uma pista de caminhada perimetral de 2 metros de largura contornando todo o gramado.\n\nConsiderando a aproximação de π = 3,14, qual será a área total destinada exclusivamente ao gramado?",
+        intro: "A área do gramado central da praça mede, aproximadamente:",
+        alternatives: [
+          { letter: "A", text: "1.017,36 m²." },
+          { letter: "B", text: "1.256,00 m²." },
+          { letter: "C", text: "961,62 m²." },
+          { letter: "D", text: "1.133,54 m²." },
+          { letter: "E", text: "854,20 m²." },
+        ],
+        correct: "A",
+      },
+      {
+        discipline: "Ciências da Natureza",
+        context:
+          "Os biocombustíveis são fontes de energia renovável obtidas a partir de biomassa orgânica. O etanol de cana-de-açúcar é considerado um biocombustível de alta eficiência energética quando comparado a combustíveis fósseis derivados do petróleo.\n\nSob o ponto de vista do ciclo global do carbono, a principal vantagem ambiental do uso do etanol em substituição à gasolina decorre do fato de que:",
+        intro:
+          "Assinale a alternativa que apresenta a justificativa ambiental correta:",
+        alternatives: [
+          {
+            letter: "A",
+            text: "sua queima não produz dióxido de carbono nem vapor de água na atmosfera.",
+          },
+          {
+            letter: "B",
+            text: "o dióxido de carbono liberado na queima foi previamente absorvido pela cana na fotossíntese.",
+          },
+          {
+            letter: "C",
+            text: "sua combustão é exclusivamente incompleta, gerando menor calor para o efeito estufa.",
+          },
+          {
+            letter: "D",
+            text: "ele elimina a formação de material particulado em qualquer motor veicular.",
+          },
+          {
+            letter: "E",
+            text: "sua produção independe do consumo de água doce nos processos de moagem.",
+          },
+        ],
+        correct: "B",
+      },
+      {
+        discipline: "Ciências Humanas",
+        context:
+          "No contexto da Revolução Industrial iniciada na Inglaterra no século XVIII, a introdução das máquinas a vapor e o regime fabril alteraram profundamente a percepção do tempo pelos trabalhadores.\n\nAnteriormente guiado pelos ciclos naturais do dia e das estações agrícolas, o ritmo de vida passou a ser rigorosamente cronometrado pelo apito da fábrica e pelos relógios mecânicos.",
+        intro: "A mudança social descrita no texto expressa:",
+        alternatives: [
+          {
+            letter: "A",
+            text: "a valorização das tradições camponesas no ambiente urbano.",
+          },
+          {
+            letter: "B",
+            text: "o aumento do tempo livre destinado ao lazer da classe operária.",
+          },
+          {
+            letter: "C",
+            text: "a manutenção do controle autônomo dos artesãos sobre sua produção.",
+          },
+          {
+            letter: "D",
+            text: "a subordinação da força de trabalho à disciplina fabril e à produtividade.",
+          },
+          {
+            letter: "E",
+            text: "o declínio dos conflitos sindicais diante da modernização tecnológica.",
+          },
+        ],
+        correct: "D",
+      },
+      {
+        discipline: "Linguagens",
+        context:
+          "A linguagem da internet, conhecida popularmente como 'internetês', caracteriza-se pelo uso de abreviações, emojis, memes e ausência frequente de pontuações formais em mensagens instantâneas.\n\nLinguistas contemporâneos têm demonstrado que esse fenômeno não representa a degradação da língua portuguesa, mas sim uma variação estilística adaptada à rapidez e dinamicidade dos canais digitais.",
+        intro: "De acordo com a perspectiva linguística expressa no texto:",
+        alternatives: [
+          {
+            letter: "A",
+            text: "a língua se adapta funcionalmente às necessidades comunicativas de seus usuários.",
+          },
+          {
+            letter: "B",
+            text: "o uso da norma padrão torna-se obsoleto e dispensável em todas as situações sociais.",
+          },
+          {
+            letter: "C",
+            text: "a gramática tradicional deve ser reformada para adotar exclusivamente o internetês.",
+          },
+          {
+            letter: "D",
+            text: "a comunicação digital empobrece o vocabulário e a capacidade interpretativa.",
+          },
+          {
+            letter: "E",
+            text: "as abreviações decorrem unicamente de limitações técnicas dos teclados de smartphones.",
+          },
+        ],
+        correct: "A",
+      },
+    ]
 
-  const item = questionPool[i % questionPool.length]
-  return {
-    index: i + 1,
-    year: 2023,
-    discipline: item.discipline,
-    badge: `QUESTÃO ${String(i + 1).padStart(2, "0")} · ENEM 2023`,
-    context: item.context,
-    intro: item.intro,
-    alternatives: item.alternatives,
-    correct: item.correct,
-  }
-})
+    const item = questionPool[i % questionPool.length]
+    return {
+      index: i + 1,
+      year: 2023,
+      discipline: item.discipline,
+      badge: `QUESTÃO ${String(i + 1).padStart(2, "0")} · ENEM 2023`,
+      context: item.context,
+      intro: item.intro,
+      alternatives: item.alternatives,
+      correct: item.correct,
+    }
+  },
+)
 
-export default function Dashboard({ go, userName: propUserName, userEmail: propUserEmail, startMode: propStartMode, targetCourse: propTargetCourse }: DashboardProps) {
+export default function Dashboard({
+  go,
+  onSessionExpired,
+  userName: propUserName,
+  userEmail: propUserEmail,
+  startMode: propStartMode,
+  targetCourse: propTargetCourse,
+}: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("inicio")
   const [isMentorinaChatOpen, setIsMentorinaChatOpen] = useState(false)
-  const [mentorinaActiveQuestion, setMentorinaActiveQuestion] = useState<EnemQuestion | undefined>(undefined)
+  const [mentorinaActiveQuestion, setMentorinaActiveQuestion] =
+    useState<EnemQuestion | undefined>(undefined)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [userName, setUserName] = useState<string>(() => propUserName || getInitialUserName())
-  const [userFullName, setUserFullName] = useState<string>(() => getInitialUserFullName(propUserName || getInitialUserName()))
-  const [userEmail, setUserEmail] = useState<string>(() => propUserEmail || getInitialUserEmail())
-  const [startMode, setStartMode] = useState<"nivelamento" | "materias">(() => getInitialStartMode(propStartMode))
-  const [targetCourse, setTargetCourse] = useState<string>(() => getInitialTargetCourse(propTargetCourse))
-  const [prioritySubjects, setPrioritySubjects] = useState<[string, string]>(() => getInitialPrioritySubjects())
+  const [userName, setUserName] = useState<string>(
+    () => propUserName || getInitialUserName(),
+  )
+  const [userFullName, setUserFullName] = useState<string>(() =>
+    getInitialUserFullName(propUserName || getInitialUserName()),
+  )
+  const [userEmail, setUserEmail] = useState<string>(
+    () => propUserEmail || getInitialUserEmail(),
+  )
+  const [startMode, setStartMode] = useState<"nivelamento" | "materias">(() =>
+    getInitialStartMode(propStartMode),
+  )
+  const [targetCourse, setTargetCourse] = useState<string>(() =>
+    getInitialTargetCourse(propTargetCourse),
+  )
+  const [prioritySubjects, setPrioritySubjects] = useState<[string, string]>(
+    () => getInitialPrioritySubjects(),
+  )
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
   const [selectedSubmodule, setSelectedSubmodule] = useState<number>(2)
   const [moduleCompleted, setModuleCompleted] = useState<boolean>(false)
-  const [completedTopics, setCompletedTopics] = useState<Record<string, boolean>>({})
-  const [completedQuestions, setCompletedQuestions] = useState<Record<string, boolean>>({})
+  const [completedTopics, setCompletedTopics] =
+    useState<Record<string, boolean>>({})
+  const [completedQuestions, setCompletedQuestions] =
+    useState<Record<string, boolean>>({})
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0)
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [showExplanation, setShowExplanation] = useState<boolean>(false)
-  const [questionResults, setQuestionResults] = useState<Record<string, "acertei" | "errei">>({})
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({})
-  const [activeQuestionModal, setActiveQuestionModal] = useState<SubmoduleQuestion | null>(null)
+  const [questionResults, setQuestionResults] =
+    useState<Record<string, "acertei" | "errei">>({})
+  const [selectedAnswers, setSelectedAnswers] =
+    useState<Record<string, number>>({})
+  const [activeQuestionModal, setActiveQuestionModal] =
+    useState<SubmoduleQuestion | null>(null)
   const [foreignLang, setForeignLang] = useState<"Inglês" | "Espanhol">(() => {
     try {
       const saved = localStorage.getItem("sherlock_foreign_lang")
@@ -466,9 +570,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     }
     return DEFAULT_ESSAY_HISTORY
   })
-  const [selectedEssayFeedback, setSelectedEssayFeedback] = useState<EssayHistoryItem | null>(null)
+  const [selectedEssayFeedback, setSelectedEssayFeedback] =
+    useState<EssayHistoryItem | null>(null)
   const [isWritingEssay, setIsWritingEssay] = useState<boolean>(false)
-  const [newEssayTheme, setNewEssayTheme] = useState<string>("Desafios para a valorização de comunidades e povos tradicionais no Brasil")
+  const [newEssayTheme, setNewEssayTheme] = useState<string>(
+    "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
+  )
   const [newEssayText, setNewEssayText] = useState<string>(() => {
     try {
       const stored = localStorage.getItem("sherlock_essay_draft")
@@ -490,7 +597,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     }
     return 4360 // 01:12:40 (padrão)
   })
-  const [openMotivatorIndex, setOpenMotivatorIndex] = useState<number | null>(null)
+  const [openMotivatorIndex, setOpenMotivatorIndex] = useState<number | null>(
+    null,
+  )
 
   // Estados para Simulado em Execução (Modo Prova - Simulado Completo / Mini / Por Área)
   const [activeExam, setActiveExam] = useState<null | {
@@ -503,10 +612,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   const [examSecondsLeft, setExamSecondsLeft] = useState<number>(19800) // 5h 30m (19800s)
   const [showSubmitModal, setShowSubmitModal] = useState<boolean>(false)
   const [examDelivered, setExamDelivered] = useState<boolean>(false)
-  const [selectedExamResult, setSelectedExamResult] = useState<ExamResultData | null>(null)
+  const [selectedExamResult, setSelectedExamResult] =
+    useState<ExamResultData | null>(null)
   const [isViewingAnswerKey, setIsViewingAnswerKey] = useState<boolean>(false)
   const [selectedGabaritoIndex, setSelectedGabaritoIndex] = useState<number>(7) // Questão 08 padrão
-  const [gabaritoFilter, setGabaritoFilter] = useState<"todas" | "erros" | "acertos">("todas")
+  const [gabaritoFilter, setGabaritoFilter] =
+    useState<"todas" | "erros" | "acertos">("todas")
 
   // Timer countdown durante o Simulado
   useEffect(() => {
@@ -584,7 +695,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         avgTimePerQuestion = `Média de ${avgM}m ${avgS}s por questão`
       }
       triScore = Math.round(450 + (actualCorrect / total) * 450)
-      triMessage = triScore >= 750 ? "Acima da nota de corte de Medicina" : "Dentro da média geral nacional"
+      triMessage =
+        triScore >= 750
+          ? "Acima da nota de corte de Medicina"
+          : "Dentro da média geral nacional"
     }
 
     setSelectedExamResult({
@@ -671,7 +785,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   }, [newEssayText])
 
   const computedParagraphsCount = useMemo(() => {
-    return newEssayText ? newEssayText.split("\n").filter((p) => p.trim().length > 0).length : 0
+    return newEssayText
+      ? newEssayText.split("\n").filter((p) => p.trim().length > 0).length
+      : 0
   }, [newEssayText])
 
   const essayStructureStatus = useMemo(() => {
@@ -690,7 +806,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   }, [newEssayText])
 
   const handleSendEssayForCorrection = () => {
-    const words = newEssayText.trim() ? newEssayText.trim().split(/\s+/).length : 0
+    const words = newEssayText.trim()
+      ? newEssayText.trim().split(/\s+/).length
+      : 0
     const lines = computedLinesCount || 30
     const textToSubmit = newEssayText.trim() || DEFAULT_MODEL_ESSAY
 
@@ -710,11 +828,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         c5: 190,
       },
       feedback: {
-        c1Feedback: "Excelente domínio da modalidade culta formal, vocabulário refinado e precisão sintática exemplar.",
-        c2Feedback: "Compreensão aprofundada da proposta com repertório legitimado e produtivo (Constituição Federal de 1988 e Darcy Ribeiro).",
-        c3Feedback: "Projeto de texto consistente, com progressão temática contínua e argumentos sólidos.",
-        c4Feedback: "Mecanismos coesivos intra e interparágrafos bem empregados, garantindo fluidez estrutural.",
-        c5Feedback: "Proposta de intervenção completa, com agente, ação, meio, efeito e detalhamento em conformidade com os direitos humanos.",
+        c1Feedback:
+          "Excelente domínio da modalidade culta formal, vocabulário refinado e precisão sintática exemplar.",
+        c2Feedback:
+          "Compreensão aprofundada da proposta com repertório legitimado e produtivo (Constituição Federal de 1988 e Darcy Ribeiro).",
+        c3Feedback:
+          "Projeto de texto consistente, com progressão temática contínua e argumentos sólidos.",
+        c4Feedback:
+          "Mecanismos coesivos intra e interparágrafos bem empregados, garantindo fluidez estrutural.",
+        c5Feedback:
+          "Proposta de intervenção completa, com agente, ação, meio, efeito e detalhamento em conformidade com os direitos humanos.",
         strengths: [
           "Articulação brilhante entre a base constitucional e o pensamento antropológico de Darcy Ribeiro",
           "Proposta de intervenção social com os 5 elementos completos e detalhados",
@@ -723,7 +846,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         improvements: [
           "Aprofundar dados demográficos do IBGE para fortalecer ainda mais o segundo parágrafo de desenvolvimento",
         ],
-        generalComment: "Parabéns! Sua redação atingiu um patamar excepcional (960 pontos), demonstrando grande domínio das 5 competências avaliadas no ENEM.",
+        generalComment:
+          "Parabéns! Sua redação atingiu um patamar excepcional (960 pontos), demonstrando grande domínio das 5 competências avaliadas no ENEM.",
       },
       text: textToSubmit,
     }
@@ -731,7 +855,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     const updatedHistory = [newSubmittedEssay, ...essayHistory]
     setEssayHistory(updatedHistory)
     try {
-      localStorage.setItem("sherlock_essay_history", JSON.stringify(updatedHistory))
+      localStorage.setItem(
+        "sherlock_essay_history",
+        JSON.stringify(updatedHistory),
+      )
       localStorage.removeItem("sherlock_essay_draft")
       localStorage.removeItem("sherlock_essay_seconds")
     } catch {
@@ -802,12 +929,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false)
   const [showNewPassword, setShowNewPassword] = useState<boolean>(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
-  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null)
-  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<boolean>(false)
+  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(
+    null,
+  )
+  const [passwordChangeSuccess, setPasswordChangeSuccess] =
+    useState<boolean>(false)
 
   const isLengthValid = newPassword.length >= 8
   const isCaseValid = /[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)
-  const isDiffFromCurrent = Boolean(newPassword.length > 0 && (!currentPassword || newPassword !== currentPassword))
+  const isDiffFromCurrent = Boolean(
+    newPassword.length > 0 &&
+      (!currentPassword || newPassword !== currentPassword),
+  )
 
   const handleStartChangingPassword = () => {
     setCurrentPassword("")
@@ -868,7 +1001,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     })
 
     if (!validation.valid) {
-      setPasswordChangeError(validation.error || "A nova senha não atende aos requisitos de segurança.")
+      setPasswordChangeError(
+        validation.error ||
+          "A nova senha não atende aos requisitos de segurança.",
+      )
       return
     }
 
@@ -886,7 +1022,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
       if (remembered) {
         const parsed = JSON.parse(remembered)
         parsed.password = newPassword
-        localStorage.setItem("sherlock_remembered_login", JSON.stringify(parsed))
+        localStorage.setItem(
+          "sherlock_remembered_login",
+          JSON.stringify(parsed),
+        )
       }
     } catch {
       // ignore
@@ -925,7 +1064,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     }
     return initialTrackSubjects
   })
-  const [tempTrackSubjects, setTempTrackSubjects] = useState<TrackSubject[]>(trackSubjects)
+  const [tempTrackSubjects, setTempTrackSubjects] =
+    useState<TrackSubject[]>(trackSubjects)
 
   const handleStartEditingTrack = () => {
     setTempTrackSubjects([...trackSubjects])
@@ -938,7 +1078,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   const handleSaveTrackOrder = () => {
     setTrackSubjects(tempTrackSubjects)
     try {
-      localStorage.setItem("sherlock_track_subjects", JSON.stringify(tempTrackSubjects))
+      localStorage.setItem(
+        "sherlock_track_subjects",
+        JSON.stringify(tempTrackSubjects),
+      )
     } catch {
       // ignore
     }
@@ -950,8 +1093,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
     setIsEditingTrack(false)
   }
 
-  const [draggedSubjectIdx, setDraggedSubjectIdx] = useState<number | null>(null)
-  const [dragOverSubjectIdx, setDragOverSubjectIdx] = useState<number | null>(null)
+  const [draggedSubjectIdx, setDraggedSubjectIdx] = useState<number | null>(
+    null,
+  )
+  const [dragOverSubjectIdx, setDragOverSubjectIdx] = useState<number | null>(
+    null,
+  )
 
   const handleMoveSubject = (fromIndex: number, toIndex: number) => {
     if (toIndex < 0 || toIndex >= tempTrackSubjects.length) return
@@ -998,11 +1145,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
   }
 
   const availableSubjectsToAdd = catalogSubjects.filter(
-    (subj) => !tempTrackSubjects.some((t) => t.id === subj.id)
+    (subj) => !tempTrackSubjects.some((t) => t.id === subj.id),
   )
 
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState<boolean>(false)
-  const [subjectToRemove, setSubjectToRemove] = useState<TrackSubject | null>(null)
+  const [showDeleteAccountModal, setShowDeleteAccountModal] =
+    useState<boolean>(false)
+  const [subjectToRemove, setSubjectToRemove] = useState<TrackSubject | null>(
+    null,
+  )
   const [showTermsModal, setShowTermsModal] = useState<boolean>(false)
 
   const handleDeleteAccount = () => {
@@ -1078,19 +1228,32 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         const subjects = (me as any).subjects
         if (Array.isArray(subjects) && subjects.length > 0) {
           const s1 = subjects[0] || "Matemática"
-          const s2 = subjects[1] || (s1.toLowerCase().includes("matemática") ? "Natureza" : "Matemática")
+          const s2 =
+            subjects[1] ||
+            (s1.toLowerCase().includes("matemática")
+              ? "Natureza"
+              : "Matemática")
           setPrioritySubjects([s1, s2])
           try {
-            localStorage.setItem("sherlock_selected_subjects", JSON.stringify(subjects))
+            localStorage.setItem(
+              "sherlock_selected_subjects",
+              JSON.stringify(subjects),
+            )
           } catch {
             // ignore
           }
         }
-        const courseName = (me as any).targetCourseName || (me as any).target_course_name || (me as any).targetCourse?.name
+        const courseName =
+          (me as any).targetCourseName ||
+          (me as any).target_course_name ||
+          (me as any).targetCourse?.name
         if (courseName && typeof courseName === "string" && courseName.trim()) {
           setTargetCourse(courseName.trim())
           try {
-            localStorage.setItem("sherlock_target_course_name", courseName.trim())
+            localStorage.setItem(
+              "sherlock_target_course_name",
+              courseName.trim(),
+            )
           } catch {
             // ignore
           }
@@ -1133,13 +1296,25 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
           }}
         >
           <div className="w-8 h-8 rounded-lg bg-[#4F3CF0] flex items-center justify-center relative shadow-xs">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M4 19h4v-4h4v-4h4V7h4" />
             </svg>
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#C6F432] ring-2 ring-[#4F3CF0]" />
           </div>
           <span className="font-extrabold text-lg tracking-tight text-[#17152E]">
-            EduMentor <span className="bg-[#C6F432] text-[#17152E] text-[10px] font-black px-1.5 py-0.5 rounded-full">AI</span>
+            EduMentor{" "}
+            <span className="bg-[#C6F432] text-[#17152E] text-[10px] font-black px-1.5 py-0.5 rounded-full">
+              AI
+            </span>
           </span>
         </div>
 
@@ -1151,12 +1326,30 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
           aria-label="Abrir menu de navegação"
         >
           {mobileMenuOpen ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="4" y1="8" x2="20" y2="8" />
               <line x1="4" y1="16" x2="20" y2="16" />
             </svg>
@@ -1171,7 +1364,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         className={`
           fixed lg:sticky top-0 left-0 z-40 h-screen w-[256px] bg-white border-r border-[#E2DFF1]
           flex flex-col justify-between p-6 transition-transform duration-300 ease-in-out shrink-0
-          ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"}
+          ${
+            mobileMenuOpen
+              ? "translate-x-0 shadow-2xl"
+              : "-translate-x-full lg:translate-x-0"
+          }
         `}
       >
         <div>
@@ -1184,14 +1381,26 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
             }}
           >
             <div className="relative w-[34px] h-[31px]">
-              <svg width="34" height="31" viewBox="0 0 34 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                width="34"
+                height="31"
+                viewBox="0 0 34 31"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 {/* Purple speech bubble base */}
                 <path
                   d="M6.5 0H19.5C23.1 0 26 2.9 26 6.5V16.5C26 20.1 23.1 23 19.5 23H10L4.5 27C3.75 27.55 2.75 27 2.75 26.1V22.85C1.15 21.75 0 19.25 0 16.5V6.5C0 2.9 2.9 0 6.5 0Z"
                   fill="#4F3CF0"
                 />
                 {/* Stepped progress pencil/chart inside */}
-                <path d="M5.5 18H10V14H14.5V10H20.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M5.5 18H10V14H14.5V10H20.5"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
                 {/* Lime Sparkle Star at top right */}
                 <path
                   d="M21.5 2.5C21.8 4.15 22.35 4.7 24 5C22.35 5.3 21.8 5.85 21.5 7.5C21.2 5.85 20.65 5.3 19 5C20.65 4.7 21.2 4.15 21.5 2.5Z"
@@ -1210,7 +1419,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
           </div>
 
           {/* Navigation Links */}
-          <nav className="mt-8 flex flex-col gap-1.5" aria-label="Menu principal">
+          <nav
+            className="mt-8 flex flex-col gap-1.5"
+            aria-label="Menu principal"
+          >
             {/* 1. Início */}
             <button
               type="button"
@@ -1222,10 +1434,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               }}
               className={`
                 w-full h-[48px] rounded-xl flex items-center px-4 gap-3 text-sm font-semibold transition cursor-pointer
-                ${!isMentorinaChatOpen && activeTab === "inicio" ? "bg-[#E9E6FF] text-[#4F3CF0]" : "text-[#17152E] hover:bg-[#F7F6FC]"}
+                ${
+                  !isMentorinaChatOpen && activeTab === "inicio"
+                    ? "bg-[#E9E6FF] text-[#4F3CF0]"
+                    : "text-[#17152E] hover:bg-[#F7F6FC]"
+                }
               `}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M3 9.5L12 2.5L21 9.5V20.5C21 21.0523 20.5523 21.5 20 21.5H15V15.5H9V21.5H4C3.44772 21.5 3 21.0523 3 20.5V9.5Z" />
               </svg>
               <span>Início</span>
@@ -1242,10 +1467,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               }}
               className={`
                 w-full h-[48px] rounded-xl flex items-center px-4 gap-3 text-sm font-medium transition cursor-pointer
-                ${!isMentorinaChatOpen && activeTab === "trilha" ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold" : "text-[#17152E] hover:bg-[#F7F6FC]"}
+                ${
+                  !isMentorinaChatOpen && activeTab === "trilha"
+                    ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold"
+                    : "text-[#17152E] hover:bg-[#F7F6FC]"
+                }
               `}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M4 19H8V14.5H12V10H16V5.5H20" />
                 <circle cx="20" cy="5.5" r="1.5" fill="currentColor" />
               </svg>
@@ -1262,10 +1500,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               }}
               className={`
                 w-full h-[48px] rounded-xl flex items-center px-4 gap-3 text-sm font-medium transition cursor-pointer
-                ${!isMentorinaChatOpen && activeTab === "simulados" ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold" : "text-[#17152E] hover:bg-[#F7F6FC]"}
+                ${
+                  !isMentorinaChatOpen && activeTab === "simulados"
+                    ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold"
+                    : "text-[#17152E] hover:bg-[#F7F6FC]"
+                }
               `}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="12" cy="13" r="8" />
                 <path d="M12 9V13L14.5 15.5" />
                 <path d="M9 3H15" />
@@ -1283,10 +1534,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               }}
               className={`
                 w-full h-[48px] rounded-xl flex items-center px-4 gap-3 text-sm font-medium transition cursor-pointer
-                ${!isMentorinaChatOpen && activeTab === "redacao" ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold" : "text-[#17152E] hover:bg-[#F7F6FC]"}
+                ${
+                  !isMentorinaChatOpen && activeTab === "redacao"
+                    ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold"
+                    : "text-[#17152E] hover:bg-[#F7F6FC]"
+                }
               `}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M4 20H8L18.5 9.5L14.5 5.5L4 16V20Z" />
                 <path d="M13.5 6.5L17.5 10.5" />
               </svg>
@@ -1303,10 +1567,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               }}
               className={`
                 w-full h-[48px] rounded-xl flex items-center px-4 gap-3 text-sm font-medium transition cursor-pointer
-                ${!isMentorinaChatOpen && activeTab === "perfil" ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold" : "text-[#17152E] hover:bg-[#F7F6FC]"}
+                ${
+                  !isMentorinaChatOpen && activeTab === "perfil"
+                    ? "bg-[#E9E6FF] text-[#4F3CF0] font-semibold"
+                    : "text-[#17152E] hover:bg-[#F7F6FC]"
+                }
               `}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="12" cy="7" r="4" />
                 <path d="M5.5 21C5.5 17 8.5 15 12 15C15.5 15 18.5 17 18.5 21" />
               </svg>
@@ -1366,19 +1643,20 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
           <MentorinaChat
             userName={userName}
             initialQuestion={mentorinaActiveQuestion}
+            onSessionExpired={onSessionExpired}
             context={
               mentorinaActiveQuestion
                 ? `ENEM ${mentorinaActiveQuestion.year} · ${mentorinaActiveQuestion.discipline}`
                 : activeTab === "redacao"
-                  ? (selectedEssayFeedback
+                  ? selectedEssayFeedback
                     ? `Redação: ${selectedEssayFeedback.theme} (Nota: ${selectedEssayFeedback.score})`
-                    : "Redação")
+                    : "Redação"
                   : activeTab === "simulados"
                     ? "Simulados"
                     : activeTab === "trilha"
-                      ? (selectedModule && MODULES_DATA[selectedModule]
+                      ? selectedModule && MODULES_DATA[selectedModule]
                         ? `Matemática · ${MODULES_DATA[selectedModule].name}`
-                        : "Matemática")
+                        : "Matemática"
                       : prioritySubjects[0] || "Matemática"
             }
             onClose={() => {
@@ -1387,96 +1665,131 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
             }}
           />
         ) : (
-          <div className={`w-full ${(activeTab === "trilha" && selectedModule) || (activeTab === "perfil" && (isEditingTrack || isChangingPassword)) ? "max-w-[1184px]" : "max-w-[1120px]"}`}>
+          <div
+            className={`w-full ${
+              (activeTab === "trilha" && selectedModule) ||
+              (activeTab === "perfil" && (isEditingTrack || isChangingPassword))
+                ? "max-w-[1184px]"
+                : "max-w-[1120px]"
+            }`}
+          >
             {/* ======================================================================= */}
             {/* TOP HEADER AREA (Olá, {userName}! + Actions)                            */}
             {/* Hidden on Module Detail view to match the exact 1184x808 Figma canvas   */}
             {/* and on Editar Trilha / Alterar Senha to match exact Figma canvases      */}
             {/* and on Redação Feedback view                                            */}
             {/* ======================================================================= */}
-            {!(activeTab === "trilha" && selectedModule) && !(activeTab === "perfil" && (isEditingTrack || isChangingPassword)) && !(activeTab === "redacao" && selectedEssayFeedback) && !(activeTab === "simulados" && selectedExamResult) && (
-              <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#17152E]">
-                    {activeTab === "trilha"
-                      ? "Minha Trilha"
-                      : activeTab === "perfil"
-                        ? "Perfil"
-                        : activeTab === "redacao"
-                          ? "Redação"
-                          : activeTab === "simulados"
-                            ? "Simulados"
-                            : `Olá, ${userName}!`}
-                  </h1>
-                  <p className="text-sm text-[#5F5B7D] mt-0.5 font-medium">
-                    {activeTab === "trilha"
-                      ? `Meta: ${targetCourse || "Medicina"}`
-                      : activeTab === "perfil"
-                        ? "Sua conta, sua trilha e suas preferências."
-                        : activeTab === "redacao"
-                          ? "Oficina de Redação Nota 1000"
-                          : activeTab === "simulados"
-                            ? "Treine com questões reais do ENEM e cronômetro, como no dia da prova."
-                            : "Bora continuar de onde parou?"}
-                  </p>
-                </div>
+            {!(activeTab === "trilha" && selectedModule) &&
+              !(
+                activeTab === "perfil" &&
+                (isEditingTrack || isChangingPassword)
+              ) &&
+              !(activeTab === "redacao" && selectedEssayFeedback) &&
+              !(activeTab === "simulados" && selectedExamResult) && (
+                <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-[#17152E]">
+                      {activeTab === "trilha"
+                        ? "Minha Trilha"
+                        : activeTab === "perfil"
+                          ? "Perfil"
+                          : activeTab === "redacao"
+                            ? "Redação"
+                            : activeTab === "simulados"
+                              ? "Simulados"
+                              : `Olá, ${userName}!`}
+                    </h1>
+                    <p className="text-sm text-[#5F5B7D] mt-0.5 font-medium">
+                      {activeTab === "trilha"
+                        ? `Meta: ${targetCourse || "Medicina"}`
+                        : activeTab === "perfil"
+                          ? "Sua conta, sua trilha e suas preferências."
+                          : activeTab === "redacao"
+                            ? "Oficina de Redação Nota 1000"
+                            : activeTab === "simulados"
+                              ? "Treine com questões reais do ENEM e cronômetro, como no dia da prova."
+                              : "Bora continuar de onde parou?"}
+                    </p>
+                  </div>
 
-                {/* Action buttons on right */}
-                <div className="flex items-center gap-3 self-end sm:self-center">
-                  {/* Notification Bell */}
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition relative cursor-pointer shadow-2xs"
-                    aria-label="Notificações"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                    </svg>
-                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C6F432] ring-2 ring-white" />
-                  </button>
-
-                  {/* Help / FAQ */}
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition cursor-pointer shadow-2xs"
-                    aria-label="Ajuda e Suporte"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                  </button>
-
-                  {/* User Avatar & Logout Dropdown */}
-                  <div className="relative group">
+                  {/* Action buttons on right */}
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    {/* Notification Bell */}
                     <button
                       type="button"
-                      className="w-10 h-10 rounded-full bg-[#E9E6FF] border-2 border-white flex items-center justify-center text-[#4F3CF0] font-black text-sm cursor-pointer shadow-xs group-hover:ring-2 group-hover:ring-[#4F3CF0] transition"
-                      aria-label="Menu do usuário"
+                      className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition relative cursor-pointer shadow-2xs"
+                      aria-label="Notificações"
                     >
-                      {userName.charAt(0).toUpperCase()}
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                      </svg>
+                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#C6F432] ring-2 ring-white" />
                     </button>
 
-                    {/* Quick Profile Popover on hover/focus */}
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#E2DFF1] py-2 hidden group-hover:block group-focus-within:block z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="px-4 py-2 border-b border-[#E2DFF1]">
-                        <p className="text-xs font-bold text-[#17152E] truncate">{userName}</p>
-                        <p className="text-[11px] text-[#5F5B7D] truncate">{userEmail || "aluno@edumentor.ai"}</p>
-                      </div>
+                    {/* Help / FAQ */}
+                    <button
+                      type="button"
+                      className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition cursor-pointer shadow-2xs"
+                      aria-label="Ajuda e Suporte"
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    </button>
+
+                    {/* User Avatar & Logout Dropdown */}
+                    <div className="relative group">
                       <button
                         type="button"
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 transition flex items-center gap-2 cursor-pointer"
+                        className="w-10 h-10 rounded-full bg-[#E9E6FF] border-2 border-white flex items-center justify-center text-[#4F3CF0] font-black text-sm cursor-pointer shadow-xs group-hover:ring-2 group-hover:ring-[#4F3CF0] transition"
+                        aria-label="Menu do usuário"
                       >
-                        Sair da Conta
+                        {userName.charAt(0).toUpperCase()}
                       </button>
+
+                      {/* Quick Profile Popover on hover/focus */}
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#E2DFF1] py-2 hidden group-hover:block group-focus-within:block z-50 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="px-4 py-2 border-b border-[#E2DFF1]">
+                          <p className="text-xs font-bold text-[#17152E] truncate">
+                            {userName}
+                          </p>
+                          <p className="text-[11px] text-[#5F5B7D] truncate">
+                            {userEmail || "aluno@edumentor.ai"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 transition flex items-center gap-2 cursor-pointer"
+                        >
+                          Sair da Conta
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </header>
-            )}
+                </header>
+              )}
 
             {/* ======================================================================= */}
             {/* TAB: INÍCIO (Exact Layout from SVG Mockup 1440x900)                     */}
@@ -1516,11 +1829,15 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                         {/* Progress Bar (40% completed, track 300px x 8px) */}
                         <div className="w-[300px] max-w-full h-2 bg-white rounded-full overflow-hidden mt-3">
-                          <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "40%" }} />
+                          <div
+                            className="h-full bg-[#4F3CF0] rounded-full"
+                            style={{ width: "40%" }}
+                          />
                         </div>
 
                         <p className="text-[13px] font-medium text-[#5F5B7D] mt-2">
-                          40% concluído · {prioritySubjects[1] || "Natureza"} libera ao terminar
+                          40% concluído · {prioritySubjects[1] || "Natureza"}{" "}
+                          libera ao terminar
                         </p>
                       </div>
                     </div>
@@ -1545,7 +1862,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Matemática
                           </span>
                           <div className="w-[170px] h-2 bg-white rounded-full overflow-hidden shrink-0">
-                            <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "60%" }} />
+                            <div
+                              className="h-full bg-[#4F3CF0] rounded-full"
+                              style={{ width: "60%" }}
+                            />
                           </div>
                           <span className="text-[13px] font-medium text-[#5F5B7D]">
                             60%
@@ -1558,7 +1878,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Natureza
                           </span>
                           <div className="w-[170px] h-2 bg-white rounded-full overflow-hidden shrink-0">
-                            <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "45%" }} />
+                            <div
+                              className="h-full bg-[#4F3CF0] rounded-full"
+                              style={{ width: "45%" }}
+                            />
                           </div>
                           <span className="text-[13px] font-medium text-[#5F5B7D]">
                             45%
@@ -1571,7 +1894,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Linguagens
                           </span>
                           <div className="w-[170px] h-2 bg-white rounded-full overflow-hidden shrink-0">
-                            <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "70%" }} />
+                            <div
+                              className="h-full bg-[#4F3CF0] rounded-full"
+                              style={{ width: "70%" }}
+                            />
                           </div>
                           <span className="text-[13px] font-medium text-[#5F5B7D]">
                             70%
@@ -1584,7 +1910,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Humanas
                           </span>
                           <div className="w-[170px] h-2 bg-white rounded-full overflow-hidden shrink-0">
-                            <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "55%" }} />
+                            <div
+                              className="h-full bg-[#4F3CF0] rounded-full"
+                              style={{ width: "55%" }}
+                            />
                           </div>
                           <span className="text-[13px] font-medium text-[#5F5B7D]">
                             55%
@@ -1608,29 +1937,65 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                     {/* Progress bar: 15h / 25h (60%, track 280px x 10px) */}
                     <div className="w-[280px] max-w-full h-[10px] bg-[#E9E6FF] rounded-full overflow-hidden mt-4">
-                      <div className="h-full bg-[#4F3CF0] rounded-full" style={{ width: "60%" }} />
+                      <div
+                        className="h-full bg-[#4F3CF0] rounded-full"
+                        style={{ width: "60%" }}
+                      />
                     </div>
 
                     {/* Days of the Week: 7 circles 34x34 with exact spacing */}
                     <div className="flex items-center gap-2 mt-3.5">
                       {/* Seg (Checked) */}
                       <div className="w-[34px] h-[34px] rounded-full bg-[#4F3CF0] flex items-center justify-center shrink-0">
-                        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-                          <path d="M22.333 13L15 20.333L11.667 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="34"
+                          height="34"
+                          viewBox="0 0 34 34"
+                          fill="none"
+                        >
+                          <path
+                            d="M22.333 13L15 20.333L11.667 17"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </div>
 
                       {/* Ter (Checked) */}
                       <div className="w-[34px] h-[34px] rounded-full bg-[#4F3CF0] flex items-center justify-center shrink-0">
-                        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-                          <path d="M22.333 13L15 20.333L11.667 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="34"
+                          height="34"
+                          viewBox="0 0 34 34"
+                          fill="none"
+                        >
+                          <path
+                            d="M22.333 13L15 20.333L11.667 17"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </div>
 
                       {/* Qua (Checked) */}
                       <div className="w-[34px] h-[34px] rounded-full bg-[#4F3CF0] flex items-center justify-center shrink-0">
-                        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-                          <path d="M22.333 13L15 20.333L11.667 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="34"
+                          height="34"
+                          viewBox="0 0 34 34"
+                          fill="none"
+                        >
+                          <path
+                            d="M22.333 13L15 20.333L11.667 17"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </div>
 
@@ -1667,7 +2032,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <div className="flex items-center gap-4">
                       {/* Book Icon Box (w 52px, h 52px, rx 12, fill #4F3CF0) */}
                       <div className="w-[52px] h-[52px] rounded-[12px] bg-[#4F3CF0] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
-                        <svg width="22" height="22" viewBox="46 56 22 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="22"
+                          height="22"
+                          viewBox="46 56 22 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M49.3333 75.5833V60.4167C49.3333 59.842 49.5615 59.2909 49.9679 58.8846C50.3742 58.4783 50.9253 58.25 51.4999 58.25H65.5833V75.5833H51.4999C50.9253 75.5833 50.3742 75.8116 49.9679 76.2179C49.5615 76.6243 49.3333 77.1754 49.3333 77.75V75.5833Z"
                             stroke="white"
@@ -1708,7 +2079,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       }}
                       className="w-full sm:w-[248px] h-[48px] rounded-full bg-[#4F3CF0] hover:bg-[#3D2CD8] text-white flex items-center justify-center gap-2.5 font-semibold text-sm transition cursor-pointer shadow-xs active:scale-95 shrink-0"
                     >
-                      <svg width="14" height="16" viewBox="432 60 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg
+                        width="14"
+                        height="16"
+                        viewBox="432 60 14 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
                         <path
                           d="M433.833 61.3333L444.667 68L433.833 74.6667V61.3333Z"
                           stroke="white"
@@ -1742,7 +2119,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       <div className="flex items-center gap-3.5">
                         {/* Repeat/Reload Icon Box (w 36px, h 36px, rx 12, fill #E9E6FF) */}
                         <div className="w-[36px] h-[36px] rounded-[12px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                          <svg width="16" height="16" viewBox="734 83 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="734 83 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
                             <path
                               d="M748 90.25C747.985 88.8628 747.49 87.5236 746.599 86.4604C745.708 85.3971 744.476 84.6756 743.112 84.4185C741.749 84.1615 740.339 84.3847 739.122 85.0504C737.904 85.7161 736.956 86.7829 736.436 88.0695C735.917 89.356 735.86 90.7826 736.274 92.1066C736.689 93.4306 737.549 94.5701 738.709 95.3312C739.869 96.0922 741.257 96.4278 742.636 96.2808C744.016 96.1339 745.302 95.5134 746.275 94.525M743.5 90.25H748V85.75"
                               stroke="#4F3CF0"
@@ -1764,7 +2147,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       </div>
 
                       {/* Chevron Right */}
-                      <svg width="6" height="11" viewBox="1083 85 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg
+                        width="6"
+                        height="11"
+                        viewBox="1083 85 8 12"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
                         <path
                           d="M1084.75 86.5L1089.25 91L1084.75 95.5"
                           stroke="#8C88AA"
@@ -1781,13 +2170,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {/* Item 2: Redação: reescrever introdução (h 66px) */}
                     <button
                       type="button"
-                      onClick={() => alert("Abrindo revisão: Redação: reescrever introdução...")}
+                      onClick={() =>
+                        alert(
+                          "Abrindo revisão: Redação: reescrever introdução...",
+                        )
+                      }
                       className="w-full h-[66px] px-6 flex items-center justify-between hover:bg-[#F7F6FC] transition cursor-pointer group text-left"
                     >
                       <div className="flex items-center gap-3.5">
                         {/* Pencil Icon Box (w 36px, h 36px, rx 12, fill #E9E6FF) */}
                         <div className="w-[36px] h-[36px] rounded-[12px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                          <svg width="16" height="16" viewBox="734 150 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="734 150 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
                             <path
                               d="M736 163H739L747.25 154.75L744.25 151.75L736 160V163Z"
                               stroke="#4F3CF0"
@@ -1816,7 +2215,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       </div>
 
                       {/* Chevron Right */}
-                      <svg width="6" height="11" viewBox="1083 151 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg
+                        width="6"
+                        height="11"
+                        viewBox="1083 151 8 12"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
                         <path
                           d="M1084.75 152.5L1089.25 157L1084.75 161.5"
                           stroke="#8C88AA"
@@ -1840,7 +2245,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <div className="flex items-center gap-4 min-w-0">
                       {/* Book Icon Box (w 48px, h 48px, rx 12, fill #E9E6FF) */}
                       <div className="w-[48px] h-[48px] rounded-[12px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                        <svg width="18" height="20" viewBox="46 45 19 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="18"
+                          height="20"
+                          viewBox="46 45 19 22"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M48 63V49C48 48.4696 48.2107 47.9609 48.5858 47.5858C48.9609 47.2107 49.4696 47 50 47H63V63H50C49.4696 63 48.9609 63.2107 48.5858 63.5858C48.2107 63.9609 48 64.4696 48 65V63Z"
                             stroke="#4F3CF0"
@@ -1870,7 +2281,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
 
                     {/* Chevron Right */}
-                    <svg width="7" height="12" viewBox="311 49 9 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2">
+                    <svg
+                      width="7"
+                      height="12"
+                      viewBox="311 49 9 14"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2"
+                    >
                       <path
                         d="M312.833 51L317.833 56L312.833 61"
                         stroke="currentColor"
@@ -1890,7 +2308,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <div className="flex items-center gap-4 min-w-0">
                       {/* Stopwatch Icon Box (w 48px, h 48px, rx 12, fill #FCE8E8) */}
                       <div className="w-[48px] h-[48px] rounded-[12px] bg-[#FCE8E8] flex items-center justify-center shrink-0">
-                        <svg width="18" height="21" viewBox="427 44 20 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="18"
+                          height="21"
+                          viewBox="427 44 20 23"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M445.333 57C445.333 61.4183 441.752 65 437.333 65C432.915 65 429.333 61.4183 429.333 57C429.333 52.5817 432.915 49 437.333 49C441.752 49 445.333 52.5817 445.333 57Z"
                             stroke="#17152E"
@@ -1920,7 +2344,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
 
                     {/* Chevron Right */}
-                    <svg width="7" height="12" viewBox="692 49 9 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2">
+                    <svg
+                      width="7"
+                      height="12"
+                      viewBox="692 49 9 14"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2"
+                    >
                       <path
                         d="M694.167 51L699.167 56L694.167 61"
                         stroke="currentColor"
@@ -1940,7 +2371,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <div className="flex items-center gap-4 min-w-0">
                       {/* Edit/Pencil Icon Box (w 48px, h 48px, rx 12, fill #3CC8F0) */}
                       <div className="w-[48px] h-[48px] rounded-[12px] bg-[#3CC8F0] flex items-center justify-center shrink-0">
-                        <svg width="18" height="18" viewBox="808 47 20 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="808 47 20 19"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M810.667 64H814.667L825.667 53L821.667 49L810.667 60V64Z"
                             stroke="#17152E"
@@ -1970,7 +2407,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
 
                     {/* Chevron Right */}
-                    <svg width="7" height="12" viewBox="1073 49 9 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2">
+                    <svg
+                      width="7"
+                      height="12"
+                      viewBox="1073 49 9 14"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="shrink-0 text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition ml-2"
+                    >
                       <path
                         d="M1075.5 51L1080.5 56L1075.5 61"
                         stroke="currentColor"
@@ -1987,29 +2431,37 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
             {/* ======================================================================= */}
             {/* TAB: TRILHA (Adaptive Study Roadmap & Module Detail View)               */}
             {/* ======================================================================= */}
-            {activeTab === "trilha" && (
-              selectedModule ? (
+            {activeTab === "trilha" &&
+              (selectedModule ? (
                 /* ===================================================================== */
                 /* DETALHE DO MÓDULO (Exact Layout from SVG Mockup 1184x808)             */
                 /* ===================================================================== */
                 (() => {
-                  const currentModule = (selectedModule && MODULES_DATA[selectedModule]) || MODULES_DATA["modulo-2"]
+                  const currentModule =
+                    (selectedModule && MODULES_DATA[selectedModule]) ||
+                    MODULES_DATA["modulo-2"]
                   const submodules = currentModule.submodules || []
-                  const currentSubmodule = submodules.find((s) => s.id === selectedSubmodule) || submodules[0] || {
-                    id: 1,
-                    number: 1,
-                    shortName: "1. Introdução",
-                    fullName: currentModule.title,
-                    resumoBadge: currentModule.resumoBadge,
-                    resumoText: currentModule.resumoText,
-                    exemploTitle: currentModule.exemploTitle,
-                    exemploBadge: currentModule.exemploBadge,
-                    exemploText: currentModule.exemploText,
-                    questions: [],
-                  }
+                  const currentSubmodule = submodules.find(
+                    (s) => s.id === selectedSubmodule,
+                  ) ||
+                    submodules[0] || {
+                      id: 1,
+                      number: 1,
+                      shortName: "1. Introdução",
+                      fullName: currentModule.title,
+                      resumoBadge: currentModule.resumoBadge,
+                      resumoText: currentModule.resumoText,
+                      exemploTitle: currentModule.exemploTitle,
+                      exemploBadge: currentModule.exemploBadge,
+                      exemploText: currentModule.exemploText,
+                      questions: [],
+                    }
                   const questions = currentSubmodule.questions || []
                   const solvedCount = questions.filter(
-                    (q) => !!completedQuestions[`${selectedModule}_${currentSubmodule.id}_${q.id}`]
+                    (q) =>
+                      !!completedQuestions[
+                        `${selectedModule}_${currentSubmodule.id}_${q.id}`
+                      ],
                   ).length
 
                   return (
@@ -2041,11 +2493,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           >
                             <polyline points="15 18 9 12 15 6" />
                           </svg>
-                          <span className="font-medium text-[#5F5B7D] group-hover:text-[#4F3CF0] transition">Trilha</span>
+                          <span className="font-medium text-[#5F5B7D] group-hover:text-[#4F3CF0] transition">
+                            Trilha
+                          </span>
                           <span className="text-[#8C88AA]">&gt;</span>
-                          <span className="font-medium text-[#5F5B7D]">Matemática</span>
+                          <span className="font-medium text-[#5F5B7D]">
+                            Matemática
+                          </span>
                           <span className="text-[#8C88AA]">&gt;</span>
-                          <span className="font-bold text-[#17152E]">{currentModule.name}</span>
+                          <span className="font-bold text-[#17152E]">
+                            {currentModule.name}
+                          </span>
                         </button>
                       </div>
 
@@ -2064,7 +2522,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   type="button"
                                   disabled={currentSubmodule.number <= 1}
                                   onClick={() => {
-                                    setSelectedSubmodule((prev) => Math.max(1, prev - 1))
+                                    setSelectedSubmodule((prev) =>
+                                      Math.max(1, prev - 1),
+                                    )
                                     setActiveQuestionIndex(0)
                                     setSelectedOption(null)
                                     setShowExplanation(false)
@@ -2072,15 +2532,28 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   className="w-5 h-5 rounded-md bg-[#E9E6FF] hover:bg-[#DDD8FD] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#4F3CF0] transition cursor-pointer"
                                   title="Tópico anterior"
                                 >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
                                     <polyline points="15 18 9 12 15 6" />
                                   </svg>
                                 </button>
                                 <button
                                   type="button"
-                                  disabled={currentSubmodule.number >= submodules.length}
+                                  disabled={
+                                    currentSubmodule.number >= submodules.length
+                                  }
                                   onClick={() => {
-                                    setSelectedSubmodule((prev) => Math.min(submodules.length, prev + 1))
+                                    setSelectedSubmodule((prev) =>
+                                      Math.min(submodules.length, prev + 1),
+                                    )
                                     setActiveQuestionIndex(0)
                                     setSelectedOption(null)
                                     setShowExplanation(false)
@@ -2088,7 +2561,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   className="w-5 h-5 rounded-md bg-[#E9E6FF] hover:bg-[#DDD8FD] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#4F3CF0] transition cursor-pointer"
                                   title="Próximo tópico"
                                 >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
                                     <polyline points="9 18 15 12 9 6" />
                                   </svg>
                                 </button>
@@ -2104,18 +2586,35 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           type="button"
                           onClick={() => {
                             const topicKey = `${selectedModule}_${currentSubmodule.id}`
-                            setCompletedTopics((prev) => ({ ...prev, [topicKey]: !prev[topicKey] }))
+                            setCompletedTopics((prev) => ({
+                              ...prev,
+                              [topicKey]: !prev[topicKey],
+                            }))
                           }}
-                          className={`w-full sm:w-[204px] h-[48px] rounded-full font-bold text-sm flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs active:scale-95 shrink-0 ${completedTopics[`${selectedModule}_${currentSubmodule.id}`]
-                            ? "bg-[#C6F432] text-[#17152E]"
-                            : "bg-[#E9E6FF] hover:bg-[#DDD8FD] text-[#17152E]"
-                            }`}
+                          className={`w-full sm:w-[204px] h-[48px] rounded-full font-bold text-sm flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs active:scale-95 shrink-0 ${
+                            completedTopics[
+                              `${selectedModule}_${currentSubmodule.id}`
+                            ]
+                              ? "bg-[#C6F432] text-[#17152E]"
+                              : "bg-[#E9E6FF] hover:bg-[#DDD8FD] text-[#17152E]"
+                          }`}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#17152E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#17152E"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                           <span>
-                            {completedTopics[`${selectedModule}_${currentSubmodule.id}`]
+                            {completedTopics[
+                              `${selectedModule}_${currentSubmodule.id}`
+                            ]
                               ? "Tópico Concluído!"
                               : "Concluir Tópico"}
                           </span>
@@ -2132,9 +2631,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               RESUMO
                             </h3>
                             <div className="mt-3.5 space-y-1.5 text-xs sm:text-[13.5px] leading-relaxed text-[#17152E] font-medium">
-                              {currentSubmodule.resumoText.split("\n").map((line, idx) => (
-                                <p key={idx}>{line}</p>
-                              ))}
+                              {currentSubmodule.resumoText
+                                .split("\n")
+                                .map((line, idx) => (
+                                  <p key={idx}>{line}</p>
+                                ))}
                             </div>
                           </div>
 
@@ -2144,31 +2645,47 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               EXEMPLO
                             </h3>
                             <div className="mt-3 space-y-1 text-xs sm:text-[13.5px] leading-relaxed text-[#17152E] font-medium">
-                              {currentSubmodule.exemploText.split("\n").map((line, idx) => (
-                                <p key={idx}>{line}</p>
-                              ))}
+                              {currentSubmodule.exemploText
+                                .split("\n")
+                                .map((line, idx) => (
+                                  <p key={idx}>{line}</p>
+                                ))}
                             </div>
                           </div>
                         </div>
 
                         {/* Right Column (520px wide): Card de Questão Interativo (min-h-[526px]) */}
                         {(() => {
-                          const activeQuestion = questions[activeQuestionIndex] || questions[0] || {
-                            id: 1,
-                            title: "ENEM - Questão 1",
-                            year: "ENEM 2023",
-                            difficulty: "Fácil",
-                            tri: 690,
-                            statement: "Qual é a forma geral da função do 1º grau?",
-                            options: ["f(x) = ax + b", "f(x) = ax²", "f(x) = a / x", "f(x) = aˣ"],
-                            correctIndex: 0,
-                            explanation: 'A forma geral é f(x) = ax + b: "a" é o coeficiente angular e "b" o linear.',
-                          }
+                          const activeQuestion = questions[
+                            activeQuestionIndex
+                          ] ||
+                            questions[0] || {
+                              id: 1,
+                              title: "ENEM - Questão 1",
+                              year: "ENEM 2023",
+                              difficulty: "Fácil",
+                              tri: 690,
+                              statement:
+                                "Qual é a forma geral da função do 1º grau?",
+                              options: [
+                                "f(x) = ax + b",
+                                "f(x) = ax²",
+                                "f(x) = a / x",
+                                "f(x) = aˣ",
+                              ],
+                              correctIndex: 0,
+                              explanation:
+                                'A forma geral é f(x) = ax + b: "a" é o coeficiente angular e "b" o linear.',
+                            }
                           const optionLetters = ["A", "B", "C", "D", "E"]
                           const currentQKey = `${selectedModule}_${currentSubmodule.id}_${activeQuestion.id}`
 
                           const goToQuestion = (targetIdx: number) => {
-                            if (targetIdx < 0 || targetIdx >= (questions.length || 8)) return
+                            if (
+                              targetIdx < 0 ||
+                              targetIdx >= (questions.length || 8)
+                            )
+                              return
                             setActiveQuestionIndex(targetIdx)
                             const targetQ = questions[targetIdx]
                             if (!targetQ) return
@@ -2202,25 +2719,36 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 <div className="mt-4 space-y-2.5">
                                   {activeQuestion.options.map((opt, idx) => {
                                     const isSelected = selectedOption === idx
-                                    const isCorrect = idx === activeQuestion.correctIndex
+                                    const isCorrect =
+                                      idx === activeQuestion.correctIndex
 
-                                    let containerClass = "border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#F8F7FD] text-[#17152E]"
-                                    let badgeClass = "bg-[#F4F2FC] text-[#5F5B7D] font-bold"
+                                    let containerClass =
+                                      "border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#F8F7FD] text-[#17152E]"
+                                    let badgeClass =
+                                      "bg-[#F4F2FC] text-[#5F5B7D] font-bold"
 
                                     if (showExplanation) {
                                       if (isCorrect) {
-                                        containerClass = "border-[#137A51] bg-[#E3F5EC]/60 shadow-xs text-[#17152E]"
-                                        badgeClass = "bg-[#137A51] text-white font-extrabold"
+                                        containerClass =
+                                          "border-[#137A51] bg-[#E3F5EC]/60 shadow-xs text-[#17152E]"
+                                        badgeClass =
+                                          "bg-[#137A51] text-white font-extrabold"
                                       } else if (isSelected) {
-                                        containerClass = "border-[#DC2626] bg-[#FEE2E2]/60 text-[#17152E]"
-                                        badgeClass = "bg-[#DC2626] text-white font-extrabold"
+                                        containerClass =
+                                          "border-[#DC2626] bg-[#FEE2E2]/60 text-[#17152E]"
+                                        badgeClass =
+                                          "bg-[#DC2626] text-white font-extrabold"
                                       } else {
-                                        containerClass = "border-[#E2DFF1]/70 opacity-70 text-[#5F5B7D]"
-                                        badgeClass = "bg-[#F4F2FC] text-[#8C88AA] font-bold"
+                                        containerClass =
+                                          "border-[#E2DFF1]/70 opacity-70 text-[#5F5B7D]"
+                                        badgeClass =
+                                          "bg-[#F4F2FC] text-[#8C88AA] font-bold"
                                       }
                                     } else if (isSelected) {
-                                      containerClass = "border-[#4F3CF0] bg-[#E9E6FF]/50 text-[#17152E]"
-                                      badgeClass = "bg-[#4F3CF0] text-white font-extrabold"
+                                      containerClass =
+                                        "border-[#4F3CF0] bg-[#E9E6FF]/50 text-[#17152E]"
+                                      badgeClass =
+                                        "bg-[#4F3CF0] text-white font-extrabold"
                                     }
 
                                     return (
@@ -2230,17 +2758,31 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                         onClick={() => {
                                           setSelectedOption(idx)
                                           setShowExplanation(true)
-                                          const optIsCorrect = idx === activeQuestion.correctIndex
+                                          const optIsCorrect =
+                                            idx === activeQuestion.correctIndex
                                           const qKey = `${selectedModule}_${currentSubmodule.id}_${activeQuestion.id}`
-                                          setSelectedAnswers((prev) => ({ ...prev, [qKey]: idx }))
-                                          setQuestionResults((prev) => ({ ...prev, [qKey]: optIsCorrect ? "acertei" : "errei" }))
+                                          setSelectedAnswers((prev) => ({
+                                            ...prev,
+                                            [qKey]: idx,
+                                          }))
+                                          setQuestionResults((prev) => ({
+                                            ...prev,
+                                            [qKey]: optIsCorrect
+                                              ? "acertei"
+                                              : "errei",
+                                          }))
                                           if (optIsCorrect) {
-                                            setCompletedQuestions((prev) => ({ ...prev, [qKey]: true }))
+                                            setCompletedQuestions((prev) => ({
+                                              ...prev,
+                                              [qKey]: true,
+                                            }))
                                           }
                                         }}
                                         className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 transition cursor-pointer ${containerClass}`}
                                       >
-                                        <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 transition ${badgeClass}`}>
+                                        <span
+                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 transition ${badgeClass}`}
+                                        >
                                           {optionLetters[idx] || `${idx + 1}`}
                                         </span>
                                         <span className="text-sm font-semibold">
@@ -2253,13 +2795,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                                 {/* Feedback / Explicação */}
                                 {showExplanation && (
-                                  <div className={`border rounded-xl p-3.5 mt-4 animate-in fade-in duration-200 ${selectedOption === activeQuestion.correctIndex
-                                    ? "bg-[#E3F5EC] border-[#137A51]/20"
-                                    : "bg-[#FEE2E2] border-[#DC2626]/20"
-                                    }`}>
-                                    <div className={`flex items-center gap-2 text-sm font-bold ${selectedOption === activeQuestion.correctIndex ? "text-[#137A51]" : "text-[#DC2626]"
-                                      }`}>
-                                      {selectedOption === activeQuestion.correctIndex ? (
+                                  <div
+                                    className={`border rounded-xl p-3.5 mt-4 animate-in fade-in duration-200 ${
+                                      selectedOption ===
+                                      activeQuestion.correctIndex
+                                        ? "bg-[#E3F5EC] border-[#137A51]/20"
+                                        : "bg-[#FEE2E2] border-[#DC2626]/20"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`flex items-center gap-2 text-sm font-bold ${
+                                        selectedOption ===
+                                        activeQuestion.correctIndex
+                                          ? "text-[#137A51]"
+                                          : "text-[#DC2626]"
+                                      }`}
+                                    >
+                                      {selectedOption ===
+                                      activeQuestion.correctIndex ? (
                                         <>
                                           <svg
                                             width="18"
@@ -2289,10 +2842,28 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                             strokeLinejoin="round"
                                           >
                                             <circle cx="12" cy="12" r="10" />
-                                            <line x1="15" y1="9" x2="9" y2="15" />
-                                            <line x1="9" y1="9" x2="15" y2="15" />
+                                            <line
+                                              x1="15"
+                                              y1="9"
+                                              x2="9"
+                                              y2="15"
+                                            />
+                                            <line
+                                              x1="9"
+                                              y1="9"
+                                              x2="15"
+                                              y2="15"
+                                            />
                                           </svg>
-                                          <span>Você errou! Resposta correta: Alternativa {optionLetters[activeQuestion.correctIndex]}</span>
+                                          <span>
+                                            Você errou! Resposta correta:
+                                            Alternativa{" "}
+                                            {
+                                              optionLetters[
+                                                activeQuestion.correctIndex
+                                              ]
+                                            }
+                                          </span>
                                         </>
                                       )}
                                     </div>
@@ -2308,7 +2879,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 <button
                                   type="button"
                                   disabled={activeQuestionIndex <= 0}
-                                  onClick={() => goToQuestion(activeQuestionIndex - 1)}
+                                  onClick={() =>
+                                    goToQuestion(activeQuestionIndex - 1)
+                                  }
                                   className="h-[48px] rounded-full border-[1.5px] border-[#8C88AA] bg-white text-[#17152E] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#F7F6FC] disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer active:scale-[0.99] shadow-2xs"
                                 >
                                   <svg
@@ -2328,8 +2901,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                                 <button
                                   type="button"
-                                  disabled={activeQuestionIndex >= (questions.length || 8) - 1}
-                                  onClick={() => goToQuestion(activeQuestionIndex + 1)}
+                                  disabled={
+                                    activeQuestionIndex >=
+                                    (questions.length || 8) - 1
+                                  }
+                                  onClick={() =>
+                                    goToQuestion(activeQuestionIndex + 1)
+                                  }
                                   className="h-[48px] rounded-full bg-[#4F3CF0] hover:bg-[#3E2DD6] text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer active:scale-[0.99] shadow-xs"
                                 >
                                   <span>Próxima</span>
@@ -2379,8 +2957,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         title="Conclua a trilha de Matemática para desbloquear"
                         className="px-4 py-2 rounded-full font-semibold text-sm bg-[#E9E6FF] text-[#5F5B7D] hover:text-[#17152E] flex items-center gap-1.5 transition cursor-not-allowed opacity-90"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F5B7D" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#5F5B7D"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                         <span>{sub.name}</span>
@@ -2391,13 +2985,30 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   {/* Informational Banner / Alert Bar */}
                   <div className="bg-white border border-[#E2DFF1] rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xs">
                     <div className="w-7 h-7 rounded-lg bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#4F3CF0"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                     </div>
                     <p className="text-xs sm:text-sm font-semibold text-[#17152E]">
-                      Uma trilha por vez: termine Matemática para liberar as próximas matérias.
+                      Uma trilha por vez: termine Matemática para liberar as
+                      próximas matérias.
                     </p>
                   </div>
 
@@ -2408,7 +3019,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         Matemática
                       </h3>
                       <span className="text-xs sm:text-sm font-extrabold text-[#4F3CF0]">
-                        {moduleCompleted ? "50% concluído · 3 de 6 módulos" : "33% concluído · 2 de 6 módulos"}
+                        {moduleCompleted
+                          ? "50% concluído · 3 de 6 módulos"
+                          : "33% concluído · 2 de 6 módulos"}
                       </span>
                     </div>
                     <div className="w-full h-2.5 bg-[#E9E6FF] rounded-full overflow-hidden mt-4">
@@ -2428,7 +3041,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-xl bg-[#E3F5EC] flex items-center justify-center shrink-0">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#137A51" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#137A51"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
@@ -2442,7 +3064,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#8C88AA] group-hover:text-[#4F3CF0] group-hover:translate-x-0.5 transition shrink-0">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
                       </div>
@@ -2456,7 +3087,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-11 h-11 rounded-xl bg-[#4F3CF0] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="white"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
                               <polygon points="5 3 19 12 5 21 5 3" />
                             </svg>
                           </div>
@@ -2465,7 +3105,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               Módulo 2: Funções
                             </h4>
                             <p className="text-xs font-medium text-[#5F5B7D] mt-0.5 truncate">
-                              {moduleCompleted ? "Concluído · 6 de 6 aulas" : "Em andamento · 3 de 6 aulas"}
+                              {moduleCompleted
+                                ? "Concluído · 6 de 6 aulas"
+                                : "Em andamento · 3 de 6 aulas"}
                             </p>
                           </div>
                         </div>
@@ -2496,7 +3138,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-xl bg-[#FCE8E8] flex items-center justify-center shrink-0">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#17152E"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                           </svg>
@@ -2506,18 +3157,45 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Módulo 3: Estatística
                           </h4>
                           <p className="text-xs font-medium text-[#5F5B7D] mt-0.5 truncate">
-                            {moduleCompleted ? "Disponível · Iniciar módulo" : "Bloqueado · Conclua o Módulo 2"}
+                            {moduleCompleted
+                              ? "Disponível · Iniciar módulo"
+                              : "Bloqueado · Conclua o Módulo 2"}
                           </p>
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#8C88AA] group-hover:text-[#4F3CF0] transition shrink-0">
                         {moduleCompleted ? (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         ) : (
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="11"
+                              rx="2"
+                              ry="2"
+                            />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                           </svg>
                         )}
@@ -2531,8 +3209,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-xl bg-[#F7F6FC] border border-[#E2DFF1] flex items-center justify-center shrink-0">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C88AA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#8C88AA"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="11"
+                              rx="2"
+                              ry="2"
+                            />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                           </svg>
                         </div>
@@ -2546,8 +3240,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#8C88AA] group-hover:text-[#4F3CF0] transition shrink-0">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                       </div>
@@ -2560,8 +3270,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-xl bg-[#F7F6FC] border border-[#E2DFF1] flex items-center justify-center shrink-0">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C88AA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#8C88AA"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="11"
+                              rx="2"
+                              ry="2"
+                            />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                           </svg>
                         </div>
@@ -2575,8 +3301,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#8C88AA] group-hover:text-[#4F3CF0] transition shrink-0">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                       </div>
@@ -2589,8 +3331,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-xl bg-[#F7F6FC] border border-[#E2DFF1] flex items-center justify-center shrink-0">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C88AA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#8C88AA"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="11"
+                              rx="2"
+                              ry="2"
+                            />
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                           </svg>
                         </div>
@@ -2604,107 +3362,151 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#8C88AA] group-hover:text-[#4F3CF0] transition shrink-0">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
 
             {/* ======================================================================= */}
             {/* TAB: SIMULADOS (Exam Simulations Hub)                                   */}
             {/* ======================================================================= */}
-            {activeTab === "simulados" && (
-              selectedExamResult ? (
+            {activeTab === "simulados" &&
+              (selectedExamResult ? (
                 isViewingAnswerKey ? (
                   /* ===================================================================== */
                   /* SCREEN: GABARITO COMENTADO (1440x1060 conforme SVG oficial)           */
                   /* ===================================================================== */
                   (() => {
-                    const allGabaritoQuestions = Array.from({ length: selectedExamResult.totalQuestions }, (_, i) => {
-                      const q = SIMULADO_90_QUESTIONS[i] || SIMULADO_90_QUESTIONS[0]
-                      const studentAnsFromSession = examAnswers[i]
-                      let isCorrect = false
-                      let studentAns: string | null = null
+                    const allGabaritoQuestions = Array.from(
+                      { length: selectedExamResult.totalQuestions },
+                      (_, i) => {
+                        const q =
+                          SIMULADO_90_QUESTIONS[i] || SIMULADO_90_QUESTIONS[0]
+                        const studentAnsFromSession = examAnswers[i]
+                        let isCorrect = false
+                        let studentAns: string | null = null
 
-                      if (Object.keys(examAnswers).length > 0 && studentAnsFromSession !== undefined) {
-                        studentAns = studentAnsFromSession
-                        isCorrect = studentAns === q.correct
-                      } else {
-                        // Distribuição exata e determinística correspondente aos acertos do resultado:
-                        // Questão 08 (índice 7) é SEMPRE erro (aluno marcou D, correta é C)
-                        const total = selectedExamResult.totalQuestions
-                        const correctCount = selectedExamResult.correctCount
-                        const errorCount = total - correctCount
-                        const isError = i === 7 || (errorCount > 1 && i >= total - (errorCount - 1))
-
-                        if (isError) {
-                          isCorrect = false
-                          studentAns = i === 7 ? "D" : (q.correct === "A" ? "B" : "A")
+                        if (
+                          Object.keys(examAnswers).length > 0 &&
+                          studentAnsFromSession !== undefined
+                        ) {
+                          studentAns = studentAnsFromSession
+                          isCorrect = studentAns === q.correct
                         } else {
-                          isCorrect = true
-                          studentAns = q.correct
+                          // Distribuição exata e determinística correspondente aos acertos do resultado:
+                          // Questão 08 (índice 7) é SEMPRE erro (aluno marcou D, correta é C)
+                          const total = selectedExamResult.totalQuestions
+                          const correctCount = selectedExamResult.correctCount
+                          const errorCount = total - correctCount
+                          const isError =
+                            i === 7 ||
+                            (errorCount > 1 && i >= total - (errorCount - 1))
+
+                          if (isError) {
+                            isCorrect = false
+                            studentAns =
+                              i === 7 ? "D" : q.correct === "A" ? "B" : "A"
+                          } else {
+                            isCorrect = true
+                            studentAns = q.correct
+                          }
                         }
+
+                        return {
+                          index: i,
+                          question: q,
+                          isCorrect,
+                          studentAns,
+                        }
+                      },
+                    )
+
+                    const displayedGabaritoQuestions =
+                      allGabaritoQuestions.filter((item) => {
+                        if (gabaritoFilter === "erros") return !item.isCorrect
+                        if (gabaritoFilter === "acertos") return item.isCorrect
+                        return true
+                      })
+
+                    const currentGabaritoItem = allGabaritoQuestions[
+                      selectedGabaritoIndex
+                    ] ||
+                      allGabaritoQuestions[0] || {
+                        index: 0,
+                        question: SIMULADO_90_QUESTIONS[0],
+                        isCorrect: false,
+                        studentAns: "A",
                       }
-
-                      return {
-                        index: i,
-                        question: q,
-                        isCorrect,
-                        studentAns,
-                      }
-                    })
-
-                    const displayedGabaritoQuestions = allGabaritoQuestions.filter((item) => {
-                      if (gabaritoFilter === "erros") return !item.isCorrect
-                      if (gabaritoFilter === "acertos") return item.isCorrect
-                      return true
-                    })
-
-                    const currentGabaritoItem = allGabaritoQuestions[selectedGabaritoIndex] || allGabaritoQuestions[0] || {
-                      index: 0,
-                      question: SIMULADO_90_QUESTIONS[0],
-                      isCorrect: false,
-                      studentAns: "A",
-                    }
-                    const currentGabaritoQ = currentGabaritoItem.question || SIMULADO_90_QUESTIONS[0]
+                    const currentGabaritoQ =
+                      currentGabaritoItem.question || SIMULADO_90_QUESTIONS[0]
                     const isCurrentQCorrect = currentGabaritoItem.isCorrect
                     const currentQStudentAns = currentGabaritoItem.studentAns
 
-                    const renderMentorinaGabaritoCommentary = (qIdx: number, q: ExamSimuladoQuestion) => {
+                    const renderMentorinaGabaritoCommentary = (
+                      qIdx: number,
+                      q: ExamSimuladoQuestion,
+                    ) => {
                       if (qIdx === 7) {
                         return (
                           <div className="space-y-3">
                             <p>
-                              <strong>1. Dados da questão:</strong> Volume total necessário = <strong>16,2 litros</strong>.
-                              O galão comporta <strong>3,6 L</strong> por R$ 80,00 e a lata menor comporta <strong>900 mL (0,9 L)</strong> por R$ 25,00.
+                              <strong>1. Dados da questão:</strong> Volume total
+                              necessário = <strong>16,2 litros</strong>. O galão
+                              comporta <strong>3,6 L</strong> por R$ 80,00 e a
+                              lata menor comporta{" "}
+                              <strong>900 mL (0,9 L)</strong> por R$ 25,00.
                             </p>
                             <p>
                               <strong>2. Comparação de custo por litro:</strong>
+                              <br />• Galão: R$ 80,00 ÷ 3,6 L ≈{" "}
+                              <strong>R$ 22,22/L</strong>
+                              <br />• Lata: R$ 25,00 ÷ 0,9 L ≈{" "}
+                              <strong>R$ 27,78/L</strong>
                               <br />
-                              • Galão: R$ 80,00 ÷ 3,6 L ≈ <strong>R$ 22,22/L</strong>
-                              <br />
-                              • Lata: R$ 25,00 ÷ 0,9 L ≈ <strong>R$ 27,78/L</strong>
-                              <br />
-                              Para minimizar o gasto, devemos priorizar a maior quantidade viável de galões sem ultrapassar 16,2 L e sem deixar sobras.
+                              Para minimizar o gasto, devemos priorizar a maior
+                              quantidade viável de galões sem ultrapassar 16,2 L
+                              e sem deixar sobras.
                             </p>
                             <p>
                               <strong>3. Divisão do volume:</strong>
-                              <br />
-                              • 4 galões × 3,6 L = <strong>14,4 L</strong> (Custo: 4 × R$ 80,00 = R$ 320,00).
-                              <br />
-                              • Sobra exata: 16,2 L - 14,4 L = <strong>1,8 L</strong>.
-                              <br />
-                              • 1,8 L equivalem a exatamente 2 latas de 0,9 L (2 × 0,9 L = 1,8 L) (Custo: 2 × R$ 25,00 = R$ 50,00).
-                              <br />
-                              • Custo total: R$ 320,00 + R$ 50,00 = <strong>R$ 370,00</strong>.
+                              <br />• 4 galões × 3,6 L = <strong>14,4 L</strong>{" "}
+                              (Custo: 4 × R$ 80,00 = R$ 320,00).
+                              <br />• Sobra exata: 16,2 L - 14,4 L ={" "}
+                              <strong>1,8 L</strong>.
+                              <br />• 1,8 L equivalem a exatamente 2 latas de
+                              0,9 L (2 × 0,9 L = 1,8 L) (Custo: 2 × R$ 25,00 =
+                              R$ 50,00).
+                              <br />• Custo total: R$ 320,00 + R$ 50,00 ={" "}
+                              <strong>R$ 370,00</strong>.
                             </p>
                             <div className="mt-3 p-3.5 bg-white/75 rounded-xl border border-[#4F3CF0]/20 text-[13px] text-[#4F3CF0] font-medium leading-relaxed">
-                              💡 <strong>Dica TRI:</strong> Na alternativa D (3 galões e 6 latas), o volume também resulta em 16,2 L (10,8 + 5,4 = 16,2 L), mas o custo é de R$ 390,00 (R$ 20,00 mais caro). No ENEM, fique atento quando o enunciado pedir especificamente a opção de <em>menor custo</em>!
+                              💡 <strong>Dica TRI:</strong> Na alternativa D (3
+                              galões e 6 latas), o volume também resulta em 16,2
+                              L (10,8 + 5,4 = 16,2 L), mas o custo é de R$
+                              390,00 (R$ 20,00 mais caro). No ENEM, fique atento
+                              quando o enunciado pedir especificamente a opção
+                              de <em>menor custo</em>!
                             </div>
                           </div>
                         )
@@ -2713,13 +3515,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       return (
                         <div className="space-y-3">
                           <p>
-                            <strong>1. Interpretação do enunciado:</strong> A questão avalia a competência na área de <strong>{q.discipline}</strong>, exigindo a identificação dos conceitos fundamentais articulados no texto de apoio.
+                            <strong>1. Interpretação do enunciado:</strong> A
+                            questão avalia a competência na área de{" "}
+                            <strong>{q.discipline}</strong>, exigindo a
+                            identificação dos conceitos fundamentais articulados
+                            no texto de apoio.
                           </p>
                           <p>
-                            <strong>2. Análise da alternativa correta:</strong> A alternativa <strong>({q.correct})</strong> é a única que responde de forma plena e coerente ao comando, respeitando as relações de causa e efeito demonstradas.
+                            <strong>2. Análise da alternativa correta:</strong>{" "}
+                            A alternativa <strong>({q.correct})</strong> é a
+                            única que responde de forma plena e coerente ao
+                            comando, respeitando as relações de causa e efeito
+                            demonstradas.
                           </p>
                           <div className="mt-3 p-3.5 bg-white/75 rounded-xl border border-[#4F3CF0]/20 text-[13px] text-[#4F3CF0] font-medium leading-relaxed">
-                            💡 <strong>Dica TRI:</strong> Elimine distratores que utilizem termos generalistas ou conclusões absolutas não respaldadas pelo texto motivador.
+                            💡 <strong>Dica TRI:</strong> Elimine distratores
+                            que utilizem termos generalistas ou conclusões
+                            absolutas não respaldadas pelo texto motivador.
                           </div>
                         </div>
                       )
@@ -2763,7 +3575,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               Gabarito Comentado
                             </h2>
                             <p className="text-[14px] text-[#5F5B7D] font-medium mt-1">
-                              {selectedExamResult.title} · {selectedExamResult.correctCount} acertos de {selectedExamResult.totalQuestions} questões · {selectedExamResult.percent}% de aproveitamento
+                              {selectedExamResult.title} ·{" "}
+                              {selectedExamResult.correctCount} acertos de{" "}
+                              {selectedExamResult.totalQuestions} questões ·{" "}
+                              {selectedExamResult.percent}% de aproveitamento
                             </p>
                           </div>
 
@@ -2772,30 +3587,36 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             <button
                               type="button"
                               onClick={() => setGabaritoFilter("todas")}
-                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${gabaritoFilter === "todas"
-                                ? "bg-[#17152E] text-white shadow-xs"
-                                : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
-                                }`}
+                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${
+                                gabaritoFilter === "todas"
+                                  ? "bg-[#17152E] text-white shadow-xs"
+                                  : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
+                              }`}
                             >
                               Todas ({selectedExamResult.totalQuestions})
                             </button>
                             <button
                               type="button"
                               onClick={() => setGabaritoFilter("erros")}
-                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${gabaritoFilter === "erros"
-                                ? "bg-[#17152E] text-white shadow-xs"
-                                : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
-                                }`}
+                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${
+                                gabaritoFilter === "erros"
+                                  ? "bg-[#17152E] text-white shadow-xs"
+                                  : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
+                              }`}
                             >
-                              Erros ({selectedExamResult.totalQuestions - selectedExamResult.correctCount})
+                              Erros (
+                              {selectedExamResult.totalQuestions -
+                                selectedExamResult.correctCount}
+                              )
                             </button>
                             <button
                               type="button"
                               onClick={() => setGabaritoFilter("acertos")}
-                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${gabaritoFilter === "acertos"
-                                ? "bg-[#17152E] text-white shadow-xs"
-                                : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
-                                }`}
+                              className={`h-10 px-5 rounded-full font-bold text-[13px] sm:text-[14px] transition cursor-pointer flex items-center gap-1.5 ${
+                                gabaritoFilter === "acertos"
+                                  ? "bg-[#17152E] text-white shadow-xs"
+                                  : "bg-white border border-[#8C88AA] text-[#17152E] hover:bg-[#F7F6FC]"
+                              }`}
                             >
                               Acertos ({selectedExamResult.correctCount})
                             </button>
@@ -2811,27 +3632,37 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 Questões
                               </h3>
                               <span className="text-[12px] font-bold text-[#5F5B7D]">
-                                {displayedGabaritoQuestions.length} {displayedGabaritoQuestions.length === 1 ? "questão" : "questões"}
+                                {displayedGabaritoQuestions.length}{" "}
+                                {displayedGabaritoQuestions.length === 1
+                                  ? "questão"
+                                  : "questões"}
                               </span>
                             </div>
 
                             <div className="grid grid-cols-4 gap-2.5 max-h-[640px] overflow-y-auto pr-1">
                               {displayedGabaritoQuestions.map((item) => {
-                                const isSelected = selectedGabaritoIndex === item.index
+                                const isSelected =
+                                  selectedGabaritoIndex === item.index
                                 return (
                                   <button
                                     key={item.index}
                                     type="button"
-                                    onClick={() => setSelectedGabaritoIndex(item.index)}
-                                    className={`h-11 rounded-[12px] flex items-center justify-center gap-1.5 font-bold text-[13px] transition cursor-pointer select-none ${isSelected
-                                      ? "ring-2 ring-[#17152E] border-2 border-[#17152E] scale-105 z-10 shadow-xs"
-                                      : "border"
-                                      } ${item.isCorrect
+                                    onClick={() =>
+                                      setSelectedGabaritoIndex(item.index)
+                                    }
+                                    className={`h-11 rounded-[12px] flex items-center justify-center gap-1.5 font-bold text-[13px] transition cursor-pointer select-none ${
+                                      isSelected
+                                        ? "ring-2 ring-[#17152E] border-2 border-[#17152E] scale-105 z-10 shadow-xs"
+                                        : "border"
+                                    } ${
+                                      item.isCorrect
                                         ? "bg-[#E3F5EC] text-[#137A51] border-[#137A51]/30 hover:bg-[#D5EFE2]"
                                         : "bg-[#FCE8E8] text-[#C42B30] border-[#C42B30]/30 hover:bg-[#F9D6D6]"
-                                      }`}
+                                    }`}
                                   >
-                                    <span>{String(item.index + 1).padStart(2, "0")}</span>
+                                    <span>
+                                      {String(item.index + 1).padStart(2, "0")}
+                                    </span>
                                     {item.isCorrect ? (
                                       <svg
                                         width="13"
@@ -2874,18 +3705,37 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               {/* Question Header & Status */}
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                                 <span className="font-extrabold text-[12px] tracking-[0.08em] text-[#4F3CF0] uppercase">
-                                  {currentGabaritoQ.badge} · {currentGabaritoQ.discipline.toUpperCase()}
+                                  {currentGabaritoQ.badge} ·{" "}
+                                  {currentGabaritoQ.discipline.toUpperCase()}
                                 </span>
                                 {isCurrentQCorrect ? (
                                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E3F5EC] text-[#137A51] font-bold text-xs self-start sm:self-auto">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg
+                                      width="13"
+                                      height="13"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
                                       <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                     Você acertou
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FCE8E8] text-[#C42B30] font-bold text-xs self-start sm:self-auto">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg
+                                      width="13"
+                                      height="13"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
                                       <line x1="18" y1="6" x2="6" y2="18" />
                                       <line x1="6" y1="6" x2="18" y2="18" />
                                     </svg>
@@ -2896,11 +3746,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                               {/* Enunciado */}
                               <div className="space-y-4 mb-6">
-                                {currentGabaritoQ.context.split("\n\n").map((para, pIdx) => (
-                                  <p key={pIdx} className="text-[15.5px] text-[#17152E] leading-relaxed font-normal">
-                                    {para}
-                                  </p>
-                                ))}
+                                {currentGabaritoQ.context
+                                  .split("\n\n")
+                                  .map((para, pIdx) => (
+                                    <p
+                                      key={pIdx}
+                                      className="text-[15.5px] text-[#17152E] leading-relaxed font-normal"
+                                    >
+                                      {para}
+                                    </p>
+                                  ))}
                                 {currentGabaritoQ.intro && (
                                   <p className="text-[15px] font-semibold text-[#17152E] pt-1">
                                     {currentGabaritoQ.intro}
@@ -2911,27 +3766,50 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               {/* Alternativas */}
                               <div className="space-y-3 mb-6">
                                 {currentGabaritoQ.alternatives.map((alt) => {
-                                  const isCorrectAlt = alt.letter === currentGabaritoQ.correct
-                                  const isStudentAlt = alt.letter === currentQStudentAns
+                                  const isCorrectAlt =
+                                    alt.letter === currentGabaritoQ.correct
+                                  const isStudentAlt =
+                                    alt.letter === currentQStudentAns
 
-                                  let itemStyle = "bg-white border border-[#E2DFF1] text-[#17152E]"
+                                  let itemStyle =
+                                    "bg-white border border-[#E2DFF1] text-[#17152E]"
                                   let badge = null
 
                                   if (isCorrectAlt) {
-                                    itemStyle = "bg-[#E3F5EC] border-2 border-[#137A51] text-[#137A51] font-medium"
+                                    itemStyle =
+                                      "bg-[#E3F5EC] border-2 border-[#137A51] text-[#137A51] font-medium"
                                     badge = (
                                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#137A51] text-white font-bold text-xs shrink-0">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
                                           <polyline points="20 6 9 17 4 12" />
                                         </svg>
                                         Correta
                                       </span>
                                     )
                                   } else if (isStudentAlt && !isCorrectAlt) {
-                                    itemStyle = "bg-[#FCE8E8] border-2 border-[#C42B30] text-[#C42B30] font-medium"
+                                    itemStyle =
+                                      "bg-[#FCE8E8] border-2 border-[#C42B30] text-[#C42B30] font-medium"
                                     badge = (
                                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C42B30] text-white font-bold text-xs shrink-0">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg
+                                          width="12"
+                                          height="12"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
                                           <line x1="18" y1="6" x2="6" y2="18" />
                                           <line x1="6" y1="6" x2="18" y2="18" />
                                         </svg>
@@ -2947,12 +3825,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                     >
                                       <div className="flex items-center gap-3.5 min-w-0">
                                         <div
-                                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${isCorrectAlt
-                                            ? "bg-[#137A51] text-white"
-                                            : isStudentAlt && !isCorrectAlt
-                                              ? "bg-[#C42B30] text-white"
-                                              : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]"
-                                            }`}
+                                          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                                            isCorrectAlt
+                                              ? "bg-[#137A51] text-white"
+                                              : isStudentAlt && !isCorrectAlt
+                                                ? "bg-[#C42B30] text-white"
+                                                : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]"
+                                          }`}
                                         >
                                           {alt.letter}
                                         </div>
@@ -2971,7 +3850,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-7 h-7 rounded-lg bg-[#4F3CF0] flex items-center justify-center text-white shrink-0 shadow-xs">
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
                                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                       </svg>
                                     </div>
@@ -2985,7 +3873,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 </div>
 
                                 <div className="text-[14px] text-[#17152E] space-y-2.5 leading-relaxed font-normal">
-                                  {renderMentorinaGabaritoCommentary(selectedGabaritoIndex, currentGabaritoQ)}
+                                  {renderMentorinaGabaritoCommentary(
+                                    selectedGabaritoIndex,
+                                    currentGabaritoQ,
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -2996,14 +3887,28 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 type="button"
                                 disabled={selectedGabaritoIndex <= 0}
                                 onClick={() => {
-                                  setSelectedGabaritoIndex((prev) => Math.max(0, prev - 1))
+                                  setSelectedGabaritoIndex((prev) =>
+                                    Math.max(0, prev - 1),
+                                  )
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="h-[48px] px-6 rounded-full border border-[#8C88AA] bg-white text-[#17152E] font-bold text-sm flex items-center gap-2 hover:bg-[#F7F6FC] disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
                                   <polyline points="15 18 9 12 15 6" />
                                 </svg>
                                 <span>Questão anterior</span>
@@ -3011,17 +3916,37 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                               <button
                                 type="button"
-                                disabled={selectedGabaritoIndex >= selectedExamResult.totalQuestions - 1}
+                                disabled={
+                                  selectedGabaritoIndex >=
+                                  selectedExamResult.totalQuestions - 1
+                                }
                                 onClick={() => {
-                                  setSelectedGabaritoIndex((prev) => Math.min(selectedExamResult.totalQuestions - 1, prev + 1))
+                                  setSelectedGabaritoIndex((prev) =>
+                                    Math.min(
+                                      selectedExamResult.totalQuestions - 1,
+                                      prev + 1,
+                                    ),
+                                  )
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="h-[48px] px-7 rounded-full bg-[#4F3CF0] hover:bg-[#3D2DC9] text-white font-bold text-sm flex items-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-35 disabled:cursor-not-allowed"
                               >
                                 <span>Próxima questão</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
                                   <polyline points="9 18 15 12 9 6" />
                                 </svg>
                               </button>
@@ -3066,7 +3991,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         Resultado do Simulado
                       </h2>
                       <p className="text-[14px] text-[#5F5B7D] font-medium">
-                        {selectedExamResult.title} · Realizado em {selectedExamResult.date}
+                        {selectedExamResult.title} · Realizado em{" "}
+                        {selectedExamResult.date}
                       </p>
                     </div>
 
@@ -3100,7 +4026,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             {selectedExamResult.timeSpent}
                           </span>
                         </div>
-                        <span className="text-[12px] text-[#5F5B7D] font-medium truncate" title={selectedExamResult.avgTimePerQuestion}>
+                        <span
+                          className="text-[12px] text-[#5F5B7D] font-medium truncate"
+                          title={selectedExamResult.avgTimePerQuestion}
+                        >
                           {selectedExamResult.avgTimePerQuestion}
                         </span>
                       </div>
@@ -3113,11 +4042,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         <div className="my-auto">
                           <span className="text-[36px] font-black text-[#17152E] font-mono leading-none">
                             {(() => {
-                              const match = selectedExamResult.avgTimePerQuestion?.match(/(\d+)m\s*(\d+)s/)
+                              const match =
+                                selectedExamResult.avgTimePerQuestion?.match(
+                                  /(\d+)m\s*(\d+)s/,
+                                )
                               if (match) {
                                 return `${match[1]}:${match[2].padStart(2, "0")}`
                               }
-                              const colonMatch = selectedExamResult.avgTimePerQuestion?.match(/(\d+:\d+)/)
+                              const colonMatch =
+                                selectedExamResult.avgTimePerQuestion?.match(
+                                  /(\d+:\d+)/,
+                                )
                               if (colonMatch) return colonMatch[1]
                               return "2:24"
                             })()}
@@ -3202,7 +4137,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             {/* Assunto 4: Geometria plana (Atenção / Vermelho) */}
                             <div>
                               <div className="flex items-center justify-between text-[13px] font-bold mb-2">
-                                <span className="text-[#17152E]">Geometria plana</span>
+                                <span className="text-[#17152E]">
+                                  Geometria plana
+                                </span>
                                 <span className="text-[#C42B30]">2/5</span>
                               </div>
                               <div className="w-full h-2 rounded-full bg-[#E9E6FF] overflow-hidden">
@@ -3285,7 +4222,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         <div className="w-full bg-[#E9E6FF] rounded-[20px] p-6 lg:p-7 flex flex-col justify-between h-auto lg:h-[216px]">
                           <div>
                             <div className="flex items-center gap-2 text-[#4F3CF0] font-bold text-[14px] mb-3">
-                              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 18 18"
+                                fill="none"
+                                className="shrink-0"
+                              >
                                 <path
                                   d="M9 1.5L10.583 6.3333L15.667 8.1667L10.583 10L9 14.8333L7.417 10L2.333 8.1667L7.417 6.3333L9 1.5Z"
                                   stroke="#4F3CF0"
@@ -3298,7 +4241,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             </div>
 
                             <p className="text-[13px] text-[#17152E] font-medium leading-[20px]">
-                              Revise Geometria plana: você errou 3 de 5. Coloque em prática essa área para subir sua nota revisando de maneira rápida.
+                              Revise Geometria plana: você errou 3 de 5. Coloque
+                              em prática essa área para subir sua nota revisando
+                              de maneira rápida.
                             </p>
                           </div>
 
@@ -3316,9 +4261,7 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
 
                         {/* Mentorina Mascote (220x220) ilustrativa (não clicável) padronizada com o mesmo espaçamento (24px) */}
-                        <div
-                          className="mt-[-1] shrink-0 self-end mr-20 select-none pointer-events-none"
-                        >
+                        <div className="mt-[-1] shrink-0 self-end mr-20 select-none pointer-events-none">
                           <svg
                             width="220"
                             height="220"
@@ -3465,10 +4408,39 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         {/* Top Badges */}
                         <div className="w-full flex items-center justify-between mb-7">
                           <div className="w-12 h-12 rounded-[12px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                              <circle cx="12" cy="12" r="10" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              <circle cx="12" cy="12" r="6" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              <circle cx="12" cy="12" r="2" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="6"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="2"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           </div>
                           <span className="px-3.5 py-1.5 rounded-full bg-[#E9E6FF] text-[#4F3CF0] font-bold text-[11px] tracking-wide uppercase">
@@ -3486,11 +4458,33 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                         {/* Meta info */}
                         <div className="flex items-center gap-2 text-[#5F5B7D]">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                            <circle cx="8" cy="8" r="6.67" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 4V8L10.67 9.33" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            className="shrink-0"
+                          >
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6.67"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M8 4V8L10.67 9.33"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
-                          <span className="text-[13.5px] font-semibold">90 questões · 5h 30</span>
+                          <span className="text-[13.5px] font-semibold">
+                            90 questões · 5h 30
+                          </span>
                         </div>
                       </div>
 
@@ -3526,8 +4520,19 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         {/* Top Badges */}
                         <div className="w-full flex items-center justify-between mb-7">
                           <div className="w-12 h-12 rounded-[12px] bg-[#C6F432] flex items-center justify-center shrink-0">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                              <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <path
+                                d="M13 2L3 14H12L11 22L21 10H12L13 2Z"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           </div>
                           <span className="px-3.5 py-1.5 rounded-full bg-[#E9E6FF] text-[#4F3CF0] font-bold text-[11px] tracking-wide uppercase">
@@ -3545,11 +4550,33 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                         {/* Meta info */}
                         <div className="flex items-center gap-2 text-[#5F5B7D]">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                            <circle cx="8" cy="8" r="6.67" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 4V8L10.67 9.33" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            className="shrink-0"
+                          >
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6.67"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M8 4V8L10.67 9.33"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
-                          <span className="text-[13.5px] font-semibold">20 questões · 45 min</span>
+                          <span className="text-[13.5px] font-semibold">
+                            20 questões · 45 min
+                          </span>
                         </div>
                       </div>
 
@@ -3585,10 +4612,33 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         {/* Top Badges */}
                         <div className="w-full flex items-center justify-between mb-7">
                           <div className="w-12 h-12 rounded-[12px] bg-[#3CC8F0] flex items-center justify-center shrink-0">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M2 17L12 22L22 17" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M2 12L12 17L22 12" stroke="#17152E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <path
+                                d="M12 2L2 7L12 12L22 7L12 2Z"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M2 17L12 22L22 17"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M2 12L12 17L22 12"
+                                stroke="#17152E"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -3603,11 +4653,33 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                         {/* Meta info */}
                         <div className="flex items-center gap-2 text-[#5F5B7D]">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                            <circle cx="8" cy="8" r="6.67" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 4V8L10.67 9.33" stroke="currentColor" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            className="shrink-0"
+                          >
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6.67"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M8 4V8L10.67 9.33"
+                              stroke="currentColor"
+                              strokeWidth="1.33333"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
-                          <span className="text-[13.5px] font-semibold">45 questões · 2h 30</span>
+                          <span className="text-[13.5px] font-semibold">
+                            45 questões · 2h 30
+                          </span>
                         </div>
                       </div>
 
@@ -3657,7 +4729,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           <tr className="border-b border-[#F0EDF9] text-[11px] font-bold text-[#5F5B7D] uppercase tracking-wider">
                             <th className="pb-3 font-bold w-[120px]">DATA</th>
                             <th className="pb-3 font-bold">SIMULADO</th>
-                            <th className="pb-3 font-bold w-[160px]">ACERTOS</th>
+                            <th className="pb-3 font-bold w-[160px]">
+                              ACERTOS
+                            </th>
                             <th className="pb-3 font-bold w-[140px]">TEMPO</th>
                             <th className="pb-3 font-bold text-right w-[140px]"></th>
                           </tr>
@@ -3665,12 +4739,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         <tbody className="divide-y divide-[#F0EDF9] text-[14px] text-[#17152E]">
                           {/* Linha 1 */}
                           <tr className="hover:bg-[#FBFBFE] transition-colors group">
-                            <td className="py-4 font-semibold text-[#17152E]">28/10</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              28/10
+                            </td>
                             <td className="py-4 font-semibold text-[#17152E]">
                               Mini-Simulado · Matemática
                             </td>
-                            <td className="py-4 font-semibold text-[#17152E]">14/20</td>
-                            <td className="py-4 font-semibold text-[#17152E]">42:12</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              14/20
+                            </td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              42:12
+                            </td>
                             <td className="py-4 text-right">
                               <button
                                 type="button"
@@ -3682,9 +4762,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                     correctCount: 14,
                                     percent: 70,
                                     timeSpent: "42:12",
-                                    avgTimePerQuestion: "Média de 2m 06s por questão",
+                                    avgTimePerQuestion:
+                                      "Média de 2m 06s por questão",
                                     triScore: 710,
-                                    triMessage: "Dentro do esperado para Matemática",
+                                    triMessage:
+                                      "Dentro do esperado para Matemática",
                                     blankCount: 0,
                                     blankPercent: 0,
                                     date: "28 de Outubro",
@@ -3693,7 +4775,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   setGabaritoFilter("todas")
                                   setIsViewingAnswerKey(true)
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="font-semibold text-[14px] text-[#4F3CF0] hover:underline cursor-pointer"
@@ -3705,12 +4790,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                           {/* Linha 2 */}
                           <tr className="hover:bg-[#FBFBFE] transition-colors group">
-                            <td className="py-4 font-semibold text-[#17152E]">24/10</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              24/10
+                            </td>
                             <td className="py-4 font-semibold text-[#17152E]">
                               Por área · Ciências da Natureza
                             </td>
-                            <td className="py-4 font-semibold text-[#17152E]">29/45</td>
-                            <td className="py-4 font-semibold text-[#17152E]">2:15:40</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              29/45
+                            </td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              2:15:40
+                            </td>
                             <td className="py-4 text-right">
                               <button
                                 type="button"
@@ -3722,9 +4813,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                     correctCount: 29,
                                     percent: 64,
                                     timeSpent: "2:15:40",
-                                    avgTimePerQuestion: "Média de 3m 00s por questão",
+                                    avgTimePerQuestion:
+                                      "Média de 3m 00s por questão",
                                     triScore: 745,
-                                    triMessage: "Acima da média de Ciências da Natureza",
+                                    triMessage:
+                                      "Acima da média de Ciências da Natureza",
                                     blankCount: 16,
                                     blankPercent: 36,
                                     date: "24 de Outubro",
@@ -3733,7 +4826,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   setGabaritoFilter("todas")
                                   setIsViewingAnswerKey(true)
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="font-semibold text-[14px] text-[#4F3CF0] hover:underline cursor-pointer"
@@ -3745,12 +4841,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                           {/* Linha 3 */}
                           <tr className="hover:bg-[#FBFBFE] transition-colors group">
-                            <td className="py-4 font-semibold text-[#17152E]">17/10</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              17/10
+                            </td>
                             <td className="py-4 font-semibold text-[#17152E]">
                               Simulado Completo · Dia 1
                             </td>
-                            <td className="py-4 font-semibold text-[#17152E]">58/90</td>
-                            <td className="py-4 font-semibold text-[#17152E]">5:12:05</td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              58/90
+                            </td>
+                            <td className="py-4 font-semibold text-[#17152E]">
+                              5:12:05
+                            </td>
                             <td className="py-4 text-right">
                               <button
                                 type="button"
@@ -3762,7 +4864,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                     correctCount: 58,
                                     percent: 64,
                                     timeSpent: "5:12:05",
-                                    avgTimePerQuestion: "Média de 3m 28s por questão",
+                                    avgTimePerQuestion:
+                                      "Média de 3m 28s por questão",
                                     triScore: 720,
                                     triMessage: "Acima da média geral nacional",
                                     blankCount: 32,
@@ -3773,7 +4876,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   setGabaritoFilter("todas")
                                   setIsViewingAnswerKey(true)
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="font-semibold text-[14px] text-[#4F3CF0] hover:underline cursor-pointer"
@@ -3787,14 +4893,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
 
             {/* ======================================================================= */}
             {/* TAB: REDAÇÃO (AI Essay Lab & Feedback Screen)                           */}
             {/* ======================================================================= */}
-            {activeTab === "redacao" && (
-              selectedEssayFeedback ? (
+            {activeTab === "redacao" &&
+              (selectedEssayFeedback ? (
                 /* ===================================================================== */
                 /* SCREEN: FEEDBACK DA REDAÇÃO                                           */
                 /* ===================================================================== */
@@ -3842,7 +4947,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           className="w-6 h-6 flex items-center justify-center text-[#5F5B7D] hover:text-[#17152E] transition cursor-pointer"
                           title="Notificações"
                         >
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                          >
                             <path
                               d="M4 14.5V9.9167C4 8.45802 4.63 7.05915 5.76 6.02766C6.88 4.99617 8.41 4.4167 10 4.4167C11.59 4.4167 13.12 4.99617 14.24 6.02766C15.37 7.05915 16 8.45802 16 9.9167V14.5L18 16.3334H2L4 14.5Z"
                               stroke="#5F5B7D"
@@ -3867,8 +4977,21 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           className="w-6 h-6 flex items-center justify-center text-[#5F5B7D] hover:text-[#17152E] transition cursor-pointer"
                           title="Tirar dúvidas com Mentorina AI"
                         >
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <circle cx="10" cy="10" r="9" stroke="#5F5B7D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                          >
+                            <circle
+                              cx="10"
+                              cy="10"
+                              r="9"
+                              stroke="#5F5B7D"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                             <path
                               d="M7.5 7.0001C7.5 6.5497 7.62 6.1082 7.86 5.722C8.09 5.3359 8.42 5.0196 8.82 4.8065C9.21 4.5933 9.66 4.4913 10.11 4.5112C10.56 4.5311 11 4.6722 11.37 4.9195C11.75 5.1669 12.05 5.5112 12.25 5.9163C12.45 6.3214 12.53 6.7721 12.49 7.2209C12.45 7.6696 12.29 8.0997 12.03 8.4656C11.77 8.8316 11.41 9.1199 11 9.3001C10.4 9.6001 10 10.2001 10 11.0001M10 15.0001H10.01"
                               stroke="#5F5B7D"
@@ -3895,58 +5018,110 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         Correção da redação
                       </h1>
                       <p className="text-[13.5px] sm:text-[14px] font-medium text-[#5F5B7D] mt-1.5 truncate">
-                        {selectedEssayFeedback.theme} · corrigido pela mentorina em {formatFeedbackDate(selectedEssayFeedback.date)}
+                        {selectedEssayFeedback.theme} · corrigido pela mentorina
+                        em {formatFeedbackDate(selectedEssayFeedback.date)}
                       </p>
                     </div>
                   </div>
 
                   {/* Cards de Nota e Competências + Pontos Fortes e Melhorias (conforme SVGs oficiais) */}
                   {(() => {
-                    const isDefaultRedacao1 = selectedEssayFeedback.id === "redacao-1"
+                    const isDefaultRedacao1 =
+                      selectedEssayFeedback.id === "redacao-1"
 
-                    const c1Score = isDefaultRedacao1 ? 160 : (selectedEssayFeedback.competencies?.c1 ?? 160)
-                    const c2Score = isDefaultRedacao1 ? 160 : (selectedEssayFeedback.competencies?.c2 ?? 160)
-                    const c3Score = isDefaultRedacao1 ? 140 : (selectedEssayFeedback.competencies?.c3 ?? 140)
-                    const c4Score = isDefaultRedacao1 ? 160 : (selectedEssayFeedback.competencies?.c4 ?? 160)
-                    const c5Score = isDefaultRedacao1 ? 140 : (selectedEssayFeedback.competencies?.c5 ?? 140)
-                    const essayScore = isDefaultRedacao1 ? 760 : (selectedEssayFeedback.score ?? (c1Score + c2Score + c3Score + c4Score + c5Score))
+                    const c1Score = isDefaultRedacao1
+                      ? 160
+                      : (selectedEssayFeedback.competencies?.c1 ?? 160)
+                    const c2Score = isDefaultRedacao1
+                      ? 160
+                      : (selectedEssayFeedback.competencies?.c2 ?? 160)
+                    const c3Score = isDefaultRedacao1
+                      ? 140
+                      : (selectedEssayFeedback.competencies?.c3 ?? 140)
+                    const c4Score = isDefaultRedacao1
+                      ? 160
+                      : (selectedEssayFeedback.competencies?.c4 ?? 160)
+                    const c5Score = isDefaultRedacao1
+                      ? 140
+                      : (selectedEssayFeedback.competencies?.c5 ?? 140)
+                    const essayScore = isDefaultRedacao1
+                      ? 760
+                      : (selectedEssayFeedback.score ??
+                        c1Score + c2Score + c3Score + c4Score + c5Score)
 
-                    const currentIndex = essayHistory.findIndex((e) => e.id === selectedEssayFeedback.id)
-                    const previousEssay = currentIndex !== -1 && currentIndex + 1 < essayHistory.length ? essayHistory[currentIndex + 1] : null
-                    const scoreDiff = isDefaultRedacao1 ? 80 : (previousEssay ? essayScore - previousEssay.score : 80)
-                    const diffText = scoreDiff >= 0 ? `+${scoreDiff} em relação à última` : `${scoreDiff} em relação à última`
+                    const currentIndex = essayHistory.findIndex(
+                      (e) => e.id === selectedEssayFeedback.id,
+                    )
+                    const previousEssay =
+                      currentIndex !== -1 &&
+                      currentIndex + 1 < essayHistory.length
+                        ? essayHistory[currentIndex + 1]
+                        : null
+                    const scoreDiff = isDefaultRedacao1
+                      ? 80
+                      : previousEssay
+                        ? essayScore - previousEssay.score
+                        : 80
+                    const diffText =
+                      scoreDiff >= 0
+                        ? `+${scoreDiff} em relação à última`
+                        : `${scoreDiff} em relação à última`
 
                     const competenciesList = [
-                      { id: "C1", title: "Domínio da escrita formal", score: c1Score },
-                      { id: "C2", title: "Compreensão da proposta", score: c2Score },
-                      { id: "C3", title: "Seleção e organização dos argumentos", score: c3Score },
-                      { id: "C4", title: "Conhecimento de recursos coesivos", score: c4Score },
-                      { id: "C5", title: "Proposta de intervenção", score: c5Score },
+                      {
+                        id: "C1",
+                        title: "Domínio da escrita formal",
+                        score: c1Score,
+                      },
+                      {
+                        id: "C2",
+                        title: "Compreensão da proposta",
+                        score: c2Score,
+                      },
+                      {
+                        id: "C3",
+                        title: "Seleção e organização dos argumentos",
+                        score: c3Score,
+                      },
+                      {
+                        id: "C4",
+                        title: "Conhecimento de recursos coesivos",
+                        score: c4Score,
+                      },
+                      {
+                        id: "C5",
+                        title: "Proposta de intervenção",
+                        score: c5Score,
+                      },
                     ]
 
-                    const strengthsList = (isDefaultRedacao1 || selectedEssayFeedback.id === "redacao-1")
-                      ? [
-                        "Tese clara e bem defendida.",
-                        "Bom uso de dados (CNPq) para sustentar o argumento.",
-                      ]
-                      : (selectedEssayFeedback.feedback?.strengths?.length
-                        ? selectedEssayFeedback.feedback.strengths
-                        : [
-                          "Tese clara e bem defendida.",
-                          "Bom uso de dados (CNPq) para sustentar o argumento.",
-                        ])
+                    const strengthsList =
+                      isDefaultRedacao1 ||
+                      selectedEssayFeedback.id === "redacao-1"
+                        ? [
+                            "Tese clara e bem defendida.",
+                            "Bom uso de dados (CNPq) para sustentar o argumento.",
+                          ]
+                        : selectedEssayFeedback.feedback?.strengths?.length
+                          ? selectedEssayFeedback.feedback.strengths
+                          : [
+                              "Tese clara e bem defendida.",
+                              "Bom uso de dados (CNPq) para sustentar o argumento.",
+                            ]
 
-                    const improvementsList = (isDefaultRedacao1 || selectedEssayFeedback.id === "redacao-1")
-                      ? [
-                        "C3: os argumentos do D2 ficaram meio soltos no final do parágrafo.",
-                        "C5: a proposta pode ter um detalhamento da ação para ficar 100%.",
-                      ]
-                      : (selectedEssayFeedback.feedback?.improvements?.length
-                        ? selectedEssayFeedback.feedback.improvements
-                        : [
-                          "C3: os argumentos do D2 ficaram meio soltos no final do parágrafo.",
-                          "C5: a proposta pode ter um detalhamento da ação para ficar 100%.",
-                        ])
+                    const improvementsList =
+                      isDefaultRedacao1 ||
+                      selectedEssayFeedback.id === "redacao-1"
+                        ? [
+                            "C3: os argumentos do D2 ficaram meio soltos no final do parágrafo.",
+                            "C5: a proposta pode ter um detalhamento da ação para ficar 100%.",
+                          ]
+                        : selectedEssayFeedback.feedback?.improvements?.length
+                          ? selectedEssayFeedback.feedback.improvements
+                          : [
+                              "C3: os argumentos do D2 ficaram meio soltos no final do parágrafo.",
+                              "C5: a proposta pode ter um detalhamento da ação para ficar 100%.",
+                            ]
 
                     return (
                       <>
@@ -3960,7 +5135,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 NOTA
                               </span>
                               <div className="shrink-0">
-                                <svg width="52" height="54" viewBox="212 63 52 54" fill="none">
+                                <svg
+                                  width="52"
+                                  height="54"
+                                  viewBox="212 63 52 54"
+                                  fill="none"
+                                >
                                   <path
                                     d="M225 63H251C258.2 63 264 68.8 264 76V96C264 103.2 258.2 109 251 109H232L221 117C219.5 118.1 217.5 117 217.5 115.2V108.7C214.3 106.5 212 101.5 212 96V76C212 68.8 217.8 63 225 63Z"
                                     fill="#4F3CF0"
@@ -4014,7 +5194,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             <div className="flex flex-col justify-between flex-1 mt-3 gap-2 sm:gap-2.5">
                               {competenciesList.map((comp) => {
                                 const isGood = comp.score >= 160
-                                const percentage = Math.min(100, Math.max(0, (comp.score / 200) * 100))
+                                const percentage = Math.min(
+                                  100,
+                                  Math.max(0, (comp.score / 200) * 100),
+                                )
 
                                 return (
                                   <div
@@ -4036,16 +5219,22 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                       {/* Barra (292px de largura no desktop conforme SVG) */}
                                       <div className="w-[110px] sm:w-[200px] md:w-[292px] h-2 rounded-full bg-[#E9E6FF] overflow-hidden">
                                         <div
-                                          className={`h-full rounded-full transition-all duration-300 ${isGood ? "bg-[#4F3CF0]" : "bg-[#FF6B57]"
-                                            }`}
+                                          className={`h-full rounded-full transition-all duration-300 ${
+                                            isGood
+                                              ? "bg-[#4F3CF0]"
+                                              : "bg-[#FF6B57]"
+                                          }`}
                                           style={{ width: `${percentage}%` }}
                                         />
                                       </div>
 
                                       {/* Pontuação */}
                                       <span
-                                        className={`text-[13.5px] sm:text-[14px] font-black text-right min-w-[58px] ${isGood ? "text-[#17152E]" : "text-[#C42B30]"
-                                          }`}
+                                        className={`text-[13.5px] sm:text-[14px] font-black text-right min-w-[58px] ${
+                                          isGood
+                                            ? "text-[#17152E]"
+                                            : "text-[#C42B30]"
+                                        }`}
                                       >
                                         {comp.score}/200
                                       </span>
@@ -4064,7 +5253,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             {/* Top: Ícone + Título */}
                             <div className="flex items-center gap-3.5">
                               <div className="w-8 h-8 rounded-full bg-[#E3F5EC] flex items-center justify-center shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                >
                                   <path
                                     d="M13.3332 4L5.99984 11.3333L2.6665 8"
                                     stroke="#137A51"
@@ -4082,8 +5276,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             {/* Bullets */}
                             <ul className="mt-4 space-y-2 sm:space-y-2.5">
                               {strengthsList.map((item, idx) => (
-                                <li key={idx} className="flex items-start gap-2.5 text-[14px] text-[#17152E] leading-snug">
-                                  <span className="text-[#17152E] font-bold leading-none select-none text-[15px]">•</span>
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2.5 text-[14px] text-[#17152E] leading-snug"
+                                >
+                                  <span className="text-[#17152E] font-bold leading-none select-none text-[15px]">
+                                    •
+                                  </span>
                                   <span className="font-normal">{item}</span>
                                 </li>
                               ))}
@@ -4095,7 +5294,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             {/* Top: Ícone + Título */}
                             <div className="flex items-center gap-3.5">
                               <div className="w-8 h-8 rounded-full bg-[#FCE8E8] flex items-center justify-center shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                >
                                   <path
                                     d="M6 13.3335H12"
                                     stroke="#C42B30"
@@ -4122,12 +5326,19 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               {improvementsList.map((item, idx) => {
                                 const match = item.match(/^(C\d+:)(.*)$/)
                                 return (
-                                  <li key={idx} className="flex items-start gap-2.5 text-[14px] text-[#17152E] leading-snug">
-                                    <span className="text-[#17152E] font-bold leading-none select-none text-[15px]">•</span>
+                                  <li
+                                    key={idx}
+                                    className="flex items-start gap-2.5 text-[14px] text-[#17152E] leading-snug"
+                                  >
+                                    <span className="text-[#17152E] font-bold leading-none select-none text-[15px]">
+                                      •
+                                    </span>
                                     <span className="font-normal">
                                       {match ? (
                                         <>
-                                          <strong className="font-bold">{match[1]}</strong>
+                                          <strong className="font-bold">
+                                            {match[1]}
+                                          </strong>
                                           {match[2]}
                                         </>
                                       ) : (
@@ -4146,7 +5357,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           {/* Esquerda: Ícone Sparkle + Texto */}
                           <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
                             <div className="shrink-0 flex items-center justify-center">
-                              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                              >
                                 <path
                                   d="M8 0.75L9.7417 6.0667L15.3334 8.0833L9.7417 10.1L8 15.4167L6.2584 10.1L0.6667 8.0833L6.2584 6.0667L8 0.75Z"
                                   stroke="#4F3CF0"
@@ -4157,9 +5373,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               </svg>
                             </div>
                             <p className="text-[13.5px] sm:text-[14px] text-[#17152E] leading-snug">
-                              <span className="font-bold">Quer ajuda para reescrever a conclusão?</span>{" "}
+                              <span className="font-bold">
+                                Quer ajuda para reescrever a conclusão?
+                              </span>{" "}
                               <span className="font-normal text-[#17152E]/90">
-                                Posso te mostrar um exemplo de proposta de intervenção completa.
+                                Posso te mostrar um exemplo de proposta de
+                                intervenção completa.
                               </span>
                             </p>
                           </div>
@@ -4184,14 +5403,22 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             onClick={() => {
                               if (selectedEssayFeedback) {
                                 setNewEssayTheme(selectedEssayFeedback.theme)
-                                setNewEssayText(selectedEssayFeedback.text || "")
+                                setNewEssayText(
+                                  selectedEssayFeedback.text || "",
+                                )
                               }
                               setSelectedEssayFeedback(null)
                               setIsWritingEssay(true)
                             }}
                             className="w-full sm:w-[237px] h-12 rounded-[24px] bg-[#4F3CF0] hover:bg-[#3D2DC9] transition-all flex items-center justify-center gap-2.5 px-6 shadow-sm active:scale-[0.99] cursor-pointer"
                           >
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 18 18"
+                              fill="none"
+                              className="shrink-0"
+                            >
                               <path
                                 d="M7.5 15.6665H15"
                                 stroke="white"
@@ -4217,7 +5444,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             type="button"
                             onClick={() => {
                               setSelectedEssayFeedback(null)
-                              setNewEssayTheme("Desafios para a valorização de comunidades e povos tradicionais no Brasil")
+                              setNewEssayTheme(
+                                "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
+                              )
                               setNewEssayText("")
                               setEssaySeconds(4360)
                               setIsWritingEssay(true)
@@ -4254,22 +5483,37 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         TEMA DA SEMANA
                       </span>
                       <h3 className="text-lg font-black text-[#17152E] mt-1">
-                        "Desafios para a valorização de comunidades e povos tradicionais no Brasil"
+                        "Desafios para a valorização de comunidades e povos
+                        tradicionais no Brasil"
                       </h3>
                       <p className="text-xs text-[#5F5B7D] mt-2 leading-relaxed">
-                        A partir da leitura dos textos motivadores e com base nos conhecimentos construídos ao longo de sua formação, redija um texto dissertativo-argumentativo em modalidade escrita formal da língua portuguesa.
+                        A partir da leitura dos textos motivadores e com base
+                        nos conhecimentos construídos ao longo de sua formação,
+                        redija um texto dissertativo-argumentativo em modalidade
+                        escrita formal da língua portuguesa.
                       </p>
 
                       <div className="mt-6 flex flex-wrap items-center gap-3">
                         <button
                           type="button"
                           onClick={() => {
-                            setNewEssayTheme("Desafios para a valorização de comunidades e povos tradicionais no Brasil")
+                            setNewEssayTheme(
+                              "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
+                            )
                             setIsWritingEssay(true)
                           }}
                           className="px-6 py-3 rounded-xl bg-[#4F3CF0] hover:bg-[#3D2CD8] text-white font-bold text-xs sm:text-sm transition cursor-pointer shadow-md active:scale-95 flex items-center gap-2"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                           </svg>
@@ -4281,16 +5525,45 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {/* 5 Competencies Guide */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
                       {[
-                        { n: "C1", t: "Gramática Formal", desc: "Domínio da norma culta" },
-                        { n: "C2", t: "Compreensão do Tema", desc: "Aplicação de conceitos e repertório" },
-                        { n: "C3", t: "Argumentação", desc: "Seleção e defesa de ponto de vista" },
-                        { n: "C4", t: "Coesão Textual", desc: "Conectivos e estrutura lógica" },
-                        { n: "C5", t: "Intervenção Social", desc: "5 elementos completos da proposta" },
+                        {
+                          n: "C1",
+                          t: "Gramática Formal",
+                          desc: "Domínio da norma culta",
+                        },
+                        {
+                          n: "C2",
+                          t: "Compreensão do Tema",
+                          desc: "Aplicação de conceitos e repertório",
+                        },
+                        {
+                          n: "C3",
+                          t: "Argumentação",
+                          desc: "Seleção e defesa de ponto de vista",
+                        },
+                        {
+                          n: "C4",
+                          t: "Coesão Textual",
+                          desc: "Conectivos e estrutura lógica",
+                        },
+                        {
+                          n: "C5",
+                          t: "Intervenção Social",
+                          desc: "5 elementos completos da proposta",
+                        },
                       ].map((c, i) => (
-                        <div key={i} className="p-3.5 rounded-xl border border-[#E2DFF1] bg-white">
-                          <span className="text-xs font-black text-[#4F3CF0] bg-[#E9E6FF] px-2 py-0.5 rounded-md">{c.n}</span>
-                          <h5 className="text-xs font-bold text-[#17152E] mt-2">{c.t}</h5>
-                          <p className="text-[11px] text-[#5F5B7D] mt-0.5">{c.desc}</p>
+                        <div
+                          key={i}
+                          className="p-3.5 rounded-xl border border-[#E2DFF1] bg-white"
+                        >
+                          <span className="text-xs font-black text-[#4F3CF0] bg-[#E9E6FF] px-2 py-0.5 rounded-md">
+                            {c.n}
+                          </span>
+                          <h5 className="text-xs font-bold text-[#17152E] mt-2">
+                            {c.t}
+                          </h5>
+                          <p className="text-[11px] text-[#5F5B7D] mt-0.5">
+                            {c.desc}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -4306,19 +5579,31 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               Histórico de redações
                             </h3>
                             <span className="bg-[#E9E6FF] text-[#4F3CF0] font-extrabold text-xs px-2.5 py-0.5 rounded-full">
-                              {essayHistory.length} {essayHistory.length === 1 ? "redação" : "redações"}
+                              {essayHistory.length}{" "}
+                              {essayHistory.length === 1
+                                ? "redação"
+                                : "redações"}
                             </span>
                           </div>
                           <p className="text-xs text-[#5F5B7D] font-medium mt-1">
-                            Acompanhe suas notas, evolução e acesse o feedback detalhado de cada texto corrigido.
+                            Acompanhe suas notas, evolução e acesse o feedback
+                            detalhado de cada texto corrigido.
                           </p>
                         </div>
 
                         {/* Média de notas badge */}
                         <div className="flex items-center gap-2 self-start sm:self-center bg-[#F7F6FC] border border-[#E2DFF1] px-3.5 py-1.5 rounded-xl">
-                          <span className="text-[11px] font-bold text-[#5F5B7D]">Média das redações:</span>
+                          <span className="text-[11px] font-bold text-[#5F5B7D]">
+                            Média das redações:
+                          </span>
                           <span className="text-sm font-black text-[#4F3CF0]">
-                            {Math.round(essayHistory.reduce((acc, curr) => acc + curr.score, 0) / essayHistory.length)} pts
+                            {Math.round(
+                              essayHistory.reduce(
+                                (acc, curr) => acc + curr.score,
+                                0,
+                              ) / essayHistory.length,
+                            )}{" "}
+                            pts
                           </span>
                         </div>
                       </div>
@@ -4339,9 +5624,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 <span className="text-xs text-[#5F5B7D] font-medium">
                                   {essay.date}
                                 </span>
-                                <span className="text-xs text-[#8C88AA] font-medium">·</span>
+                                <span className="text-xs text-[#8C88AA] font-medium">
+                                  ·
+                                </span>
                                 <span className="text-xs text-[#5F5B7D] font-medium">
-                                  {essay.linesCount ? `${essay.linesCount} linhas` : "Texto completo"}
+                                  {essay.linesCount
+                                    ? `${essay.linesCount} linhas`
+                                    : "Texto completo"}
                                 </span>
                               </div>
 
@@ -4352,19 +5641,34 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               {/* Mini competências badges */}
                               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]">
-                                  C1: <strong className="text-[#17152E]">{essay.competencies.c1}</strong>
+                                  C1:{" "}
+                                  <strong className="text-[#17152E]">
+                                    {essay.competencies.c1}
+                                  </strong>
                                 </span>
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]">
-                                  C2: <strong className="text-[#17152E]">{essay.competencies.c2}</strong>
+                                  C2:{" "}
+                                  <strong className="text-[#17152E]">
+                                    {essay.competencies.c2}
+                                  </strong>
                                 </span>
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]">
-                                  C3: <strong className="text-[#17152E]">{essay.competencies.c3}</strong>
+                                  C3:{" "}
+                                  <strong className="text-[#17152E]">
+                                    {essay.competencies.c3}
+                                  </strong>
                                 </span>
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]">
-                                  C4: <strong className="text-[#17152E]">{essay.competencies.c4}</strong>
+                                  C4:{" "}
+                                  <strong className="text-[#17152E]">
+                                    {essay.competencies.c4}
+                                  </strong>
                                 </span>
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]">
-                                  C5: <strong className="text-[#17152E]">{essay.competencies.c5}</strong>
+                                  C5:{" "}
+                                  <strong className="text-[#17152E]">
+                                    {essay.competencies.c5}
+                                  </strong>
                                 </span>
                               </div>
                             </div>
@@ -4379,7 +5683,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   <span className="text-2xl sm:text-3xl font-black text-[#4F3CF0] tracking-tight">
                                     {essay.score}
                                   </span>
-                                  <span className="text-xs text-[#5F5B7D] font-bold">/ 1000</span>
+                                  <span className="text-xs text-[#5F5B7D] font-bold">
+                                    / 1000
+                                  </span>
                                 </div>
                               </div>
 
@@ -4388,12 +5694,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 onClick={() => {
                                   setSelectedEssayFeedback(essay)
                                   if (typeof window !== "undefined") {
-                                    window.scrollTo({ top: 0, behavior: "smooth" })
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: "smooth",
+                                    })
                                   }
                                 }}
                                 className="h-[44px] px-5 rounded-full bg-[#4F3CF0] hover:bg-[#3D2CD8] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer shadow-xs active:scale-95 shrink-0"
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
                                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                   <circle cx="12" cy="12" r="3" />
                                 </svg>
@@ -4406,14 +5724,13 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
                   )}
                 </div>
-              )
-            )}
+              ))}
 
             {/* ======================================================================= */}
             {/* TAB: PERFIL (Student Profile & Settings)                                 */}
             {/* ======================================================================= */}
-            {activeTab === "perfil" && (
-              isChangingPassword ? (
+            {activeTab === "perfil" &&
+              (isChangingPassword ? (
                 /* ===================================================================== */
                 /* SCREEN: ALTERAR SENHA (Exact 1184x814 Figma view)                     */
                 /* ===================================================================== */
@@ -4426,7 +5743,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       onClick={handleCancelChangingPassword}
                       className="flex items-center gap-2 text-[#4F3CF0] font-bold text-sm hover:underline cursor-pointer group py-1"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#4F3CF0"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="group-hover:-translate-x-1 transition-transform"
+                      >
                         <polyline points="15 18 9 12 15 6" />
                       </svg>
                       <span>Perfil</span>
@@ -4440,7 +5767,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition relative cursor-pointer shadow-2xs"
                         aria-label="Notificações"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                         </svg>
@@ -4453,7 +5789,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition cursor-pointer shadow-2xs"
                         aria-label="Ajuda e Suporte"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <circle cx="12" cy="12" r="10" />
                           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                           <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -4479,11 +5824,24 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                   {/* Form Card: 560px aligned left with minimal spacing between fields */}
                   <div className="w-full max-w-[560px] mr-auto bg-white border border-[#E2DFF1] rounded-[20px] p-6 sm:p-7 shadow-xs">
-                    <form onSubmit={handleSaveNewPassword} className="space-y-2.5">
+                    <form
+                      onSubmit={handleSaveNewPassword}
+                      className="space-y-2.5"
+                    >
                       {/* Success Alert */}
                       {passwordChangeSuccess && (
                         <div className="bg-[#E6F8EF] border border-[#A7E6C5] text-[#137A51] px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                           <span>Senha alterada com sucesso!</span>
@@ -4493,7 +5851,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       {/* Error Alert */}
                       {passwordChangeError && (
                         <div className="bg-[#FCE8E8] border border-[#F6B5B5] text-[#C42B30] px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2 animate-fadeIn">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0"
+                          >
                             <circle cx="12" cy="12" r="10" />
                             <line x1="12" y1="8" x2="12" y2="12" />
                             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -4513,7 +5881,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             value={currentPassword}
                             onChange={(e) => {
                               setCurrentPassword(e.target.value)
-                              if (passwordChangeError) setPasswordChangeError(null)
+                              if (passwordChangeError)
+                                setPasswordChangeError(null)
                             }}
                             placeholder="Digite sua senha atual"
                             className="w-full h-[46px] rounded-[12px] border border-[#8C88AA] focus:border-[#4F3CF0] focus:ring-1 focus:ring-[#4F3CF0] outline-none px-4 pr-11 text-sm text-[#17152E] transition"
@@ -4538,11 +5907,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             onKeyUp={() => setShowCurrentPassword(false)}
                             onBlur={() => setShowCurrentPassword(false)}
                             onClick={(e) => e.preventDefault()}
-                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${showCurrentPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
-                              }`}
+                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${
+                              showCurrentPassword
+                                ? "text-[#4F3CF0]"
+                                : "text-[#5F5B7D] hover:text-[#17152E]"
+                            }`}
                             aria-label="Pressione e segure para visualizar a senha atual"
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -4561,7 +5942,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             value={newPassword}
                             onChange={(e) => {
                               setNewPassword(e.target.value)
-                              if (passwordChangeError) setPasswordChangeError(null)
+                              if (passwordChangeError)
+                                setPasswordChangeError(null)
                             }}
                             placeholder="Digite a nova senha"
                             className="w-full h-[46px] rounded-[12px] border border-[#8C88AA] focus:border-[#4F3CF0] focus:ring-1 focus:ring-[#4F3CF0] outline-none px-4 pr-11 text-sm text-[#17152E] transition"
@@ -4586,11 +5968,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             onKeyUp={() => setShowNewPassword(false)}
                             onBlur={() => setShowNewPassword(false)}
                             onClick={(e) => e.preventDefault()}
-                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${showNewPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
-                              }`}
+                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${
+                              showNewPassword
+                                ? "text-[#4F3CF0]"
+                                : "text-[#5F5B7D] hover:text-[#17152E]"
+                            }`}
                             aria-label="Pressione e segure para visualizar a nova senha"
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -4615,8 +6009,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />
                             </svg>
                             <span
-                              className={`text-xs transition-colors ${isLengthValid ? "text-[#137A51] font-semibold" : "text-[#5F5B7D] font-medium"
-                                }`}
+                              className={`text-xs transition-colors ${
+                                isLengthValid
+                                  ? "text-[#137A51] font-semibold"
+                                  : "text-[#5F5B7D] font-medium"
+                              }`}
                             >
                               Pelo menos 8 caracteres
                             </span>
@@ -4638,8 +6035,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />
                             </svg>
                             <span
-                              className={`text-xs transition-colors ${isCaseValid ? "text-[#137A51] font-semibold" : "text-[#5F5B7D] font-medium"
-                                }`}
+                              className={`text-xs transition-colors ${
+                                isCaseValid
+                                  ? "text-[#137A51] font-semibold"
+                                  : "text-[#5F5B7D] font-medium"
+                              }`}
                             >
                               Uma letra maiúscula e uma minúscula
                             </span>
@@ -4661,8 +6061,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />
                             </svg>
                             <span
-                              className={`text-xs transition-colors ${isDiffFromCurrent ? "text-[#137A51] font-semibold" : "text-[#5F5B7D] font-medium"
-                                }`}
+                              className={`text-xs transition-colors ${
+                                isDiffFromCurrent
+                                  ? "text-[#137A51] font-semibold"
+                                  : "text-[#5F5B7D] font-medium"
+                              }`}
                             >
                               Diferente da senha atual
                             </span>
@@ -4681,7 +6084,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             value={confirmNewPassword}
                             onChange={(e) => {
                               setConfirmNewPassword(e.target.value)
-                              if (passwordChangeError) setPasswordChangeError(null)
+                              if (passwordChangeError)
+                                setPasswordChangeError(null)
                             }}
                             placeholder="Repita a nova senha"
                             className="w-full h-[46px] rounded-[12px] border border-[#8C88AA] focus:border-[#4F3CF0] focus:ring-1 focus:ring-[#4F3CF0] outline-none px-4 pr-11 text-sm text-[#17152E] transition"
@@ -4706,11 +6110,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             onKeyUp={() => setShowConfirmPassword(false)}
                             onBlur={() => setShowConfirmPassword(false)}
                             onClick={(e) => e.preventDefault()}
-                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${showConfirmPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
-                              }`}
+                            className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition cursor-pointer p-1 select-none ${
+                              showConfirmPassword
+                                ? "text-[#4F3CF0]"
+                                : "text-[#5F5B7D] hover:text-[#17152E]"
+                            }`}
                             aria-label="Pressione e segure para visualizar a confirmação da senha"
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -4754,7 +6170,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       onClick={handleCancelEditingTrack}
                       className="flex items-center gap-2 text-[#4F3CF0] font-bold text-sm hover:underline cursor-pointer group py-1"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#4F3CF0"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="group-hover:-translate-x-1 transition-transform"
+                      >
                         <polyline points="15 18 9 12 15 6" />
                       </svg>
                       <span>Perfil</span>
@@ -4768,7 +6194,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition relative cursor-pointer shadow-2xs"
                         aria-label="Notificações"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                         </svg>
@@ -4781,7 +6216,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         className="w-10 h-10 rounded-full bg-white border border-[#E2DFF1] flex items-center justify-center text-[#5F5B7D] hover:text-[#4F3CF0] hover:border-[#4F3CF0] transition cursor-pointer shadow-2xs"
                         aria-label="Ajuda e Suporte"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <circle cx="12" cy="12" r="10" />
                           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                           <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -4801,7 +6245,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       Editar trilha
                     </h2>
                     <p className="text-xs sm:text-sm text-[#5F5B7D] font-medium mt-1">
-                      Uma trilha por vez: termine a atual para liberar a próxima.
+                      Uma trilha por vez: termine a atual para liberar a
+                      próxima.
                     </p>
                   </div>
 
@@ -4823,7 +6268,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       <div className="divide-y divide-[#E2DFF1]/60">
                         {tempTrackSubjects.map((subject, idx) => {
                           const isDragging = draggedSubjectIdx === idx
-                          const isDragOver = dragOverSubjectIdx === idx && draggedSubjectIdx !== idx
+                          const isDragOver =
+                            dragOverSubjectIdx === idx &&
+                            draggedSubjectIdx !== idx
 
                           return (
                             <div
@@ -4854,11 +6301,15 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 setDraggedSubjectIdx(null)
                                 setDragOverSubjectIdx(null)
                               }}
-                              className={`py-5 px-3 -mx-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all duration-150 cursor-grab active:cursor-grabbing select-none ${isDragging ? "opacity-30 bg-[#F7F6FC] scale-[0.98]" : ""
-                                } ${isDragOver
+                              className={`py-5 px-3 -mx-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-all duration-150 cursor-grab active:cursor-grabbing select-none ${
+                                isDragging
+                                  ? "opacity-30 bg-[#F7F6FC] scale-[0.98]"
+                                  : ""
+                              } ${
+                                isDragOver
                                   ? "bg-[#E9E6FF]/50 ring-2 ring-[#4F3CF0] ring-dashed"
                                   : "hover:bg-[#F7F6FC]/60"
-                                }`}
+                              }`}
                             >
                               {/* Left: Drag Handle + Number Badge + Info */}
                               <div className="flex items-center gap-3.5 min-w-0 flex-1">
@@ -4867,7 +6318,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                   className="p-1.5 text-[#8C88AA] group-hover:text-[#4F3CF0] select-none shrink-0 transition-colors cursor-grab active:cursor-grabbing"
                                   title="Arraste para reordenar"
                                 >
-                                  <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                  <svg
+                                    width="10"
+                                    height="16"
+                                    viewBox="0 0 10 16"
+                                    fill="currentColor"
+                                  >
                                     <circle cx="2" cy="2" r="1.5" />
                                     <circle cx="2" cy="8" r="1.5" />
                                     <circle cx="2" cy="14" r="1.5" />
@@ -4879,10 +6335,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                                 {/* Number Badge */}
                                 <div
-                                  className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 select-none ${idx === 0
-                                    ? "bg-[#E9E6FF] text-[#4F3CF0]"
-                                    : "bg-[#F7F6FC] text-[#4F3CF0]"
-                                    }`}
+                                  className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 select-none ${
+                                    idx === 0
+                                      ? "bg-[#E9E6FF] text-[#4F3CF0]"
+                                      : "bg-[#F7F6FC] text-[#4F3CF0]"
+                                  }`}
                                 >
                                   {idx + 1}
                                 </div>
@@ -4948,17 +6405,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         )}
                       </div>
 
-                      {tempTrackSubjects.length < 3 && tempTrackSubjects.length > 0 && (
-                        <div className="pt-4 border-t border-[#E2DFF1]/60 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={handleRestoreSubjects}
-                            className="text-xs text-[#4F3CF0] font-bold hover:underline cursor-pointer"
-                          >
-                            + Restaurar matérias ausentes
-                          </button>
-                        </div>
-                      )}
+                      {tempTrackSubjects.length < 3 &&
+                        tempTrackSubjects.length > 0 && (
+                          <div className="pt-4 border-t border-[#E2DFF1]/60 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleRestoreSubjects}
+                              className="text-xs text-[#4F3CF0] font-bold hover:underline cursor-pointer"
+                            >
+                              + Restaurar matérias ausentes
+                            </button>
+                          </div>
+                        )}
                     </div>
 
                     {/* Card: Adicionar matéria (380px x 290px) - Ocultado quando não houver matérias disponíveis para adicionar */}
@@ -4968,7 +6426,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           Adicionar matéria
                         </h3>
                         <p className="text-xs text-[#5F5B7D] font-medium mt-1 leading-relaxed">
-                          Escolha uma matéria para adicionar à sua trilha.<br />
+                          Escolha uma matéria para adicionar à sua trilha.
+                          <br />
                           Ela entrará ao final da lista.
                         </p>
 
@@ -5079,7 +6538,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       </p>
                       <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
                         <span className="bg-[#E9E6FF] text-[#4F3CF0] font-bold text-[11px] px-3.5 py-1.5 rounded-full uppercase tracking-wider">
-                          {targetCourse ? `${targetCourse.toUpperCase()} · UFRJ` : "MEDICINA · UFRJ"}
+                          {targetCourse
+                            ? `${targetCourse.toUpperCase()} · UFRJ`
+                            : "MEDICINA · UFRJ"}
                         </span>
                         <span className="bg-[#E9E6FF] text-[#4F3CF0] font-bold text-[11px] px-3.5 py-1.5 rounded-full uppercase tracking-wider">
                           10H / SEMANA
@@ -5090,7 +6551,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         onClick={() => alert("Editar dados do perfil em breve")}
                         className="w-full h-[46.5px] rounded-[23.25px] border-[1.5px] border-[#8C88AA] bg-white text-[#17152E] font-bold text-sm flex items-center justify-center gap-2 mt-6 hover:bg-[#F7F6FC] transition cursor-pointer"
                       >
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#17152E" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 18 18"
+                          fill="none"
+                          stroke="#17152E"
+                          strokeWidth="1.67"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M12.5 2.5a2.121 2.121 0 0 1 3 3L5 16l-4 1 1-4 10.5-10.5z" />
                         </svg>
                         Editar dados
@@ -5114,7 +6584,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                       {/* Subtitle */}
                       <p className="text-xs text-[#5F5B7D] font-medium leading-relaxed pb-5 border-b border-[#E2DFF1]/70">
-                        A Mentorina montou sua trilha a partir das suas escolhas. Termine a matéria atual para liberar a próxima.
+                        A Mentorina montou sua trilha a partir das suas
+                        escolhas. Termine a matéria atual para liberar a
+                        próxima.
                       </p>
 
                       {/* Sequential Subjects rendered dynamically from trackSubjects */}
@@ -5122,13 +6594,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         {trackSubjects.map((subject, idx) => (
                           <div
                             key={subject.id}
-                            className={`py-4 sm:py-5 flex ${idx === 0 ? "items-start" : "items-center"} gap-4`}
+                            className={`py-4 sm:py-5 flex ${
+                              idx === 0 ? "items-start" : "items-center"
+                            } gap-4`}
                           >
                             <div
-                              className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 ${idx === 0
-                                ? "bg-[#E9E6FF] text-[#4F3CF0] mt-0.5"
-                                : "bg-[#F7F6FC] text-[#4F3CF0]"
-                                }`}
+                              className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shrink-0 ${
+                                idx === 0
+                                  ? "bg-[#E9E6FF] text-[#4F3CF0] mt-0.5"
+                                  : "bg-[#F7F6FC] text-[#4F3CF0]"
+                              }`}
                             >
                               {idx + 1}
                             </div>
@@ -5136,8 +6611,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               {idx === 0 ? (
                                 <>
                                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                                    <h4 className="text-sm font-bold text-[#17152E] truncate">{subject.name}</h4>
-                                    <span className="text-xs font-bold text-[#4F3CF0] shrink-0">{subject.progress}%</span>
+                                    <h4 className="text-sm font-bold text-[#17152E] truncate">
+                                      {subject.name}
+                                    </h4>
+                                    <span className="text-xs font-bold text-[#4F3CF0] shrink-0">
+                                      {subject.progress}%
+                                    </span>
                                   </div>
                                   <p className="text-xs text-[#5F5B7D] font-medium mb-2.5">
                                     {subject.status}
@@ -5151,15 +6630,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                                 </>
                               ) : (
                                 <>
-                                  <h4 className="text-sm font-bold text-[#17152E] truncate">{subject.name}</h4>
+                                  <h4 className="text-sm font-bold text-[#17152E] truncate">
+                                    {subject.name}
+                                  </h4>
                                   <p className="text-xs text-[#5F5B7D] font-medium mt-1">
-                                    Não iniciada · {subject.topicsCount} tópicos · Libera após {trackSubjects[idx - 1]?.name.replace("Ciências da ", "").replace("Ciências ", "")}
+                                    Não iniciada · {subject.topicsCount} tópicos
+                                    · Libera após{" "}
+                                    {trackSubjects[idx - 1]?.name
+                                      .replace("Ciências da ", "")
+                                      .replace("Ciências ", "")}
                                   </p>
                                 </>
                               )}
                             </div>
                             {idx > 0 && (
-                              <span className="text-sm font-bold text-[#5F5B7D] shrink-0 px-2 select-none">—</span>
+                              <span className="text-sm font-bold text-[#5F5B7D] shrink-0 px-2 select-none">
+                                —
+                              </span>
                             )}
                           </div>
                         ))}
@@ -5172,7 +6659,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           onClick={handleStartEditingTrack}
                           className="w-[179.5px] h-[46.5px] rounded-[23.25px] border-[1.5px] border-[#8C88AA] bg-white text-[#17152E] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#F7F6FC] transition cursor-pointer"
                         >
-                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#17152E" strokeWidth="1.67" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 18 18"
+                            fill="none"
+                            stroke="#17152E"
+                            strokeWidth="1.67"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <path d="M12.5 2.5a2.121 2.121 0 0 1 3 3L5 16l-4 1 1-4 10.5-10.5z" />
                           </svg>
                           Editar trilha
@@ -5194,9 +6690,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               Aa
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-[#17152E]">Língua estrangeira</h4>
+                              <h4 className="text-sm font-bold text-[#17152E]">
+                                Língua estrangeira
+                              </h4>
                               <p className="text-xs text-[#5F5B7D] font-medium mt-0.5 truncate">
-                                {foreignLang}: usada nas questões de Linguagens do Enem
+                                {foreignLang}: usada nas questões de Linguagens
+                                do Enem
                               </p>
                             </div>
                           </div>
@@ -5217,17 +6716,47 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
                             <div className="w-11 h-11 rounded-[14px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#4F3CF0"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <rect
+                                  x="3"
+                                  y="11"
+                                  width="18"
+                                  height="11"
+                                  rx="2"
+                                  ry="2"
+                                />
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                               </svg>
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">Alterar senha</h4>
-                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">Troque sua senha de acesso</p>
+                              <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">
+                                Alterar senha
+                              </h4>
+                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">
+                                Troque sua senha de acesso
+                              </p>
                             </div>
                           </div>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F5B7D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 group-hover:translate-x-0.5 transition-transform">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#5F5B7D"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                          >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
@@ -5240,7 +6769,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
                             <div className="w-11 h-11 rounded-[14px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#4F3CF0"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                 <polyline points="14 2 14 8 20 8" />
                                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -5248,11 +6786,25 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                               </svg>
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">Termos de uso e privacidade</h4>
-                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">Ver nossos termos e tratamento de dados</p>
+                              <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">
+                                Termos de uso e privacidade
+                              </h4>
+                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">
+                                Ver nossos termos e tratamento de dados
+                              </p>
                             </div>
                           </div>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F5B7D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 group-hover:translate-x-0.5 transition-transform">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#5F5B7D"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                          >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
@@ -5265,15 +6817,36 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
                             <div className="w-11 h-11 rounded-[14px] bg-[#E9E6FF] flex items-center justify-center shrink-0">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F3CF0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#4F3CF0"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
                               </svg>
                             </div>
-                            <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">Sair da conta</h4>
+                            <h4 className="text-sm font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition">
+                              Sair da conta
+                            </h4>
                           </div>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F5B7D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 group-hover:translate-x-0.5 transition-transform">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#5F5B7D"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                          >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
@@ -5286,18 +6859,41 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         >
                           <div className="flex items-center gap-3.5 min-w-0">
                             <div className="w-11 h-11 rounded-[14px] bg-[#FCE8E8] flex items-center justify-center shrink-0">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C42B30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#C42B30"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                                 <circle cx="8.5" cy="7" r="4" />
                                 <line x1="23" y1="11" x2="17" y2="11" />
                               </svg>
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-[#C42B30]">Encerrar conta</h4>
-                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">Apagar seus dados de forma definitiva</p>
+                              <h4 className="text-sm font-bold text-[#C42B30]">
+                                Encerrar conta
+                              </h4>
+                              <p className="text-xs text-[#5F5B7D] font-medium mt-0.5">
+                                Apagar seus dados de forma definitiva
+                              </p>
                             </div>
                           </div>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C42B30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 group-hover:translate-x-0.5 transition-transform">
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#C42B30"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0 group-hover:translate-x-0.5 transition-transform"
+                          >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
@@ -5305,8 +6901,7 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              ))}
           </div>
         )}
       </main>
@@ -5332,7 +6927,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               className="drop-shadow-xs transition duration-200 group-hover:brightness-105"
             >
               <g filter="url(#filter0_dd_2448_1051)">
-                <rect x="20" y="13" width="72" height="72" rx="36" fill="#4F3CF0" />
+                <rect
+                  x="20"
+                  y="13"
+                  width="72"
+                  height="72"
+                  rx="36"
+                  fill="#4F3CF0"
+                />
                 <path
                   d="M55.9998 29.5L60.1165 42.0667L73.3332 46.8333L60.1165 51.6L55.9998 64.1667L51.8832 51.6L38.6665 46.8333L51.8832 42.0667L55.9998 29.5Z"
                   strokeWidth="2.16667"
@@ -5340,7 +6942,14 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   strokeLinejoin="round"
                   stroke="white"
                 />
-                <circle cx="82" cy="23" r="9.5" fill="#C6F432" strokeWidth="3" stroke="#F7F6FC" />
+                <circle
+                  cx="82"
+                  cy="23"
+                  r="9.5"
+                  fill="#C6F432"
+                  strokeWidth="3"
+                  stroke="#F7F6FC"
+                />
               </g>
               <defs>
                 <filter
@@ -5359,14 +6968,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
                     result="hardAlpha"
                   />
-                  <feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect1_dropShadow_2448_1051" />
+                  <feMorphology
+                    radius="4"
+                    operator="erode"
+                    in="SourceAlpha"
+                    result="effect1_dropShadow_2448_1051"
+                  />
                   <feOffset dy="8" />
                   <feGaussianBlur stdDeviation="12" />
                   <feColorMatrix
                     type="matrix"
                     values="0 0 0 0 0.309804 0 0 0 0 0.235294 0 0 0 0 0.941176 0 0 0 0.25 0"
                   />
-                  <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2448_1051" />
+                  <feBlend
+                    mode="normal"
+                    in2="BackgroundImageFix"
+                    result="effect1_dropShadow_2448_1051"
+                  />
                   <feColorMatrix
                     in="SourceAlpha"
                     type="matrix"
@@ -5379,8 +6997,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     type="matrix"
                     values="0 0 0 0 0.0901961 0 0 0 0 0.0823529 0 0 0 0 0.180392 0 0 0 0.12 0"
                   />
-                  <feBlend mode="normal" in2="effect1_dropShadow_2448_1051" result="effect2_dropShadow_2448_1051" />
-                  <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_2448_1051" result="shape" />
+                  <feBlend
+                    mode="normal"
+                    in2="effect1_dropShadow_2448_1051"
+                    result="effect2_dropShadow_2448_1051"
+                  />
+                  <feBlend
+                    mode="normal"
+                    in="SourceGraphic"
+                    in2="effect2_dropShadow_2448_1051"
+                    result="shape"
+                  />
                 </filter>
               </defs>
             </svg>
@@ -5405,19 +7032,21 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {activeQuestionModal.title}
                   </h4>
                   <p className="text-[11px] font-semibold text-[#5F5B7D]">
-                    {activeQuestionModal.year} · TRI Estimada: ~{activeQuestionModal.tri}
+                    {activeQuestionModal.year} · TRI Estimada: ~
+                    {activeQuestionModal.tri}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${activeQuestionModal.difficulty === "Fácil"
-                    ? "bg-[#E3F5EC] text-[#137A51]"
-                    : activeQuestionModal.difficulty === "Média"
-                      ? "bg-[#FEF3C7] text-[#B45309]"
-                      : "bg-[#F3E8FF] text-[#6B21A8]"
-                    }`}
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    activeQuestionModal.difficulty === "Fácil"
+                      ? "bg-[#E3F5EC] text-[#137A51]"
+                      : activeQuestionModal.difficulty === "Média"
+                        ? "bg-[#FEF3C7] text-[#B45309]"
+                        : "bg-[#F3E8FF] text-[#6B21A8]"
+                  }`}
                 >
                   {activeQuestionModal.difficulty}
                 </span>
@@ -5431,7 +7060,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   }}
                   className="w-8 h-8 rounded-full bg-[#F4F3FA] hover:bg-[#E9E6FF] text-[#5F5B7D] hover:text-[#17152E] flex items-center justify-center transition cursor-pointer"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -5452,15 +7090,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                 const letters = ["A", "B", "C", "D", "E"]
                 const isSelected = selectedOption === optIdx
                 const isCorrect = optIdx === activeQuestionModal.correctIndex
-                let optionStyle = "border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#F8F7FD]"
+                let optionStyle =
+                  "border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#F8F7FD]"
                 let badgeStyle = "bg-[#F4F3FA] text-[#5F5B7D]"
 
                 if (showExplanation) {
                   if (isCorrect) {
-                    optionStyle = "border-[#137A51] bg-[#E3F5EC]/70 text-[#137A51]"
+                    optionStyle =
+                      "border-[#137A51] bg-[#E3F5EC]/70 text-[#137A51]"
                     badgeStyle = "bg-[#137A51] text-white"
                   } else if (isSelected && !isCorrect) {
-                    optionStyle = "border-[#DC2626] bg-[#FEE2E2]/70 text-[#DC2626]"
+                    optionStyle =
+                      "border-[#DC2626] bg-[#FEE2E2]/70 text-[#DC2626]"
                     badgeStyle = "bg-[#DC2626] text-white"
                   } else {
                     optionStyle = "border-[#E2DFF1] opacity-60"
@@ -5478,7 +7119,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     onClick={() => setSelectedOption(optIdx)}
                     className={`w-full p-3 sm:p-3.5 rounded-xl border text-left flex items-center gap-3 transition cursor-pointer ${optionStyle}`}
                   >
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${badgeStyle}`}>
+                    <span
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${badgeStyle}`}
+                    >
                       {letters[optIdx]}
                     </span>
                     <span className="text-xs sm:text-sm font-semibold text-[#17152E]">
@@ -5493,17 +7136,36 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
             {showExplanation && (
               <div className="space-y-3 animate-in fade-in duration-200">
                 <div
-                  className={`p-3.5 rounded-xl border flex items-center gap-2.5 ${selectedOption === activeQuestionModal.correctIndex
-                    ? "bg-[#E3F5EC] border-[#137A51]/30 text-[#137A51]"
-                    : "bg-[#FEE2E2] border-[#DC2626]/30 text-[#DC2626]"
-                    }`}
+                  className={`p-3.5 rounded-xl border flex items-center gap-2.5 ${
+                    selectedOption === activeQuestionModal.correctIndex
+                      ? "bg-[#E3F5EC] border-[#137A51]/30 text-[#137A51]"
+                      : "bg-[#FEE2E2] border-[#DC2626]/30 text-[#DC2626]"
+                  }`}
                 >
                   {selectedOption === activeQuestionModal.correctIndex ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <circle cx="12" cy="12" r="10" />
                       <line x1="15" y1="9" x2="9" y2="15" />
                       <line x1="9" y1="9" x2="15" y2="15" />
@@ -5548,27 +7210,41 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   onClick={() => {
                     if (selectedOption !== null) {
                       setShowExplanation(true)
-                      const currentModule = (selectedModule && MODULES_DATA[selectedModule]) || MODULES_DATA["modulo-2"]
+                      const currentModule =
+                        (selectedModule && MODULES_DATA[selectedModule]) ||
+                        MODULES_DATA["modulo-2"]
                       const submodules = currentModule.submodules || []
-                      const currentSub = submodules.find((s) => s.id === selectedSubmodule) || submodules[0]
+                      const currentSub =
+                        submodules.find((s) => s.id === selectedSubmodule) ||
+                        submodules[0]
                       const key = `${selectedModule}_${currentSub.id}_${activeQuestionModal.id}`
-                      setCompletedQuestions((prev) => ({ ...prev, [key]: true }))
+                      setCompletedQuestions((prev) => ({
+                        ...prev,
+                        [key]: true,
+                      }))
                     }
                   }}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer shadow-xs ${selectedOption !== null
-                    ? "bg-[#4F3CF0] hover:bg-[#3E2DD6] text-white"
-                    : "bg-[#E2DFF1] text-[#8C88AA] cursor-not-allowed"
-                    }`}
+                  className={`px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer shadow-xs ${
+                    selectedOption !== null
+                      ? "bg-[#4F3CF0] hover:bg-[#3E2DD6] text-white"
+                      : "bg-[#E2DFF1] text-[#8C88AA] cursor-not-allowed"
+                  }`}
                 >
                   Confirmar Resposta
                 </button>
               ) : (
                 (() => {
-                  const currentModule = (selectedModule && MODULES_DATA[selectedModule]) || MODULES_DATA["modulo-2"]
+                  const currentModule =
+                    (selectedModule && MODULES_DATA[selectedModule]) ||
+                    MODULES_DATA["modulo-2"]
                   const submodules = currentModule.submodules || []
-                  const currentSub = submodules.find((s) => s.id === selectedSubmodule) || submodules[0]
+                  const currentSub =
+                    submodules.find((s) => s.id === selectedSubmodule) ||
+                    submodules[0]
                   const questions = currentSub.questions || []
-                  const nextQuestion = questions.find((q) => q.id === activeQuestionModal.id + 1)
+                  const nextQuestion = questions.find(
+                    (q) => q.id === activeQuestionModal.id + 1,
+                  )
 
                   return nextQuestion ? (
                     <button
@@ -5581,7 +7257,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       className="px-6 py-2.5 rounded-xl bg-[#4F3CF0] hover:bg-[#3E2DD6] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                     >
                       <span>Próxima Questão ({nextQuestion.id}/8)</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <polyline points="9 18 15 12 9 6" />
                       </svg>
                     </button>
@@ -5745,7 +7430,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   Remover matéria?
                 </h3>
                 <p className="text-xs sm:text-[13px] text-[#5F5B7D] font-medium mt-1.5 leading-relaxed">
-                  Todo o progresso nesta matéria será perdido e ela voltará para a lista de matérias disponíveis.
+                  Todo o progresso nesta matéria será perdido e ela voltará para
+                  a lista de matérias disponíveis.
                 </p>
               </div>
             </div>
@@ -5808,7 +7494,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
         <div className="fixed inset-0 z-50 bg-[#F7F6FC] overflow-y-auto flex flex-col min-h-screen text-[#17152E]">
           {/* Top Bar (Exatamente 76px de altura fixa com flexShrink: 0) */}
           <header
-            style={{ height: "76px", minHeight: "76px", maxHeight: "76px", flexShrink: 0 }}
+            style={{
+              height: "76px",
+              minHeight: "76px",
+              maxHeight: "76px",
+              flexShrink: 0,
+            }}
             className="sticky top-0 z-40 w-full h-[76px] min-h-[76px] max-h-[76px] shrink-0 bg-white border-b border-[#E2DFF1] shadow-2xs flex items-center"
           >
             <div
@@ -5821,7 +7512,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   type="button"
                   onClick={() => {
                     try {
-                      if (newEssayText) localStorage.setItem("sherlock_essay_draft", newEssayText)
+                      if (newEssayText)
+                        localStorage.setItem(
+                          "sherlock_essay_draft",
+                          newEssayText,
+                        )
                     } catch {
                       // ignore
                     }
@@ -5829,11 +7524,23 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   }}
                   className="h-[24px] flex items-center gap-3 text-[#17152E] hover:opacity-80 transition cursor-pointer active:scale-95"
                 >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#17152E" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="#17152E"
+                    strokeWidth="1.66667"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                  >
                     <path d="M11 1L1 11" />
                     <path d="M1 1L11 11" />
                   </svg>
-                  <span className="font-semibold text-[15px] leading-none tracking-tight text-[#17152E]">Sair</span>
+                  <span className="font-semibold text-[15px] leading-none tracking-tight text-[#17152E]">
+                    Sair
+                  </span>
                 </button>
               </div>
 
@@ -5854,9 +7561,29 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   style={{ width: "173px", height: "51px" }}
                   className="w-[173px] h-[51px] rounded-[25.5px] border border-[#8C88AA] bg-white flex items-center justify-center gap-2.5 shadow-2xs select-none shrink-0"
                 >
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
-                    <circle cx="9" cy="9" r="7.5" stroke="#17152E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M9 4.5V9L12 10.5" stroke="#17152E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    className="shrink-0"
+                  >
+                    <circle
+                      cx="9"
+                      cy="9"
+                      r="7.5"
+                      stroke="#17152E"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 4.5V9L12 10.5"
+                      stroke="#17152E"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   <span className="text-[17px] font-bold text-[#17152E] font-mono tracking-tight leading-none">
                     {formatTimer(essaySeconds)}
@@ -5870,7 +7597,17 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   style={{ width: "228px", height: "48px" }}
                   className="w-[228px] h-[48px] rounded-[24px] bg-[#4F3CF0] hover:bg-[#3D2CD8] text-white font-bold text-[14px] flex items-center justify-center gap-2.5 transition cursor-pointer shadow-xs active:scale-95 shrink-0"
                 >
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.66667" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="1.66667"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                  >
                     <path d="M8 1L9.6 6.3L15 8L9.6 9.7L8 15L6.4 9.7L1 8L6.4 6.3L8 1Z" />
                   </svg>
                   <span>Enviar para correção</span>
@@ -5897,15 +7634,22 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                 </div>
                 <div className="mt-3 pt-3 border-t border-[#E2DFF1]/70">
                   <p className="text-[12px] text-[#5F5B7D] leading-relaxed line-clamp-3">
-                    A partir da leitura dos textos motivadores e com base nos conhecimentos construídos ao longo de sua formação, redija um texto dissertativo-argumentativo em modalidade escrita formal da língua portuguesa sobre o tema <strong>"{newEssayTheme}"</strong>.
+                    A partir da leitura dos textos motivadores e com base nos
+                    conhecimentos construídos ao longo de sua formação, redija
+                    um texto dissertativo-argumentativo em modalidade escrita
+                    formal da língua portuguesa sobre o tema{" "}
+                    <strong>"{newEssayTheme}"</strong>.
                   </p>
                 </div>
               </div>
 
               {/* Card 2: Textos Motivadores (Accordion conforme SVG 400x216/228) */}
               <div
-                className={`w-full bg-white rounded-[20px] border border-[#E2DFF1] px-7 py-6 shadow-2xs shrink-0 flex flex-col transition-all duration-200 ${openMotivatorIndex === null ? "h-auto lg:h-[216px] justify-between" : "h-auto gap-4"
-                  }`}
+                className={`w-full bg-white rounded-[20px] border border-[#E2DFF1] px-7 py-6 shadow-2xs shrink-0 flex flex-col transition-all duration-200 ${
+                  openMotivatorIndex === null
+                    ? "h-auto lg:h-[216px] justify-between"
+                    : "h-auto gap-4"
+                }`}
               >
                 <div>
                   <h3 className="text-[17px] font-black text-[#17152E] tracking-tight">
@@ -5913,12 +7657,20 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   </h3>
                 </div>
 
-                <div className={openMotivatorIndex === null ? "space-y-6 pb-2" : "space-y-4"}>
+                <div
+                  className={
+                    openMotivatorIndex === null ? "space-y-6 pb-2" : "space-y-4"
+                  }
+                >
                   {/* Item 1 */}
                   <div className="w-full">
                     <button
                       type="button"
-                      onClick={() => setOpenMotivatorIndex(openMotivatorIndex === 1 ? null : 1)}
+                      onClick={() =>
+                        setOpenMotivatorIndex(
+                          openMotivatorIndex === 1 ? null : 1,
+                        )
+                      }
                       className="w-full flex items-center justify-between text-left group cursor-pointer transition select-none"
                     >
                       <span className="text-[13.5px] sm:text-[14px] font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition-colors pr-3 truncate">
@@ -5933,8 +7685,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`shrink-0 transition-transform duration-200 ${openMotivatorIndex === 1 ? "rotate-180 stroke-[#4F3CF0]" : ""
-                          }`}
+                        className={`shrink-0 transition-transform duration-200 ${
+                          openMotivatorIndex === 1
+                            ? "rotate-180 stroke-[#4F3CF0]"
+                            : ""
+                        }`}
                       >
                         <path d="M1 1.25L5 4.75L9 1.25" />
                       </svg>
@@ -5942,10 +7697,19 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {openMotivatorIndex === 1 && (
                       <div className="mt-2.5 p-3.5 rounded-xl bg-[#FAF9FE] border border-[#E2DFF1]/70 text-[11.5px] leading-relaxed text-[#5F5B7D] space-y-2 animate-fadeIn">
                         <blockquote className="italic border-l-2 border-[#4F3CF0] pl-2.5 text-[#17152E]">
-                          "Art. 231. São reconhecidos aos povos originários e comunidades tradicionais sua organização social, costumes, línguas, crenças e tradições, e os direitos originários sobre as terras que tradicionalmente ocupam..."
+                          "Art. 231. São reconhecidos aos povos originários e
+                          comunidades tradicionais sua organização social,
+                          costumes, línguas, crenças e tradições, e os direitos
+                          originários sobre as terras que tradicionalmente
+                          ocupam..."
                         </blockquote>
                         <p>
-                          Pesquisas socioambientais e demográficas do IPEA e instituições científicas apontam que o investimento contínuo em pesquisa etnográfica, monitoramento territorial e inovação tecnológica é indispensável para preservar o patrimônio cultural e ambiental brasileiro.
+                          Pesquisas socioambientais e demográficas do IPEA e
+                          instituições científicas apontam que o investimento
+                          contínuo em pesquisa etnográfica, monitoramento
+                          territorial e inovação tecnológica é indispensável
+                          para preservar o patrimônio cultural e ambiental
+                          brasileiro.
                         </p>
                       </div>
                     )}
@@ -5955,7 +7719,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   <div className="w-full">
                     <button
                       type="button"
-                      onClick={() => setOpenMotivatorIndex(openMotivatorIndex === 2 ? null : 2)}
+                      onClick={() =>
+                        setOpenMotivatorIndex(
+                          openMotivatorIndex === 2 ? null : 2,
+                        )
+                      }
                       className="w-full flex items-center justify-between text-left group cursor-pointer transition select-none"
                     >
                       <span className="text-[13.5px] sm:text-[14px] font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition-colors pr-3 truncate">
@@ -5970,8 +7738,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`shrink-0 transition-transform duration-200 ${openMotivatorIndex === 2 ? "rotate-180 stroke-[#4F3CF0]" : ""
-                          }`}
+                        className={`shrink-0 transition-transform duration-200 ${
+                          openMotivatorIndex === 2
+                            ? "rotate-180 stroke-[#4F3CF0]"
+                            : ""
+                        }`}
                       >
                         <path d="M1 1.25L5 4.75L9 1.25" />
                       </svg>
@@ -5979,10 +7750,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {openMotivatorIndex === 2 && (
                       <div className="mt-2.5 p-3.5 rounded-xl bg-[#FAF9FE] border border-[#E2DFF1]/70 text-[11.5px] leading-relaxed text-[#5F5B7D] space-y-2 animate-fadeIn">
                         <p className="font-bold text-[#17152E]">
-                          Distribuição Demográfica e Proteção dos Biomas (Censo IBGE / FUNAI):
+                          Distribuição Demográfica e Proteção dos Biomas (Censo
+                          IBGE / FUNAI):
                         </p>
                         <p>
-                          O Brasil registra mais de 1,7 milhão de indígenas e 1,3 milhão de quilombolas, além de ribeirinhos e extrativistas. Dados estatísticos comprovam que territórios devidamente delimitados e com suporte socioeconômico apresentam índices de devastação até 80% menores que a média nacional.
+                          O Brasil registra mais de 1,7 milhão de indígenas e
+                          1,3 milhão de quilombolas, além de ribeirinhos e
+                          extrativistas. Dados estatísticos comprovam que
+                          territórios devidamente delimitados e com suporte
+                          socioeconômico apresentam índices de devastação até
+                          80% menores que a média nacional.
                         </p>
                       </div>
                     )}
@@ -5992,7 +7769,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   <div className="w-full">
                     <button
                       type="button"
-                      onClick={() => setOpenMotivatorIndex(openMotivatorIndex === 3 ? null : 3)}
+                      onClick={() =>
+                        setOpenMotivatorIndex(
+                          openMotivatorIndex === 3 ? null : 3,
+                        )
+                      }
                       className="w-full flex items-center justify-between text-left group cursor-pointer transition select-none"
                     >
                       <span className="text-[13.5px] sm:text-[14px] font-bold text-[#17152E] group-hover:text-[#4F3CF0] transition-colors pr-3 truncate">
@@ -6007,8 +7788,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className={`shrink-0 transition-transform duration-200 ${openMotivatorIndex === 3 ? "rotate-180 stroke-[#4F3CF0]" : ""
-                          }`}
+                        className={`shrink-0 transition-transform duration-200 ${
+                          openMotivatorIndex === 3
+                            ? "rotate-180 stroke-[#4F3CF0]"
+                            : ""
+                        }`}
                       >
                         <path d="M1 1.25L5 4.75L9 1.25" />
                       </svg>
@@ -6019,7 +7803,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           Reflexão Crítica e Patrimônio Imaterial:
                         </p>
                         <p>
-                          A charge ilustra o avanço desordenado da exploração econômica sobre ecossistemas ancestrais, contrastando com a harmonia e as tecnologias sociais milenares mantidas pelas populações tradicionais. Ignorar esses saberes fragiliza a segurança climática e a própria identidade do país.
+                          A charge ilustra o avanço desordenado da exploração
+                          econômica sobre ecossistemas ancestrais, contrastando
+                          com a harmonia e as tecnologias sociais milenares
+                          mantidas pelas populações tradicionais. Ignorar esses
+                          saberes fragiliza a segurança climática e a própria
+                          identidade do país.
                         </p>
                       </div>
                     )}
@@ -6030,20 +7819,47 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
               {/* Card 3: Estrutura (400x210 conforme SVG oficial) */}
               <div className="w-full h-auto lg:h-[210px] bg-white rounded-[20px] border border-[#E2DFF1] px-7 py-6 shadow-2xs flex flex-col justify-between shrink-0">
                 <div>
-                  <h3 className="text-[17px] font-black text-[#17152E] tracking-tight">Estrutura</h3>
+                  <h3 className="text-[17px] font-black text-[#17152E] tracking-tight">
+                    Estrutura
+                  </h3>
                 </div>
 
                 <div className="space-y-3.5 pb-0.5">
                   {[
-                    { id: "intro", label: "Introdução", done: essayStructureStatus.intro },
-                    { id: "dev1", label: "Desenvolvimento 1", done: essayStructureStatus.dev1 },
-                    { id: "dev2", label: "Desenvolvimento 2", done: essayStructureStatus.dev2 },
-                    { id: "concl", label: "Conclusão com proposta de intervenção", done: essayStructureStatus.concl },
+                    {
+                      id: "intro",
+                      label: "Introdução",
+                      done: essayStructureStatus.intro,
+                    },
+                    {
+                      id: "dev1",
+                      label: "Desenvolvimento 1",
+                      done: essayStructureStatus.dev1,
+                    },
+                    {
+                      id: "dev2",
+                      label: "Desenvolvimento 2",
+                      done: essayStructureStatus.dev2,
+                    },
+                    {
+                      id: "concl",
+                      label: "Conclusão com proposta de intervenção",
+                      done: essayStructureStatus.concl,
+                    },
                   ].map((item) => (
-                    <div key={item.id} className="flex items-center gap-3.5 select-none transition-colors">
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3.5 select-none transition-colors"
+                    >
                       {item.done ? (
                         <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 animate-fadeIn">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            className="shrink-0 animate-fadeIn"
+                          >
                             <path
                               d="M3.5 8.2L6.2 10.9L12.5 4.6"
                               stroke="#137A51"
@@ -6055,14 +7871,29 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         </div>
                       ) : (
                         <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-                            <circle cx="8" cy="8" r="6.2" stroke="#8C88AA" strokeWidth="1.5" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            className="shrink-0"
+                          >
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6.2"
+                              stroke="#8C88AA"
+                              strokeWidth="1.5"
+                            />
                           </svg>
                         </div>
                       )}
                       <span
-                        className={`text-[13.5px] sm:text-[14px] transition-colors truncate ${item.done ? "font-bold text-[#17152E]" : "font-medium text-[#5F5B7D]"
-                          }`}
+                        className={`text-[13.5px] sm:text-[14px] transition-colors truncate ${
+                          item.done
+                            ? "font-bold text-[#17152E]"
+                            : "font-medium text-[#5F5B7D]"
+                        }`}
                       >
                         {item.label}
                       </span>
@@ -6080,8 +7911,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                 {/* Header da Folha de Redação */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-[#E2DFF1]/70">
                   <div>
-                    <h3 className="text-lg sm:text-xl font-black text-[#17152E]">Folha de Redação</h3>
-                    <p className="text-xs text-[#5F5B7D] mt-0.5">Texto definitivo · Prova de Redação do ENEM</p>
+                    <h3 className="text-lg sm:text-xl font-black text-[#17152E]">
+                      Folha de Redação
+                    </h3>
+                    <p className="text-xs text-[#5F5B7D] mt-0.5">
+                      Texto definitivo · Prova de Redação do ENEM
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -6090,7 +7925,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       onClick={() => {
                         setNewEssayText(DEFAULT_MODEL_ESSAY)
                         try {
-                          localStorage.setItem("sherlock_essay_draft", DEFAULT_MODEL_ESSAY)
+                          localStorage.setItem(
+                            "sherlock_essay_draft",
+                            DEFAULT_MODEL_ESSAY,
+                          )
                         } catch {
                           // ignore
                         }
@@ -6098,7 +7936,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       className="px-3.5 py-1.5 rounded-full bg-[#E9E6FF] hover:bg-[#DCD6FF] text-[#4F3CF0] font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-95"
                       title="Preencher com redação exemplar nota 1000"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                       </svg>
                       <span>Modelo Nota 1000</span>
@@ -6128,14 +7975,15 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Linhas */}
                     <span
-                      className={`px-3 py-1 rounded-full font-bold transition-colors ${computedLinesCount > 30
-                        ? "bg-[#FFE8E8] text-[#C42B30]"
-                        : computedLinesCount >= 20
-                          ? "bg-[#E9F9EE] text-[#1C8A43]"
-                          : computedLinesCount >= 7
-                            ? "bg-[#FFF8E7] text-[#B27B00]"
-                            : "bg-[#F7F6FC] text-[#5F5B7D]"
-                        }`}
+                      className={`px-3 py-1 rounded-full font-bold transition-colors ${
+                        computedLinesCount > 30
+                          ? "bg-[#FFE8E8] text-[#C42B30]"
+                          : computedLinesCount >= 20
+                            ? "bg-[#E9F9EE] text-[#1C8A43]"
+                            : computedLinesCount >= 7
+                              ? "bg-[#FFF8E7] text-[#B27B00]"
+                              : "bg-[#F7F6FC] text-[#5F5B7D]"
+                      }`}
                     >
                       {computedLinesCount} / 30 linhas
                     </span>
@@ -6165,7 +8013,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <span className="font-bold uppercase tracking-wider text-[10px] text-[#4F3CF0]">
                       Texto Definitivo
                     </span>
-                    <span className="font-mono text-[11px]">30 Linhas Pautadas · Grade Oficial ENEM</span>
+                    <span className="font-mono text-[11px]">
+                      30 Linhas Pautadas · Grade Oficial ENEM
+                    </span>
                   </div>
 
                   {/* Números à esquerda + Linhas à direita */}
@@ -6175,8 +8025,11 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       {Array.from({ length: 30 }, (_, i) => (
                         <div
                           key={i}
-                          className={`h-[32px] flex items-center justify-center transition-colors ${computedLinesCount > i ? "text-[#4F3CF0] font-bold bg-[#E9E6FF]/40" : ""
-                            }`}
+                          className={`h-[32px] flex items-center justify-center transition-colors ${
+                            computedLinesCount > i
+                              ? "text-[#4F3CF0] font-bold bg-[#E9E6FF]/40"
+                              : ""
+                          }`}
                         >
                           {String(i + 1).padStart(2, "0")}
                         </div>
@@ -6186,12 +8039,18 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {/* Linhas horizontais e Textarea */}
                     <div className="flex-1 relative py-2">
                       {/* Linhas pautadas horizontais */}
-                      <div className="absolute inset-0 pt-2 pointer-events-none select-none flex flex-col" aria-hidden="true">
+                      <div
+                        className="absolute inset-0 pt-2 pointer-events-none select-none flex flex-col"
+                        aria-hidden="true"
+                      >
                         {Array.from({ length: 30 }, (_, i) => (
                           <div
                             key={i}
-                            className={`h-[32px] border-b border-[#E2DFF1]/70 w-full transition-colors ${computedLinesCount === i + 1 ? "border-b-[#4F3CF0]/40" : ""
-                              }`}
+                            className={`h-[32px] border-b border-[#E2DFF1]/70 w-full transition-colors ${
+                              computedLinesCount === i + 1
+                                ? "border-b-[#4F3CF0]/40"
+                                : ""
+                            }`}
                           />
                         ))}
                       </div>
@@ -6202,7 +8061,10 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         onChange={(e) => {
                           setNewEssayText(e.target.value)
                           try {
-                            localStorage.setItem("sherlock_essay_draft", e.target.value)
+                            localStorage.setItem(
+                              "sherlock_essay_draft",
+                              e.target.value,
+                            )
                           } catch {
                             // ignore
                           }
@@ -6223,44 +8085,84 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                 <div className="mt-4">
                   {computedLinesCount < 7 && computedLinesCount > 0 && (
                     <div className="p-3 rounded-xl bg-[#FFE8E8] border border-[#C42B30]/30 text-xs text-[#C42B30] flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="8" x2="12" y2="12" />
                         <line x1="12" y1="16" x2="12.01" y2="16" />
                       </svg>
-                      <span>Atenção: redações com até 7 linhas recebem nota zero no ENEM.</span>
+                      <span>
+                        Atenção: redações com até 7 linhas recebem nota zero no
+                        ENEM.
+                      </span>
                     </div>
                   )}
 
                   {computedLinesCount >= 7 && computedLinesCount < 20 && (
                     <div className="p-3 rounded-xl bg-[#FFF8E7] border border-[#FFC700]/40 text-xs text-[#B27B00] flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="16" x2="12" y2="12" />
                         <line x1="12" y1="8" x2="12.01" y2="8" />
                       </svg>
-                      <span>Você escreveu {computedLinesCount} linhas. Para nota máxima, recomenda-se entre 20 e 30 linhas.</span>
+                      <span>
+                        Você escreveu {computedLinesCount} linhas. Para nota
+                        máxima, recomenda-se entre 20 e 30 linhas.
+                      </span>
                     </div>
                   )}
 
                   {computedLinesCount >= 20 && computedLinesCount <= 30 && (
                     <div className="p-3 rounded-xl bg-[#E9F9EE] border border-[#27AE60]/30 text-xs text-[#1C8A43] flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                         <polyline points="22 4 12 14.01 9 11.01" />
                       </svg>
-                      <span>Extensão excelente! {computedLinesCount} linhas escritas dentro da faixa de pontuação máxima.</span>
+                      <span>
+                        Extensão excelente! {computedLinesCount} linhas escritas
+                        dentro da faixa de pontuação máxima.
+                      </span>
                     </div>
                   )}
 
                   {computedLinesCount > 30 && (
                     <div className="p-3 rounded-xl bg-[#FFE8E8] border border-[#C42B30]/30 text-xs text-[#C42B30] flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="8" x2="12" y2="12" />
                         <line x1="12" y1="16" x2="12.01" y2="16" />
                       </svg>
-                      <span>Você ultrapassou 30 linhas ({computedLinesCount} linhas). Linhas além da 30ª são desconsideradas no ENEM.</span>
+                      <span>
+                        Você ultrapassou 30 linhas ({computedLinesCount}{" "}
+                        linhas). Linhas além da 30ª são desconsideradas no ENEM.
+                      </span>
                     </div>
                   )}
                 </div>
@@ -6315,7 +8217,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                 {activeExam.title}
               </h2>
               <p className="text-[12px] font-semibold text-[#5F5B7D] mt-0.5">
-                Questão {String(examQuestionIndex + 1).padStart(2, "0")} de {activeExam.totalQuestions}
+                Questão {String(examQuestionIndex + 1).padStart(2, "0")} de{" "}
+                {activeExam.totalQuestions}
               </p>
             </div>
 
@@ -6367,7 +8270,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
           <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 items-start flex-1">
             {/* CARD DA ESQUERDA: QUESTÃO (1012x564px, rx=20) */}
             {(() => {
-              const currentQ = SIMULADO_90_QUESTIONS[examQuestionIndex] || SIMULADO_90_QUESTIONS[0]
+              const currentQ =
+                SIMULADO_90_QUESTIONS[examQuestionIndex] ||
+                SIMULADO_90_QUESTIONS[0]
               return (
                 <div className="w-full lg:w-[1012px] flex-1 bg-white rounded-[20px] p-6 sm:p-8 border border-[#E2DFF1] shadow-[0_1px_2px_rgba(23,21,46,0.08),0_2px_6px_rgba(23,21,46,0.06)] flex flex-col justify-between min-h-[564px]">
                   <div>
@@ -6398,7 +8303,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     {/* Lista de Alternativas (A a E) */}
                     <div className="space-y-3 mb-8">
                       {currentQ.alternatives.map((alt) => {
-                        const isSelected = examAnswers[examQuestionIndex] === alt.letter
+                        const isSelected =
+                          examAnswers[examQuestionIndex] === alt.letter
                         return (
                           <button
                             key={alt.letter}
@@ -6411,18 +8317,20 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             }}
                             className={`
                               w-full text-left p-3.5 sm:p-4 rounded-[14px] flex items-center gap-3.5 sm:gap-4 transition cursor-pointer
-                              ${isSelected
-                                ? "bg-[#F7F6FC] border-2 border-[#4F3CF0] shadow-2xs font-semibold"
-                                : "bg-white border border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#FDFDFF]"
+                              ${
+                                isSelected
+                                  ? "bg-[#F7F6FC] border-2 border-[#4F3CF0] shadow-2xs font-semibold"
+                                  : "bg-white border border-[#E2DFF1] hover:border-[#4F3CF0]/60 hover:bg-[#FDFDFF]"
                               }
                             `}
                           >
                             <div
                               className={`
                                 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition
-                                ${isSelected
-                                  ? "bg-[#4F3CF0] text-white"
-                                  : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]"
+                                ${
+                                  isSelected
+                                    ? "bg-[#4F3CF0] text-white"
+                                    : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1]"
                                 }
                               `}
                             >
@@ -6442,7 +8350,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     <button
                       type="button"
                       disabled={examQuestionIndex <= 0}
-                      onClick={() => setExamQuestionIndex((prev) => Math.max(0, prev - 1))}
+                      onClick={() =>
+                        setExamQuestionIndex((prev) => Math.max(0, prev - 1))
+                      }
                       className="h-[48px] px-6 rounded-full border border-[#8C88AA] bg-white text-[#17152E] font-bold text-sm flex items-center gap-2 hover:bg-[#F7F6FC] disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
                     >
                       <svg
@@ -6462,10 +8372,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
 
                     <button
                       type="button"
-                      disabled={examQuestionIndex >= activeExam.totalQuestions - 1}
+                      disabled={
+                        examQuestionIndex >= activeExam.totalQuestions - 1
+                      }
                       onClick={() =>
                         setExamQuestionIndex((prev) =>
-                          Math.min(activeExam.totalQuestions - 1, prev + 1)
+                          Math.min(activeExam.totalQuestions - 1, prev + 1),
                         )
                       }
                       className="h-[48px] px-7 rounded-full bg-[#4F3CF0] hover:bg-[#3D2DC9] text-white font-bold text-sm flex items-center gap-2 transition cursor-pointer shadow-xs"
@@ -6498,7 +8410,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                     Navegação da prova
                   </h3>
                   <p className="text-[12px] font-semibold text-[#5F5B7D] mt-0.5">
-                    Respondidas: {Object.keys(examAnswers).length} de {activeExam.totalQuestions}
+                    Respondidas: {Object.keys(examAnswers).length} de{" "}
+                    {activeExam.totalQuestions}
                   </p>
                 </div>
               </div>
@@ -6531,11 +8444,12 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                       onClick={() => setExamQuestionIndex(i)}
                       className={`
                         h-9 rounded-[10px] text-[12px] flex items-center justify-center font-bold transition cursor-pointer
-                        ${isCurrent
-                          ? "bg-[#4F3CF0] text-white shadow-xs scale-105 ring-2 ring-[#4F3CF0]/30"
-                          : isAnswered
-                            ? "bg-[#E9E6FF] text-[#4F3CF0] border border-[#4F3CF0]/30 hover:bg-[#DDD8FE]"
-                            : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1] hover:border-[#4F3CF0] hover:text-[#17152E]"
+                        ${
+                          isCurrent
+                            ? "bg-[#4F3CF0] text-white shadow-xs scale-105 ring-2 ring-[#4F3CF0]/30"
+                            : isAnswered
+                              ? "bg-[#E9E6FF] text-[#4F3CF0] border border-[#4F3CF0]/30 hover:bg-[#DDD8FE]"
+                              : "bg-[#F7F6FC] text-[#5F5B7D] border border-[#E2DFF1] hover:border-[#4F3CF0] hover:text-[#17152E]"
                         }
                       `}
                     >
@@ -6580,12 +8494,16 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                         <strong className="text-[#17152E]">
                           {Object.keys(examAnswers).length}
                         </strong>{" "}
-                        de <strong>{activeExam.totalQuestions}</strong> questões.
-                        {activeExam.totalQuestions - Object.keys(examAnswers).length > 0 && (
+                        de <strong>{activeExam.totalQuestions}</strong>{" "}
+                        questões.
+                        {activeExam.totalQuestions -
+                          Object.keys(examAnswers).length >
+                          0 && (
                           <span className="block mt-1 text-amber-600 font-semibold">
                             Ainda restam{" "}
-                            {activeExam.totalQuestions - Object.keys(examAnswers).length} questões
-                            em branco.
+                            {activeExam.totalQuestions -
+                              Object.keys(examAnswers).length}{" "}
+                            questões em branco.
                           </span>
                         )}
                       </p>
@@ -6639,7 +8557,8 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                             Questões respondidas:
                           </span>
                           <span className="font-bold text-[#17152E]">
-                            {Object.keys(examAnswers).length} / {activeExam.totalQuestions}
+                            {Object.keys(examAnswers).length} /{" "}
+                            {activeExam.totalQuestions}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -6651,7 +8570,9 @@ export default function Dashboard({ go, userName: propUserName, userEmail: propU
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-[#5F5B7D] font-medium">Status:</span>
+                          <span className="text-[#5F5B7D] font-medium">
+                            Status:
+                          </span>
                           <span className="font-bold text-[#137A51]">
                             Gabarito processado
                           </span>

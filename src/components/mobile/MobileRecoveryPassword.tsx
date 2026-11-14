@@ -1,33 +1,60 @@
 import { useState, useEffect, type FormEvent } from "react"
+
 import MobileResetPassword from "./MobileResetPassword"
+
 import { authApi } from "../../services/api"
 
 interface MobileRecoveryPasswordProps {
   reset?: boolean
+
   go: (screen: any, token?: string) => void
+
   email?: string
+
   setEmail?: (email: string) => void
+
   sent?: boolean
+
   setSent?: (sent: boolean) => void
+
   password?: string
+
   setPassword?: (password: string) => void
+
   confirmation?: string
+
   setConfirmation?: (confirmation: string) => void
+
   show?: boolean
+
   setShow?: (show: boolean) => void
+
   formAttempted?: boolean
+
   setFormAttempted?: (attempted: boolean) => void
+
   loading?: boolean
+
   error?: string | null
+
   successMessage?: string | null
+
   token?: string
+
   tokenValid?: boolean | null
+
   tokenEmail?: string | null
+
   validatingToken?: boolean
+
   resetLink?: string | null
+
   generatedToken?: string | null
+
   onOpenResetLink?: (token?: string) => void
+
   onSubmitRecovery?: (e: FormEvent<HTMLFormElement>) => void
+
   onSubmitReset?: (e: FormEvent<HTMLFormElement>) => void
 }
 
@@ -35,6 +62,7 @@ interface MobileRecoveryPasswordProps {
  * Question Mark 3D Mascot Illustration with Mentorina Face
  * Exact vector paths and gradients extracted from Figma Artboard (393 x 802 px)
  */
+
 function MascotQuestionIllustration() {
   return (
     <div className="w-full flex justify-center py-2">
@@ -211,49 +239,87 @@ function MascotQuestionIllustration() {
 
 export default function MobileRecoveryPassword({
   reset = false,
+
   go,
+
   email: propEmail,
+
   setEmail: propSetEmail,
+
   sent: propSent,
+
   setSent: propSetSent,
+
   password: propPassword,
+
   setPassword: propSetPassword,
+
   confirmation: propConfirmation,
+
   setConfirmation: propSetConfirmation,
+
   show: propShow,
+
   setShow: propSetShow,
+
   formAttempted: propFormAttempted,
+
   setFormAttempted: propSetFormAttempted,
+
   loading: propLoading,
+
   error: propError,
+
   successMessage: propSuccessMessage,
+
   token,
+
   tokenValid,
+
   tokenEmail,
+
   validatingToken,
+
   resetLink: propResetLink,
+
   generatedToken: propGeneratedToken,
+
   onOpenResetLink,
+
   onSubmitRecovery,
+
   onSubmitReset,
 }: MobileRecoveryPasswordProps) {
   // Local state fallbacks if parent does not control them
+
   const [localEmail, setLocalEmail] = useState("")
+
   const [localSent, setLocalSent] = useState(false)
+
   const [localPassword, setLocalPassword] = useState("")
+
   const [localConfirmation, setLocalConfirmation] = useState("")
+
   const [localShow, setLocalShow] = useState(false)
+
   const [localShowConfirm, setLocalShowConfirm] = useState(false)
+
   const [localAttempted, setLocalAttempted] = useState(false)
+
   const [localLoading, setLocalLoading] = useState(false)
+
   const [localError, setLocalError] = useState<string | null>(null)
+
   const [localSuccessMsg, setLocalSuccessMsg] = useState<string | null>(null)
+
   const [localResetLink, setLocalResetLink] = useState<string | null>(null)
+
   const [localGeneratedToken, setLocalGeneratedToken] = useState<string | null>(
     null,
   )
 
   const isShowPassword = propShow !== undefined ? propShow : localShow
+
   const setPasswordVisibility = (val: boolean) => {
     if (propSetShow) {
       propSetShow(val)
@@ -264,81 +330,116 @@ export default function MobileRecoveryPassword({
 
   useEffect(() => {
     if (!isShowPassword && !localShowConfirm) return
+
     const handleGlobalRelease = () => {
       setPasswordVisibility(false)
+
       setLocalShowConfirm(false)
     }
+
     window.addEventListener("mouseup", handleGlobalRelease)
+
     window.addEventListener("touchend", handleGlobalRelease)
+
     return () => {
       window.removeEventListener("mouseup", handleGlobalRelease)
+
       window.removeEventListener("touchend", handleGlobalRelease)
     }
   }, [isShowPassword, localShowConfirm, propSetShow])
 
   const activeResetLink = propResetLink ?? localResetLink
+
   const activeGeneratedToken = propGeneratedToken ?? localGeneratedToken
 
   const email = propEmail ?? localEmail
+
   const setEmail = propSetEmail ?? setLocalEmail
 
   const sent = propSent ?? localSent
+
   const setSent = propSetSent ?? setLocalSent
 
   const password = propPassword ?? localPassword
+
   const setPassword = propSetPassword ?? setLocalPassword
 
   const confirmation = propConfirmation ?? localConfirmation
+
   const setConfirmation = propSetConfirmation ?? setLocalConfirmation
 
   const show = propShow ?? localShow
+
   const setShow = propSetShow ?? setLocalShow
 
   const formAttempted = propFormAttempted ?? localAttempted
+
   const setFormAttempted = propSetFormAttempted ?? setLocalAttempted
 
   const loading = propLoading ?? localLoading
+
   const setLoading = setLocalLoading
 
   const error = propError ?? localError
+
   const setError = setLocalError
 
   const successMessage = propSuccessMessage ?? localSuccessMsg
+
   const setSuccessMessage = setLocalSuccessMsg
 
   // Validation rules for Reset Password mode
+
   const validLength = password.length >= 8 && password.length <= 20
-  const validMix = /[a-zA-Z]/.test(password) && /\d/.test(password)
+
+  const validCase = /[a-z]/.test(password) && /[A-Z]/.test(password)
+
+  const validNumber = /\d/.test(password)
+
+  const validSpecial = /[!@#$%&*]/.test(password)
+
   const same = password.length > 0 && password === confirmation
-  const canReset = validLength && validMix && same
+
+  const canReset =
+    validLength && validCase && validNumber && validSpecial && same
 
   const handleRecoverySubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     setFormAttempted(true)
+
     setError(null)
 
     if (onSubmitRecovery) {
       onSubmitRecovery(e)
+
       return
     }
 
     const trimmed = email.trim().toLowerCase()
+
     if (!trimmed) {
       setError("Informe um e-mail válido.")
+
       return
     }
 
     setLoading(true)
+
     try {
       const res = await authApi.solicitarRecuperacao(trimmed)
+
       setSent(true)
+
       setSuccessMessage(
         res.message ||
           "Se o e-mail informado estiver cadastrado, enviamos as instruções para redefinição de senha.",
       )
+
       if (res.data?.token) {
         setLocalGeneratedToken(res.data.token)
       }
+
       if (res.data?.resetLink) {
         setLocalResetLink(res.data.resetLink)
       }
@@ -347,7 +448,9 @@ export default function MobileRecoveryPassword({
         err instanceof Error
           ? err.message
           : "Não foi possível solicitar a recuperação. Tente novamente."
+
       setError(msg)
+
       setSent(false)
     } finally {
       setLoading(false)
@@ -356,14 +459,18 @@ export default function MobileRecoveryPassword({
 
   const handleResetSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     setFormAttempted(true)
+
     if (onSubmitReset) {
       onSubmitReset(e)
     } else {
       if (canReset) {
         setLoading(true)
+
         setTimeout(() => {
           setLoading(false)
+
           go("login")
         }, 500)
       }
@@ -371,6 +478,7 @@ export default function MobileRecoveryPassword({
   }
 
   // When in reset password mode, render the dedicated 393 x 580 px mobile screen from Figma
+
   if (reset) {
     return (
       <MobileResetPassword
@@ -436,6 +544,7 @@ export default function MobileRecoveryPassword({
                 type="button"
                 onClick={() => {
                   setPassword("SenhaForte123")
+
                   setConfirmation("SenhaForte123")
                 }}
                 className="text-[11px] font-bold text-[#4F3CF0] bg-[#E9E6FF] hover:bg-[#DDD8FF] px-2.5 py-1 rounded-full transition-colors active:scale-95 cursor-pointer"
@@ -474,6 +583,7 @@ export default function MobileRecoveryPassword({
           {/* Form Content */}
           {!reset ? (
             /* Mode 1: Recovery Email Request */
+
             <form
               onSubmit={handleRecoverySubmit}
               onInvalidCapture={() => setFormAttempted(true)}
@@ -569,6 +679,7 @@ export default function MobileRecoveryPassword({
                       }
                       onClick={(e) => {
                         e.preventDefault()
+
                         if (onOpenResetLink) {
                           onOpenResetLink(activeGeneratedToken || undefined)
                         } else {
@@ -576,8 +687,9 @@ export default function MobileRecoveryPassword({
                             activeGeneratedToken &&
                             typeof window !== "undefined"
                           ) {
-                            window.location.hash = `reset?token=${encodeURIComponent(activeGeneratedToken)}`
+                            window.location.hash = `#reset?token=${encodeURIComponent(activeGeneratedToken)}`
                           }
+
                           go("reset", activeGeneratedToken || undefined)
                         }
                       }}
@@ -592,6 +704,7 @@ export default function MobileRecoveryPassword({
             </form>
           ) : (
             /* Mode 2: Reset / Create New Password */
+
             <form
               onSubmit={handleResetSubmit}
               onInvalidCapture={() => setFormAttempted(true)}
@@ -617,6 +730,7 @@ export default function MobileRecoveryPassword({
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
+
                       setPasswordVisibility(true)
                     }}
                     onMouseUp={() => setPasswordVisibility(false)}
@@ -627,6 +741,7 @@ export default function MobileRecoveryPassword({
                     onKeyDown={(e) => {
                       if (e.key === " " || e.key === "Enter") {
                         e.preventDefault()
+
                         setPasswordVisibility(true)
                       }
                     }}
@@ -634,7 +749,9 @@ export default function MobileRecoveryPassword({
                     onBlur={() => setPasswordVisibility(false)}
                     onClick={(e) => e.preventDefault()}
                     className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1 cursor-pointer select-none ${
-                      isShowPassword ? "text-[#4F3CF0]" : "text-[#8C88AA] hover:text-[#17152E]"
+                      isShowPassword
+                        ? "text-[#4F3CF0]"
+                        : "text-[#8C88AA] hover:text-[#17152E]"
                     }`}
                     aria-label="Pressione e segure para visualizar a nova senha"
                   >
@@ -671,6 +788,7 @@ export default function MobileRecoveryPassword({
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault()
+
                       setLocalShowConfirm(true)
                     }}
                     onMouseUp={() => setLocalShowConfirm(false)}
@@ -681,6 +799,7 @@ export default function MobileRecoveryPassword({
                     onKeyDown={(e) => {
                       if (e.key === " " || e.key === "Enter") {
                         e.preventDefault()
+
                         setLocalShowConfirm(true)
                       }
                     }}
@@ -688,7 +807,9 @@ export default function MobileRecoveryPassword({
                     onBlur={() => setLocalShowConfirm(false)}
                     onClick={(e) => e.preventDefault()}
                     className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors p-1 cursor-pointer select-none ${
-                      localShowConfirm ? "text-[#4F3CF0]" : "text-[#8C88AA] hover:text-[#17152E]"
+                      localShowConfirm
+                        ? "text-[#4F3CF0]"
+                        : "text-[#8C88AA] hover:text-[#17152E]"
                     }`}
                     aria-label="Pressione e segure para visualizar a confirmação da nova senha"
                   >
@@ -727,19 +848,37 @@ export default function MobileRecoveryPassword({
                   </li>
                   <li
                     className={`flex items-center gap-2 ${
-                      validMix ? "text-[#137A51] font-medium" : "text-[#5F5B7D]"
+                      validCase
+                        ? "text-[#137A51] font-medium"
+                        : "text-[#5F5B7D]"
                     }`}
                   >
-                    <span className="text-[13px]">{validMix ? "✓" : "○"}</span>
-                    <span>Letras e números</span>
+                    <span className="text-[13px]">{validCase ? "✓" : "○"}</span>
+                    <span>Letras maiúsculas e minúsculas</span>
                   </li>
                   <li
                     className={`flex items-center gap-2 ${
-                      same ? "text-[#137A51] font-medium" : "text-[#5F5B7D]"
+                      validNumber
+                        ? "text-[#137A51] font-medium"
+                        : "text-[#5F5B7D]"
                     }`}
                   >
-                    <span className="text-[13px]">{same ? "✓" : "○"}</span>
-                    <span>As duas senhas são iguais</span>
+                    <span className="text-[13px]">
+                      {validNumber ? "✓" : "○"}
+                    </span>
+                    <span>Pelo menos um número</span>
+                  </li>
+                  <li
+                    className={`flex items-center gap-2 ${
+                      validSpecial
+                        ? "text-[#137A51] font-medium"
+                        : "text-[#5F5B7D]"
+                    }`}
+                  >
+                    <span className="text-[13px]">
+                      {validSpecial ? "✓" : "○"}
+                    </span>
+                    <span>Caractere especial (!@#$%&*)</span>
                   </li>
                 </ul>
               </div>

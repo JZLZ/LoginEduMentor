@@ -5,6 +5,8 @@ WORKDIR /app
 
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_MENTORINA_API_URL
+ENV VITE_MENTORINA_API_URL=${VITE_MENTORINA_API_URL}
 
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --ignore-scripts --network-timeout 600000

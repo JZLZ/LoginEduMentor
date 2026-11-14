@@ -23,3 +23,10 @@ logs/
 
 # Kiro
 .kiro/
+
+# Python / Test artifacts
+.venv/
+.mentorina_venv/
+.pytest_cache/
+__pycache__/
+*.pyc

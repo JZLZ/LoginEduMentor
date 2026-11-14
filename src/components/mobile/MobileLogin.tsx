@@ -2,45 +2,83 @@ import { useState, useEffect, type FormEvent } from "react"
 
 interface MobileLoginProps {
   email: string
+
   setEmail: (email: string) => void
+
   password: string
+
   setPassword: (password: string) => void
+
   showPassword: boolean
+
   setShowPassword: (show: boolean) => void
+
   rememberMe: boolean
+
   onRememberChange: (checked: boolean) => void
+
   loading: boolean
+
   errorMessage: string | null
+
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
+
   onFillAdmin: () => void
+
   go: (screen: any) => void
+
   onOpenTerms?: () => void
+
+  isLocked?: boolean
+
+  lockCountdown?: number
 }
 
 export default function MobileLogin({
   email,
+
   setEmail,
+
   password,
+
   setPassword,
+
   showPassword,
+
   setShowPassword,
+
   rememberMe,
+
   onRememberChange,
+
   loading,
+
   errorMessage,
+
   onSubmit,
+
   onFillAdmin,
+
   go,
+
+  isLocked = false,
+
+  lockCountdown = 0,
 }: MobileLoginProps) {
   const [formAttempted, setFormAttempted] = useState(false)
 
   useEffect(() => {
     if (!showPassword) return
+
     const handleGlobalRelease = () => setShowPassword(false)
+
     window.addEventListener("mouseup", handleGlobalRelease)
+
     window.addEventListener("touchend", handleGlobalRelease)
+
     return () => {
       window.removeEventListener("mouseup", handleGlobalRelease)
+
       window.removeEventListener("touchend", handleGlobalRelease)
     }
   }, [showPassword, setShowPassword])
@@ -182,21 +220,41 @@ export default function MobileLogin({
           {/* Error Message Alert */}
           {errorMessage && (
             <div
-              className="mb-3.5 p-3 bg-red-50 border border-red-200 text-red-700 text-[12.5px] rounded-[10px] flex items-start gap-2 leading-relaxed"
+              className={`mb-3.5 p-3.5 border text-[12.5px] rounded-[12px] flex flex-col gap-2 leading-relaxed ${
+                isLocked
+                  ? "bg-red-50 border-red-300 text-red-800 shadow-sm"
+                  : "bg-red-50 border-red-200 text-red-700"
+              }`}
               role="alert"
             >
-              <svg
-                className="w-4 h-4 mt-0.5 shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>{errorMessage}</span>
+              <div className="flex items-start gap-2">
+                <svg
+                  className="w-4 h-4 mt-0.5 shrink-0 text-red-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="flex-1 font-medium">{errorMessage}</span>
+              </div>
+              {isLocked && (
+                <div className="flex items-center justify-between pt-2 border-t border-red-200/80 text-[12px]">
+                  <span className="font-semibold text-red-800 flex items-center gap-1">
+                    ⏱️ Desbloqueio em {lockCountdown}s
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => go("recovery")}
+                    className="font-bold underline text-red-800 hover:text-red-950 cursor-pointer"
+                  >
+                    Recuperar senha agora
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -242,6 +300,7 @@ export default function MobileLogin({
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault()
+
                     setShowPassword(true)
                   }}
                   onMouseUp={() => setShowPassword(false)}
@@ -252,6 +311,7 @@ export default function MobileLogin({
                   onKeyDown={(e) => {
                     if (e.key === " " || e.key === "Enter") {
                       e.preventDefault()
+
                       setShowPassword(true)
                     }
                   }}
@@ -259,7 +319,9 @@ export default function MobileLogin({
                   onBlur={() => setShowPassword(false)}
                   onClick={(e) => e.preventDefault()}
                   className={`absolute right-3 p-1 focus:outline-none transition-colors cursor-pointer select-none ${
-                    showPassword ? "text-[#4F3CF0]" : "text-[#5F5B7D] hover:text-[#17152E]"
+                    showPassword
+                      ? "text-[#4F3CF0]"
+                      : "text-[#5F5B7D] hover:text-[#17152E]"
                   }`}
                   aria-label="Pressione e segure para visualizar a senha"
                 >
@@ -313,10 +375,11 @@ export default function MobileLogin({
                   className="sr-only"
                 />
                 <div
-                  className={`w-[20px] h-[20px] rounded-[6px] flex items-center justify-center transition-all shrink-0 ${rememberMe
+                  className={`w-[20px] h-[20px] rounded-[6px] flex items-center justify-center transition-all shrink-0 ${
+                    rememberMe
                       ? "bg-[#4F3CF0] border border-[#4F3CF0]"
                       : "bg-white border border-[#8C88AA]"
-                    }`}
+                  }`}
                 >
                   {rememberMe && (
                     <svg width="13" height="10" viewBox="0 0 14 11" fill="none">
@@ -339,7 +402,7 @@ export default function MobileLogin({
             {/* CTA Button "Entrar" (x=24, y=610, w=345, h=48, rx=24, bg=#4F3CF0) */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isLocked}
               className="w-full h-[48px] rounded-[24px] bg-[#4F3CF0] hover:bg-[#4332D6] active:scale-[0.99] text-white font-bold text-[15px] flex items-center justify-center shadow-md transition-all mt-3.5 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
@@ -347,6 +410,8 @@ export default function MobileLogin({
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   <span>Entrando...</span>
                 </div>
+              ) : isLocked ? (
+                `Aguarde ${lockCountdown}s`
               ) : (
                 "Entrar"
               )}

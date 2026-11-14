@@ -13,6 +13,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:mentorina-contract": "node --test scripts/mentorina-contract.test.mjs",
     "format": "oxfmt"
   },
   "dependencies": {
