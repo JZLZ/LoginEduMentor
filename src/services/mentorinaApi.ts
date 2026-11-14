@@ -89,14 +89,37 @@ export class MentorinaApiError extends Error {
   }
 }
 
-const configuredMentorinaApiUrl =
-  import.meta.env.VITE_MENTORINA_API_URL?.trim().replace(/\/$/, "")
+function resolveMentorinaApiUrl(): string {
+  const configured = import.meta.env.VITE_MENTORINA_API_URL?.trim().replace(/\/$/, "")
+  if (configured) {
+    return configured
+  }
+
+  // Em ambiente local de desenvolvimento
+  if (import.meta.env.DEV) {
+    return "http://localhost:8000"
+  }
+
+  // Em produção/homologação quando VITE_MENTORINA_API_URL não for injetada no build:
+  // Deriva dinamicamente da URL da API do backend ou do origin do navegador
+  const backendApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "")
+  if (backendApiUrl) {
+    if (backendApiUrl.endsWith("/api")) {
+      return backendApiUrl.replace(/\/api$/, "/mentorina")
+    }
+    return `${backendApiUrl}/mentorina`
+  }
+
+  if (typeof window !== "undefined" && window.location) {
+    return `${window.location.origin}/mentorina`
+  }
+
+  return "http://localhost:8000"
+}
 
 export const MENTORINA_CONFIG = {
   USE_MOCK: import.meta.env.VITE_USE_MOCK_MENTORINA === "true",
-  MENTORINA_API_URL:
-    configuredMentorinaApiUrl ||
-    (import.meta.env.DEV ? "http://localhost:8000" : ""),
+  MENTORINA_API_URL: resolveMentorinaApiUrl(),
 }
 
 // ============================================================================
@@ -107,7 +130,8 @@ async function mentorinaFetch<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!MENTORINA_CONFIG.MENTORINA_API_URL) {
+  const baseUrl = MENTORINA_CONFIG.MENTORINA_API_URL || resolveMentorinaApiUrl()
+  if (!baseUrl) {
     console.error(
       "[MENTORINA-CLIENT] Erro: VITE_MENTORINA_API_URL não configurada.",
     )
